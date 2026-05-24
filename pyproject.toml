@@ -1,0 +1,12 @@
+[project]
+name = "infinite-context"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "marimo>=0.23.8",
+    "matplotlib>=3.10.9",
+    "tinker>=0.22.0",
+    "tinker-cookbook>=0.4.1",
+]
