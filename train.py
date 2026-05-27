@@ -391,102 +391,6 @@ def _strip_mask(datum: tinker.Datum) -> tinker.Datum:
 
 
 # ---------------------------------------------------------------------------
-# Debug helpers
-# ---------------------------------------------------------------------------
-
-
-def _action_token_count(traj: Trajectory) -> int:
-    return sum(len(t.ac.tokens) for t in traj.transitions)
-
-
-def _summarize_datum(datum: tinker.Datum) -> dict[str, int]:
-    inputs = datum.loss_fn_inputs
-    out = {"input_length": datum.model_input.length}
-    for k in ("target_tokens", "logprobs", "advantages", "mask"):
-        if k in inputs:
-            shape = inputs[k].shape if hasattr(inputs[k], "shape") else None
-            out[k] = shape[-1] if shape else -1
-    return out
-
-
-def print_rollout_tree(node: RolloutNode, indent: int = 0) -> None:
-    prefix = "  " * indent
-    n_turns = len(node.trajectory.transitions)
-    n_action_tokens = _action_token_count(node.trajectory)
-    reward = _trajectory_total_reward(node.trajectory)
-    header = (
-        f"{prefix}- depth={node.depth} turns={n_turns} "
-        f"action_tokens={n_action_tokens} reward={reward:.3f} "
-        f"answer={node.answer!r}"
-    )
-    print(header)
-    if node.subtask:
-        sub_short = node.subtask if len(node.subtask) <= 100 else node.subtask[:97] + "..."
-        print(f"{prefix}    subtask: {sub_short!r}")
-    for c in node.children:
-        print_rollout_tree(c, indent + 1)
-
-
-async def _debug_one_rollout(
-    sampling_client: tinker.SamplingClient,
-    tokenizer,
-    renderer: Renderer,
-    train_rows,
-) -> None:
-    """Run DEBUG_N_ROLLOUTS rollouts (first N problems), print every tree +
-    datum shapes, and exit without training. Concurrent."""
-    n = DEBUG_N_ROLLOUTS
-    print("=" * 72)
-    print(f"DEBUG: {n} rollouts (problems 0..{n - 1}), concurrent")
-    print("=" * 72)
-    rows = [train_rows[i] for i in range(n)]
-    golds = [_extract_gsm8k_gold(r["answer"]) for r in rows]
-    coros = [
-        _rollout_one_parent(r["question"], g, sampling_client, tokenizer, renderer)
-        for r, g in zip(rows, golds)
-    ]
-    results: list[ParentRollout] = await asyncio.gather(*coros)
-
-    n_with_children = 0
-    fake_adv = 1.0
-    for ri, (row, result) in enumerate(zip(rows, results)):
-        nodes = result.all_nodes()
-        max_depth = max(n.depth for n in nodes)
-        if max_depth > 0:
-            n_with_children += 1
-        parent_reward = _trajectory_total_reward(result.root.trajectory)
-        print()
-        print("-" * 72)
-        print(f"Rollout {ri}  (gold={result.gold_answer}, "
-              f"nodes={len(nodes)}, max_depth={max_depth}, "
-              f"parent_reward={parent_reward:.3f})")
-        q_short = row["question"] if len(row["question"]) <= 120 else row["question"][:117] + "..."
-        print(f"Question: {q_short}")
-        print("Tree:")
-        print_rollout_tree(result.root)
-
-        total_datums = 0
-        for node in nodes:
-            if not node.trajectory.transitions:
-                print(f"  [depth={node.depth}] empty trajectory — would be skipped")
-                continue
-            datums = trajectory_to_data(node.trajectory, fake_adv)
-            for di, datum in enumerate(datums):
-                summary = _summarize_datum(datum)
-                print(f"  datum (depth={node.depth}, #{di}): {summary}")
-                total_datums += 1
-        print(f"Datums for this rollout: {total_datums}")
-
-    print()
-    print("=" * 72)
-    print(
-        f"Summary: {n_with_children}/{n} rollouts spawned at least one subagent. "
-        f"Max depth observed across all rollouts = "
-        f"{max(max(n.depth for n in r.all_nodes()) for r in results)}"
-    )
-
-
-# ---------------------------------------------------------------------------
 # Training loop
 # ---------------------------------------------------------------------------
 
@@ -506,8 +410,18 @@ async def main() -> None:
     print(f"Loaded {len(train_rows)} GSM8K problems")
 
     if DEBUG_ONE_ROLLOUT:
+        from debug import debug_run_rollouts
+
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
-        await _debug_one_rollout(sampling_client, tokenizer, renderer, train_rows)
+        await debug_run_rollouts(
+            n_rollouts=DEBUG_N_ROLLOUTS,
+            sampling_client=sampling_client,
+            tokenizer=tokenizer,
+            renderer=renderer,
+            train_rows=train_rows,
+            rollout_fn=_rollout_one_parent,
+            gold_extractor=_extract_gsm8k_gold,
+        )
         return
 
     for step in range(N_STEPS):
@@ -585,6 +499,8 @@ async def main() -> None:
         )
 
         if DEBUG_PRINT_TREE_EACH_STEP:
+            from debug import print_rollout_tree
+
             for ri, parent_result in enumerate(parent_results):
                 print(f"--- rollout {ri} (advantage={advantages[ri]:+.3f}) ---")
                 print_rollout_tree(parent_result.root)
