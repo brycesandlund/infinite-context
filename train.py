@@ -1,7 +1,7 @@
 """Recursive-agent RL on Needle-in-a-Haystack (Phase 2).
 
 Each problem is a synthesized long document (Paul Graham essays + a single
-"The magic number is X" needle). Each agent has a tight `MAX_TRAJ_TOKENS`
+"The magic number is X" needle). Each agent has a tight `AGENT_CONTEXT`
 context, so the parent literally cannot fit the doc and must delegate.
 
 Tools available to every agent in the tree:
@@ -47,8 +47,8 @@ from niah_data import NIAHProblem, load_pg_essays_text, make_niah_problem
 # ---------------------------------------------------------------------------
 
 
-MODEL_NAME = "Qwen/Qwen3.5-4B"
-RENDERER_NAME = "qwen3_5_disable_thinking"
+MODEL_NAME = "Qwen/Qwen3.5-9B"
+RENDERER_NAME = "qwen3_5"      # thinking enabled
 LORA_RANK = 32
 LEARNING_RATE = 4e-5
 
@@ -57,12 +57,18 @@ BATCH_SIZE = 4              # problems per training step
 GROUP_SIZE = 4              # parent rollouts per problem
 MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
 MAX_TURNS = 8               # per-agent multi-turn cap
-MAX_TOKENS_PER_GEN = 256    # max tokens generated per assistant turn
-MAX_TRAJ_TOKENS = 10_000    # per-agent context budget; if a turn would overflow, episode ends
+
+# A single knob: the per-agent context budget. Both the trajectory cap and the
+# per-turn generation cap derive from this — TinkerTokenCompleter dynamically
+# caps max_tokens = AGENT_CONTEXT - prompt.length, and the env terminates when
+# the trajectory would exceed AGENT_CONTEXT. The model can think as much as it
+# wants per turn, limited only by remaining budget.
+AGENT_CONTEXT = 10_000
+ENV_GEN_BUFFER = 256        # small safety value for the env's preemptive check; the actual per-turn cap is dynamic via TinkerTokenCompleter.context_window
 
 # NIAH task knobs
-DOC_SIZE_TOKENS = 15_000    # haystack length per problem; v0 keeps this just slightly over the context budget so the model can sometimes solve it without delegation, giving GRPO some reward variance to bootstrap from. Ramp up once the loop trains.
-MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to MAX_TRAJ_TOKENS so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
+DOC_SIZE_TOKENS = 15_000    # haystack length per problem
+MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to AGENT_CONTEXT so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
 
 DATA_SEED = 0               # base seed for problem generation; per-problem seed = DATA_SEED + step*BATCH_SIZE + idx
 
@@ -210,8 +216,7 @@ class SubagentTool:
     system_prompt: str
     max_depth: int
     max_turns: int
-    max_tokens: int
-    max_trajectory_tokens: int
+    context_budget: int           # per-agent total context (trajectory + remaining gen room)
     current_depth: int = 0
     child_nodes: list[RolloutNode] = field(default_factory=list)
 
@@ -233,8 +238,7 @@ class SubagentTool:
             system_prompt=self.system_prompt,
             max_depth=self.max_depth,
             max_turns=self.max_turns,
-            max_tokens=self.max_tokens,
-            max_trajectory_tokens=self.max_trajectory_tokens,
+            context_budget=self.context_budget,
             current_depth=self.current_depth + 1,
         )
         tool_list = [
@@ -253,12 +257,13 @@ class SubagentTool:
             initial_messages=initial_messages,
             reward_fn=_trivial_reward,
             max_turns=self.max_turns,
-            max_trajectory_tokens=self.max_trajectory_tokens,
-            max_generation_tokens=self.max_tokens,
+            max_trajectory_tokens=self.context_budget,
+            max_generation_tokens=ENV_GEN_BUFFER,
         )
         policy = TinkerTokenCompleter(
             sampling_client=self.sampling_client,
-            max_tokens=self.max_tokens,
+            max_tokens=self.context_budget,
+            context_window=self.context_budget,
             temperature=1.0,
         )
         child_trajectory = await do_single_rollout(policy, child_env)
@@ -334,7 +339,7 @@ async def _rollout_one_parent(
     )
     system_prompt = _make_system_prompt(
         doc_length=len(problem.document_tokens),
-        context_budget=MAX_TRAJ_TOKENS,
+        context_budget=AGENT_CONTEXT,
         max_chunk_tokens=MAX_CHUNK_TOKENS,
     )
     parent_subagent = SubagentTool(
@@ -345,8 +350,7 @@ async def _rollout_one_parent(
         system_prompt=system_prompt,
         max_depth=MAX_DEPTH,
         max_turns=MAX_TURNS,
-        max_tokens=MAX_TOKENS_PER_GEN,
-        max_trajectory_tokens=MAX_TRAJ_TOKENS,
+        context_budget=AGENT_CONTEXT,
         current_depth=0,
     )
     tool_list = [read_chunk_tool.read_chunk, parent_subagent.spawn_subagent]
@@ -365,12 +369,13 @@ async def _rollout_one_parent(
         initial_messages=initial_messages,
         reward_fn=NIAHReward(gold_answer=problem.gold_answer),
         max_turns=MAX_TURNS,
-        max_trajectory_tokens=MAX_TRAJ_TOKENS,
-        max_generation_tokens=MAX_TOKENS_PER_GEN,
+        max_trajectory_tokens=AGENT_CONTEXT,
+        max_generation_tokens=ENV_GEN_BUFFER,
     )
     policy = TinkerTokenCompleter(
         sampling_client=sampling_client,
-        max_tokens=MAX_TOKENS_PER_GEN,
+        max_tokens=AGENT_CONTEXT,
+        context_window=AGENT_CONTEXT,
         temperature=1.0,
     )
     parent_traj = await do_single_rollout(policy, parent_env)
@@ -421,7 +426,7 @@ async def main() -> None:
     print(
         f"Corpus: {len(corpus_text)} chars -> {len(corpus_tokens)} tokens. "
         f"Doc size per problem: {DOC_SIZE_TOKENS} tokens; agent context cap: "
-        f"{MAX_TRAJ_TOKENS}; chunk cap: {MAX_CHUNK_TOKENS}."
+        f"{AGENT_CONTEXT}; chunk cap: {MAX_CHUNK_TOKENS}."
     )
     if len(corpus_tokens) < DOC_SIZE_TOKENS:
         raise SystemExit(
