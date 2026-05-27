@@ -17,6 +17,7 @@ from tinker_cookbook.rl.data_processing import trajectory_to_data
 from tinker_cookbook.rl.types import Trajectory
 
 if TYPE_CHECKING:
+    from niah_data import NIAHProblem
     from train import ParentRollout, RolloutNode
 
 
@@ -55,33 +56,30 @@ def print_rollout_tree(node: "RolloutNode", indent: int = 0) -> None:
         print_rollout_tree(c, indent + 1)
 
 
-async def debug_run_rollouts(
+async def debug_run_rollouts_niah(
     n_rollouts: int,
     sampling_client: tinker.SamplingClient,
     tokenizer,
     renderer: Renderer,
-    train_rows,
+    problems: list["NIAHProblem"],
     rollout_fn: Callable[..., Awaitable["ParentRollout"]],
-    gold_extractor: Callable[[str], str],
 ) -> None:
-    """Run `n_rollouts` rollouts concurrently on the first n_rollouts problems
-    and print every tree + datum shape. No training."""
+    """Run `n_rollouts` NIAH rollouts concurrently. Print every tree + datum
+    shapes. No training."""
+    n = min(n_rollouts, len(problems))
     print("=" * 72)
-    print(f"DEBUG: {n_rollouts} rollouts (problems 0..{n_rollouts - 1}), concurrent")
+    print(f"DEBUG: {n} NIAH rollouts, concurrent")
     print("=" * 72)
-    rows = [train_rows[i] for i in range(n_rollouts)]
-    golds = [gold_extractor(r["answer"]) for r in rows]
     coros = [
-        rollout_fn(r["question"], g, sampling_client, tokenizer, renderer)
-        for r, g in zip(rows, golds)
+        rollout_fn(problems[i], sampling_client, tokenizer, renderer) for i in range(n)
     ]
     results = await asyncio.gather(*coros)
 
     fake_adv = 1.0
     n_with_children = 0
-    for ri, (row, result) in enumerate(zip(rows, results)):
+    for ri, (problem, result) in enumerate(zip(problems[:n], results)):
         nodes = result.all_nodes()
-        max_depth = max(n.depth for n in nodes)
+        max_depth = max(node.depth for node in nodes)
         if max_depth > 0:
             n_with_children += 1
         parent_reward = _trajectory_total_reward(result.root.trajectory)
@@ -89,10 +87,14 @@ async def debug_run_rollouts(
         print("-" * 72)
         print(
             f"Rollout {ri}  (gold={result.gold_answer}, "
+            f"needle_pos={problem.needle_position}/{len(problem.document_tokens)}, "
             f"nodes={len(nodes)}, max_depth={max_depth}, "
             f"parent_reward={parent_reward:.3f})"
         )
-        q_short = row["question"] if len(row["question"]) <= 120 else row["question"][:117] + "..."
+        q_short = (
+            problem.question if len(problem.question) <= 120
+            else problem.question[:117] + "..."
+        )
         print(f"Question: {q_short}")
         print("Tree:")
         print_rollout_tree(result.root)
@@ -112,7 +114,7 @@ async def debug_run_rollouts(
     print()
     print("=" * 72)
     print(
-        f"Summary: {n_with_children}/{n_rollouts} rollouts spawned at least one subagent. "
+        f"Summary: {n_with_children}/{n} rollouts spawned at least one subagent. "
         f"Max depth observed across all rollouts = "
-        f"{max(max(n.depth for n in r.all_nodes()) for r in results)}"
+        f"{max(max(node.depth for node in r.all_nodes()) for r in results)}"
     )
