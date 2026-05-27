@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Annotated
 
 import tinker
@@ -61,9 +62,22 @@ MAX_TRAJ_TOKENS = 10_000    # per-agent context budget; if a turn would overflow
 
 # NIAH task knobs
 DOC_SIZE_TOKENS = 15_000    # haystack length per problem; v0 keeps this just slightly over the context budget so the model can sometimes solve it without delegation, giving GRPO some reward variance to bootstrap from. Ramp up once the loop trains.
-MAX_CHUNK_TOKENS = 2_000    # cap on a single read_chunk return
+MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to MAX_TRAJ_TOKENS so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
 
 DATA_SEED = 0               # base seed for problem generation; per-problem seed = DATA_SEED + step*BATCH_SIZE + idx
+
+# Checkpointing. After training, save under this name (overwrite-safe). Set to None to skip saving.
+# To resume: paste a tinker:// path into LOAD_CHECKPOINT_PATH below.
+SAVE_CHECKPOINT_NAME: str | None = "final"
+LOAD_CHECKPOINT_PATH: str | None = None  # e.g. "tinker://<run-id>/weights/final"; cat ~/.cache/infinite-context/last_checkpoint.txt to recall the last save
+RESUME_OPTIMIZER = True     # if loading, also restore Adam momentum (use False when starting a fresh fine-tune from a base ckpt)
+EVAL_ONLY = False           # skip training, go straight to eval (requires LOAD_CHECKPOINT_PATH to be useful)
+LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_checkpoint.txt"
+
+# After training, run this many rollouts on held-out problem seeds (no fwd/bwd)
+# and print each full tree. 0 = skip.
+EVAL_N_ROLLOUTS = 4
+EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
 DEBUG_ONE_ROLLOUT = False
@@ -139,22 +153,25 @@ def flatten_tree(node: RolloutNode) -> list[RolloutNode]:
 # ---------------------------------------------------------------------------
 
 
-def _make_system_prompt(doc_length: int, max_chunk_tokens: int) -> str:
+def _make_system_prompt(doc_length: int, context_budget: int, max_chunk_tokens: int) -> str:
     return (
-        f"You are a long-document search assistant. The user will ask a question that "
-        f"requires reading a document of {doc_length} tokens. Your own context budget is "
-        f"limited, so you usually cannot read the whole document yourself.\n\n"
+        f"You are a long-document search assistant. The document is {doc_length} tokens "
+        f"long. Your own context window is {context_budget} tokens — the conversation "
+        f"(system prompt, user message, your responses, and all tool results) must fit "
+        f"in this budget or the episode ends.\n\n"
         f"You have two tools:\n"
-        f"- `read_chunk(start, end)`: read the document tokens in [start, end). Each "
-        f"call is capped at {max_chunk_tokens} tokens. The result is appended to your "
-        f"context.\n"
-        f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself with "
-        f"the same tools. Pass a clear subtask string (e.g. \"Read tokens 5000..7000 and "
-        f"return the magic number, or 'not found'\"). The subagent returns its final "
-        f"\\boxed{{}} answer as a string.\n\n"
-        f"You may call spawn_subagent multiple times in parallel within a single turn to "
-        f"scan disjoint ranges concurrently. When you are confident in the final answer, "
-        f"emit it as \\boxed{{value}} and stop."
+        f"- `read_chunk(start, end)`: read the document tokens in [start, end). A "
+        f"single read returns at most {max_chunk_tokens} tokens — most of your context "
+        f"window — so plan accordingly: typically you can do one read of any range and "
+        f"then must either answer or delegate further.\n"
+        f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself "
+        f"(also {context_budget} tokens) with the same tools. Pass an explicit subtask "
+        f"string that names a token range, e.g. \"Read tokens 5000..7000 and return the "
+        f"magic number, or 'not found'\". The subagent returns its final \\boxed{{}} "
+        f"answer as a string.\n\n"
+        f"You may call spawn_subagent multiple times in parallel within a single turn "
+        f"to scan disjoint ranges concurrently. When you are confident in the final "
+        f"answer, emit it as \\boxed{{value}} and stop."
     )
 
 
@@ -317,6 +334,7 @@ async def _rollout_one_parent(
     )
     system_prompt = _make_system_prompt(
         doc_length=len(problem.document_tokens),
+        context_budget=MAX_TRAJ_TOKENS,
         max_chunk_tokens=MAX_CHUNK_TOKENS,
     )
     parent_subagent = SubagentTool(
@@ -418,6 +436,18 @@ async def main() -> None:
             seed=seed,
         )
 
+    # Optional: load a previously saved checkpoint before doing anything else.
+    if LOAD_CHECKPOINT_PATH:
+        print(f"Loading checkpoint: {LOAD_CHECKPOINT_PATH}")
+        loader = (
+            training_client.load_state_with_optimizer_async
+            if RESUME_OPTIMIZER
+            else training_client.load_state_async
+        )
+        load_future = await loader(LOAD_CHECKPOINT_PATH)
+        await load_future.result_async()
+        print("  loaded.")
+
     if DEBUG_ONE_ROLLOUT:
         from debug import debug_run_rollouts_niah
 
@@ -432,7 +462,10 @@ async def main() -> None:
         )
         return
 
-    for step in range(N_STEPS):
+    if EVAL_ONLY:
+        print("EVAL_ONLY: skipping training loop.")
+
+    for step in range(0 if EVAL_ONLY else N_STEPS):
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
 
         # One NIAH problem per slot in the batch; GROUP_SIZE rollouts each.
@@ -508,6 +541,64 @@ async def main() -> None:
             for ri, parent_result in enumerate(parent_results):
                 print(f"--- rollout {ri} (advantage={advantages[ri]:+.3f}) ---")
                 print_rollout_tree(parent_result.root)
+
+    # ------------------------------------------------------------------ #
+    # Save checkpoint (skipped on EVAL_ONLY to avoid overwriting with    #
+    # a model we didn't train).                                          #
+    # ------------------------------------------------------------------ #
+    if SAVE_CHECKPOINT_NAME and not EVAL_ONLY:
+        print(f"Saving checkpoint '{SAVE_CHECKPOINT_NAME}'...")
+        save_future = await training_client.save_state_async(
+            SAVE_CHECKPOINT_NAME, overwrite=True
+        )
+        save_resp = await save_future.result_async()
+        print(f"  saved: {save_resp.path}")
+        LAST_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LAST_CHECKPOINT_FILE.write_text(save_resp.path)
+        print(f"  (path written to {LAST_CHECKPOINT_FILE})")
+
+    # ------------------------------------------------------------------ #
+    # Post-training eval: K rollouts on held-out problems. Each rollout  #
+    # gets a full per-agent transcript dump (system + user + every       #
+    # assistant turn + every tool result).                               #
+    # ------------------------------------------------------------------ #
+    if EVAL_N_ROLLOUTS > 0:
+        from debug import print_rollout_tree_verbose
+
+        sampling_client = await training_client.save_weights_and_get_sampling_client_async()
+        eval_problems = [gen_problem(EVAL_SEED_OFFSET + i) for i in range(EVAL_N_ROLLOUTS)]
+        print()
+        print("=" * 72)
+        print(f"POST-TRAINING EVAL: {EVAL_N_ROLLOUTS} held-out rollouts (verbose)")
+        print("=" * 72)
+        eval_coros = [
+            _rollout_one_parent(p, sampling_client, tokenizer, renderer)
+            for p in eval_problems
+        ]
+        eval_results = await asyncio.gather(*eval_coros)
+        n_eval_correct = 0
+        for ri, (problem, result) in enumerate(zip(eval_problems, eval_results)):
+            nodes = result.all_nodes()
+            parent_reward = _trajectory_total_reward(result.root.trajectory)
+            is_correct = (
+                result.root.answer is not None
+                and _normalize_answer(result.root.answer)
+                == _normalize_answer(result.gold_answer)
+            )
+            if is_correct:
+                n_eval_correct += 1
+            print()
+            print("#" * 72)
+            print(
+                f"# Eval rollout {ri}  gold={result.gold_answer}  "
+                f"needle_pos={problem.needle_position}/{len(problem.document_tokens)}  "
+                f"nodes={len(nodes)}  parent_reward={parent_reward:.3f}  "
+                f"correct={is_correct}"
+            )
+            print("#" * 72)
+            print_rollout_tree_verbose(result.root, tokenizer)
+        print()
+        print(f"Eval: {n_eval_correct}/{EVAL_N_ROLLOUTS} correct")
 
 
 if __name__ == "__main__":

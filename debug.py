@@ -39,6 +39,56 @@ def _summarize_datum(datum: tinker.Datum) -> dict[str, int]:
     return out
 
 
+def _flatten_ob_tokens(ob) -> list[int]:
+    """Pull all token ids out of a tinker.ModelInput, ignoring non-text chunks."""
+    out: list[int] = []
+    for chunk in ob.chunks:
+        toks = getattr(chunk, "tokens", None)
+        if toks is not None:
+            out.extend(toks)
+    return out
+
+
+def _full_transcript_text(traj: Trajectory, tokenizer) -> str:
+    """Reconstruct the full conversation text (system + user + every assistant
+    turn + every tool result) by decoding the trajectory's final observation
+    plus the final action. Includes the renderer's role/control tokens
+    (`<|im_start|>...`, `<|im_end|>`, `<tool_call>`, etc.) verbatim."""
+    if not traj.transitions:
+        return ""
+    ob_tokens = _flatten_ob_tokens(traj.transitions[-1].ob)
+    ac_tokens = list(traj.transitions[-1].ac.tokens)
+    return tokenizer.decode(ob_tokens + ac_tokens)
+
+
+def print_rollout_tree_verbose(
+    node: "RolloutNode", tokenizer, indent: int = 0
+) -> None:
+    """Dump the full transcript of each agent in the tree (parent first, then
+    children depth-first). Each agent block contains its own system prompt,
+    user message, every assistant turn, and every tool result. Subagent calls
+    are NOT inlined into the parent's print — they appear as their own block,
+    indented one level deeper."""
+    prefix = "  " * indent
+    reward = _trajectory_total_reward(node.trajectory)
+    n_turns = len(node.trajectory.transitions)
+    bar = "=" * max(8, 76 - len(prefix))
+    print(f"{prefix}{bar}")
+    print(
+        f"{prefix}[depth={node.depth}] turns={n_turns} "
+        f"reward={reward:.3f} answer={node.answer!r}"
+    )
+    if node.subtask:
+        print(f"{prefix}SUBTASK (from parent): {node.subtask}")
+    print(f"{prefix}{bar}")
+    transcript = _full_transcript_text(node.trajectory, tokenizer)
+    for line in transcript.splitlines():
+        print(f"{prefix}{line}")
+    print()
+    for c in node.children:
+        print_rollout_tree_verbose(c, tokenizer, indent + 1)
+
+
 def print_rollout_tree(node: "RolloutNode", indent: int = 0) -> None:
     prefix = "  " * indent
     n_turns = len(node.trajectory.transitions)
