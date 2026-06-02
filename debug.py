@@ -17,7 +17,7 @@ from tinker_cookbook.rl.data_processing import trajectory_to_data
 from tinker_cookbook.rl.types import Trajectory
 
 if TYPE_CHECKING:
-    from niah_data import NIAHProblem
+    from tasks import Problem
     from train import ParentRollout, RolloutNode
 
 
@@ -111,7 +111,7 @@ async def debug_run_rollouts_niah(
     sampling_client: tinker.SamplingClient,
     tokenizer,
     renderer: Renderer,
-    problems: list["NIAHProblem"],
+    problems: list["Problem"],
     rollout_fn: Callable[..., Awaitable["ParentRollout"]],
 ) -> None:
     """Run `n_rollouts` NIAH rollouts concurrently. Print every tree + datum
@@ -135,9 +135,10 @@ async def debug_run_rollouts_niah(
         parent_reward = _trajectory_total_reward(result.root.trajectory)
         print()
         print("-" * 72)
+        needle_positions = problem.metadata.get("needle_positions", [])
         print(
-            f"Rollout {ri}  (gold={result.gold_answer}, "
-            f"needle_pos={problem.needle_position}/{len(problem.document_tokens)}, "
+            f"Rollout {ri}  (task={result.task}, gold={result.gold_answers}, "
+            f"needle_pos={needle_positions}/{len(problem.document_tokens)}, "
             f"nodes={len(nodes)}, max_depth={max_depth}, "
             f"parent_reward={parent_reward:.3f})"
         )

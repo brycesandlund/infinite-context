@@ -9,4 +9,9 @@ dependencies = [
     "matplotlib>=3.10.9",
     "tinker>=0.22.0",
     "tinker-cookbook>=0.4.1",
+    # RULER vendoring: wonderwords supplies the adj/noun/verb pools RULER uses
+    # for needle keys; nltk supplies sent_tokenize which RULER uses to insert
+    # needles at sentence boundaries (rather than mid-word token positions).
+    "wonderwords>=2.2.0",
+    "nltk>=3.9",
 ]

@@ -19,6 +19,7 @@ and the Qwen3.5 renderer.
 from __future__ import annotations
 
 import asyncio
+import random
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,7 +40,16 @@ from tinker_cookbook.tool_use import (
     tool,
 )
 
-from niah_data import NIAHProblem, load_pg_essays_text, make_niah_problem
+from tasks import (
+    GradingMode,
+    Problem,
+    eval_grading_mode,
+    grade_answer,
+    grading_mode,
+    list_tasks,
+    load_pg_essays_text,
+    make_problem,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -64,9 +74,25 @@ MAX_TURNS = 8               # per-agent multi-turn cap
 # the trajectory would exceed AGENT_CONTEXT. The model can think as much as it
 # wants per turn, limited only by remaining budget.
 AGENT_CONTEXT = 10_000
-ENV_GEN_BUFFER = 256        # small safety value for the env's preemptive check; the actual per-turn cap is dynamic via TinkerTokenCompleter.context_window
 
-# NIAH task knobs
+# Task knobs.
+#
+# TASK_MIXTURE is a weighted sampler over task names (must all be in list_tasks()).
+# Each problem slot in a batch independently samples one task per these weights;
+# all GROUP_SIZE rollouts of that slot share the same task+seed so GRPO's
+# group-mean baseline still works (compares apples to apples within a problem).
+#
+# Set to a single-task dict to lock training to one task family — handy for
+# debugging or ablations. Weights need not sum to 1; they're renormalized.
+TASK_MIXTURE: dict[str, float] = {
+    # 11 RULER training tasks (canonical names per NVIDIA/RULER/scripts/synthetic.yaml).
+    # qa_1/qa_2 are held out for eval (require SQuAD+HotpotQA downloads and
+    # we want a clean train/eval split).
+    "niah_single_1": 1.0, "niah_single_2": 1.0, "niah_single_3": 1.0,
+    "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
+    "niah_multivalue": 1.0, "niah_multiquery": 1.0,
+    "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
+}
 DOC_SIZE_TOKENS = 15_000    # haystack length per problem
 MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to AGENT_CONTEXT so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
 
@@ -84,6 +110,11 @@ LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_check
 # and print each full tree. 0 = skip.
 EVAL_N_ROLLOUTS = 4
 EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
+# Optional: force the eval rollouts onto specific task families instead of
+# sampling from TASK_MIXTURE. Cycles through the list if EVAL_N_ROLLOUTS exceeds
+# its length. Set to None to sample from TASK_MIXTURE like the training loop.
+# Handy for a smoke test where you want to SEE one of each family render+grade.
+EVAL_TASKS: list[str] | None = None
 
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
 DEBUG_ONE_ROLLOUT = False
@@ -111,10 +142,7 @@ class ReadChunkTool:
         start: Annotated[int, "First token position to read (inclusive)."],
         end: Annotated[int, "Last token position to read (exclusive)."],
     ) -> ToolResult:
-        """Read a slice of the document. Returns the decoded text of tokens [start, end).
-        The total document has a fixed length (stated in the system prompt). Each call
-        is capped at the chunk limit; for larger ranges, issue multiple reads or delegate
-        to a subagent."""
+        """Read a slice of the document and return the decoded text of tokens [start, end). The document has a fixed length (stated in the system prompt). Each call is capped at the chunk limit; for larger ranges, issue multiple reads or delegate to a subagent."""
         n = len(self.document_tokens)
         if start < 0:
             start = 0
@@ -159,22 +187,35 @@ def flatten_tree(node: RolloutNode) -> list[RolloutNode]:
 # ---------------------------------------------------------------------------
 
 
-def _make_system_prompt(doc_length: int, context_budget: int, max_chunk_tokens: int) -> str:
+def _make_system_prompt(
+    doc_length: int,
+    context_budget: int,
+    max_chunk_tokens: int,
+    task_context: str,
+) -> str:
+    """Build the system prompt shared by parent and every spawned subagent.
+
+    `task_context` carries per-task instructions (label space, format hint, etc.)
+    pinned at the top so a freshly-spawned subagent already knows the task
+    without the parent re-explaining it in each subtask string."""
+    task_block = f"{task_context}\n\n" if task_context else ""
     return (
-        f"You are a long-document search assistant. The document is {doc_length} tokens "
-        f"long. Your own context window is {context_budget} tokens — the conversation "
-        f"(system prompt, user message, your responses, and all tool results) must fit "
-        f"in this budget or the episode ends.\n\n"
+        f"{task_block}"
+        f"You are a long-document assistant. The document is {doc_length} tokens "
+        f"long; you cannot see it directly. Your own context window is {context_budget} "
+        f"tokens — the conversation (system prompt, user message, your responses, "
+        f"and all tool results) must fit in this budget or the episode ends.\n\n"
         f"You have two tools:\n"
         f"- `read_chunk(start, end)`: read the document tokens in [start, end). A "
         f"single read returns at most {max_chunk_tokens} tokens — most of your context "
         f"window — so plan accordingly: typically you can do one read of any range and "
         f"then must either answer or delegate further.\n"
         f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself "
-        f"(also {context_budget} tokens) with the same tools. Pass an explicit subtask "
-        f"string that names a token range, e.g. \"Read tokens 5000..7000 and return the "
-        f"magic number, or 'not found'\". The subagent returns its final \\boxed{{}} "
-        f"answer as a string.\n\n"
+        f"(also {context_budget} tokens) with the same tools and the same task "
+        f"instructions above. Pass an explicit subtask string that names a token "
+        f"range and the sub-question, e.g. \"Read tokens 5000..7000 and list any "
+        f"matching needles you find, or 'none'.\" The subagent returns its final "
+        f"\\boxed{{}} answer as a string.\n\n"
         f"You may call spawn_subagent multiple times in parallel within a single turn "
         f"to scan disjoint ranges concurrently. When you are confident in the final "
         f"answer, emit it as \\boxed{{value}} and stop."
@@ -225,8 +266,7 @@ class SubagentTool:
         self,
         subtask: Annotated[str, "Sub-problem statement (free text) for the child to solve"],
     ) -> ToolResult:
-        """Spawn a fresh-context copy of yourself to solve `subtask`. Returns the child's
-        \\boxed{} answer."""
+        """Spawn a fresh-context copy of yourself to solve `subtask`; returns the child's \\boxed{} answer."""
         if self.current_depth >= self.max_depth:
             return simple_tool_result("Error: max recursion depth reached. Solve directly.")
 
@@ -258,7 +298,12 @@ class SubagentTool:
             reward_fn=_trivial_reward,
             max_turns=self.max_turns,
             max_trajectory_tokens=self.context_budget,
-            max_generation_tokens=ENV_GEN_BUFFER,
+            # 1-token reserve so the env terminates cleanly (with
+            # context_overflow_reward) at obs == context_budget instead of letting
+            # the completer raise "No room for generation". Not a generation cap —
+            # TinkerTokenCompleter dynamically caps max_tokens to fill whatever
+            # room is actually left.
+            max_generation_tokens=1,
         )
         policy = TinkerTokenCompleter(
             sampling_client=self.sampling_client,
@@ -282,31 +327,38 @@ class SubagentTool:
 
 
 # ---------------------------------------------------------------------------
-# NIAH reward
+# Reward (task-agnostic): graded on the parent's final \boxed{} answer
 # ---------------------------------------------------------------------------
 
 
-def _normalize_answer(s: str) -> str:
-    return s.replace(",", "").replace("$", "").strip()
-
-
 @dataclass
-class NIAHReward:
-    gold_answer: str
+class LongContextReward:
+    """Format bonus + score on the parent's final \\boxed{} answer.
+
+    `mode` is one of:
+    - "exact":   single value, normalized equality;            score ∈ {0, 1}
+    - "set":     any-order list of values in \\boxed{};        score ∈ {0, 1}
+    - "numeric": float-valued answer, 0.75**|y-y_hat| partial credit; score ∈ [0, 1]
+
+    Reward = format_coef * (format - 1) + score. The format term is a small
+    negative shaping bonus for failing to emit \\boxed{}; the score is the
+    grader's float output.
+    """
+
+    gold_answers: list[str]
+    mode: GradingMode = "exact"
     format_coef: float = 0.1
 
     async def __call__(self, history: list[Message]) -> tuple[float, dict[str, float]]:
         final = next((m for m in reversed(history) if m.get("role") == "assistant"), None)
         if final is None:
-            return 0.0, {"format": 0.0, "correct": 0.0}
+            return 0.0, {"format": 0.0, "score": 0.0}
         content = get_text_content(final) or ""
         extracted = _extract_boxed(content)
         correct_format = float(extracted is not None)
-        correct_answer = 0.0
-        if extracted is not None and _normalize_answer(extracted) == _normalize_answer(self.gold_answer):
-            correct_answer = 1.0
-        reward = self.format_coef * (correct_format - 1) + correct_answer
-        return reward, {"format": correct_format, "correct": correct_answer}
+        score = grade_answer(extracted, self.gold_answers, self.mode)
+        reward = self.format_coef * (correct_format - 1) + score
+        return reward, {"format": correct_format, "score": score}
 
 
 # ---------------------------------------------------------------------------
@@ -319,15 +371,22 @@ class ParentRollout:
     """One parent rollout = a tree of trajectories rooted at depth 0."""
 
     root: RolloutNode
-    gold_answer: str
-    problem: NIAHProblem
+    problem: Problem
+
+    @property
+    def gold_answers(self) -> list[str]:
+        return self.problem.gold_answers
+
+    @property
+    def task(self) -> str:
+        return self.problem.task
 
     def all_nodes(self) -> list[RolloutNode]:
         return flatten_tree(self.root)
 
 
 async def _rollout_one_parent(
-    problem: NIAHProblem,
+    problem: Problem,
     sampling_client: tinker.SamplingClient,
     tokenizer,
     renderer: Renderer,
@@ -341,6 +400,7 @@ async def _rollout_one_parent(
         doc_length=len(problem.document_tokens),
         context_budget=AGENT_CONTEXT,
         max_chunk_tokens=MAX_CHUNK_TOKENS,
+        task_context=problem.task_context,
     )
     parent_subagent = SubagentTool(
         sampling_client=sampling_client,
@@ -367,10 +427,12 @@ async def _rollout_one_parent(
         renderer=renderer,
         tools=tool_list,
         initial_messages=initial_messages,
-        reward_fn=NIAHReward(gold_answer=problem.gold_answer),
+        reward_fn=LongContextReward(
+            gold_answers=problem.gold_answers, mode=grading_mode(problem.task)
+        ),
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
-        max_generation_tokens=ENV_GEN_BUFFER,
+        max_generation_tokens=1,  # see SubagentTool.spawn_subagent for rationale
     )
     policy = TinkerTokenCompleter(
         sampling_client=sampling_client,
@@ -389,7 +451,7 @@ async def _rollout_one_parent(
         answer=parent_answer,
         children=parent_subagent.child_nodes,
     )
-    return ParentRollout(root=root, gold_answer=problem.gold_answer, problem=problem)
+    return ParentRollout(root=root, problem=problem)
 
 
 def _trajectory_total_reward(traj: Trajectory) -> float:
@@ -433,13 +495,50 @@ async def main() -> None:
             f"Corpus too small ({len(corpus_tokens)} tokens) for DOC_SIZE_TOKENS={DOC_SIZE_TOKENS}."
         )
 
-    def gen_problem(seed: int) -> NIAHProblem:
-        return make_niah_problem(
+    unknown_tasks = [t for t in TASK_MIXTURE if t not in list_tasks()]
+    if unknown_tasks:
+        raise SystemExit(f"Unknown tasks in TASK_MIXTURE: {unknown_tasks}. Available: {list_tasks()}")
+    if not TASK_MIXTURE:
+        raise SystemExit("TASK_MIXTURE is empty.")
+    _mixture_names = list(TASK_MIXTURE.keys())
+    _mixture_weights = [TASK_MIXTURE[t] for t in _mixture_names]
+
+    def gen_problem(seed: int) -> Problem:
+        """Sample one task from TASK_MIXTURE using `seed`, then generate it.
+
+        The task choice is a function of `seed` alone, so a given seed always
+        produces the same problem — needed for GRPO (all GROUP_SIZE rollouts of
+        a slot share the same problem/task) and for held-out eval reproducibility.
+        """
+        rng = random.Random(seed)
+        task = rng.choices(_mixture_names, weights=_mixture_weights, k=1)[0]
+        # Use a derived seed for the generator so its sampling is independent
+        # of which task we chose (otherwise the same `seed` would deterministically
+        # produce the same haystack across different tasks).
+        gen_seed = rng.randrange(2**32)
+        return make_problem(
+            task=task,
             corpus_tokens=corpus_tokens,
             tokenizer=tokenizer,
             doc_size_tokens=DOC_SIZE_TOKENS,
-            seed=seed,
+            seed=gen_seed,
         )
+
+    def gen_problem_for_task(task: str, seed: int) -> Problem:
+        """Generate a problem for a SPECIFIC task (bypasses TASK_MIXTURE).
+        Used by EVAL_TASKS to force coverage of chosen families."""
+        return make_problem(
+            task=task,
+            corpus_tokens=corpus_tokens,
+            tokenizer=tokenizer,
+            doc_size_tokens=DOC_SIZE_TOKENS,
+            seed=random.Random(seed).randrange(2**32),
+        )
+
+    if EVAL_TASKS:
+        unknown_eval = [t for t in EVAL_TASKS if t not in list_tasks()]
+        if unknown_eval:
+            raise SystemExit(f"Unknown tasks in EVAL_TASKS: {unknown_eval}. Available: {list_tasks()}")
 
     # Optional: load a previously saved checkpoint before doing anything else.
     if LOAD_CHECKPOINT_PATH:
@@ -473,7 +572,9 @@ async def main() -> None:
     for step in range(0 if EVAL_ONLY else N_STEPS):
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
 
-        # One NIAH problem per slot in the batch; GROUP_SIZE rollouts each.
+        # One problem per slot in the batch (task sampled from TASK_MIXTURE);
+        # GROUP_SIZE rollouts each, all sharing that problem so the GRPO group-mean
+        # baseline compares like-vs-like.
         problems = [gen_problem(DATA_SEED + step * BATCH_SIZE + pi) for pi in range(BATCH_SIZE)]
 
         rollout_coros = []
@@ -521,20 +622,29 @@ async def main() -> None:
             await fwd_bwd_future.result_async()
             await optim_future.result_async()
 
-        n_correct = sum(
-            1
-            for r in parent_results
-            if r.root.answer is not None
-            and _normalize_answer(r.root.answer) == _normalize_answer(r.gold_answer)
+        # Per-task aggregation: mean score (the grader's float output) per task
+        # name. Lets us see at a glance whether the mixture is balanced and
+        # which families the policy is improving on.
+        per_task_scores: dict[str, list[float]] = {}
+        for r in parent_results:
+            score = grade_answer(r.root.answer, r.gold_answers, grading_mode(r.task))
+            per_task_scores.setdefault(r.task, []).append(score)
+        per_task_summary = ", ".join(
+            f"{t}={sum(s) / len(s):.2f}({len(s)})"
+            for t, s in sorted(per_task_scores.items())
         )
         mean_reward = sum(rewards) / len(rewards)
+        mean_score = sum(
+            s for scores in per_task_scores.values() for s in scores
+        ) / len(parent_results)
         depth_counts = ", ".join(
             f"d{d}={trajectories_per_depth.get(d, 0)}"
             for d in sorted(trajectories_per_depth)
         )
         print(
             f"Step {step:2d} | mean_reward: {mean_reward:.3f} | "
-            f"parent_correct: {n_correct}/{len(parent_results)} | "
+            f"mean_score: {mean_score:.3f} | "
+            f"by_task: {per_task_summary} | "
             f"trajectories: {depth_counts} | "
             f"datums: {len(all_datums)} | "
             f"trained: {bool(all_datums and nonzero_adv)}"
@@ -571,7 +681,15 @@ async def main() -> None:
         from debug import print_rollout_tree_verbose
 
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
-        eval_problems = [gen_problem(EVAL_SEED_OFFSET + i) for i in range(EVAL_N_ROLLOUTS)]
+        if EVAL_TASKS:
+            # Force one problem per listed task (cycling if N > len), so the
+            # smoke test exercises a known spread of families.
+            eval_problems = [
+                gen_problem_for_task(EVAL_TASKS[i % len(EVAL_TASKS)], EVAL_SEED_OFFSET + i)
+                for i in range(EVAL_N_ROLLOUTS)
+            ]
+        else:
+            eval_problems = [gen_problem(EVAL_SEED_OFFSET + i) for i in range(EVAL_N_ROLLOUTS)]
         print()
         print("=" * 72)
         print(f"POST-TRAINING EVAL: {EVAL_N_ROLLOUTS} held-out rollouts (verbose)")
@@ -581,29 +699,50 @@ async def main() -> None:
             for p in eval_problems
         ]
         eval_results = await asyncio.gather(*eval_coros)
-        n_eval_correct = 0
+        # Two scores per eval rollout:
+        # - `ruler_score`: RULER's official substring matcher (string_match_all /
+        #   string_match_part). Comparable to NVIDIA's published leaderboard.
+        # - `train_score`: strict grader matching the training reward — useful
+        #   for diagnosing whether the agent learned the strict format or only
+        #   the looser substring criterion.
+        eval_ruler_by_task: dict[str, list[float]] = {}
+        eval_train_by_task: dict[str, list[float]] = {}
         for ri, (problem, result) in enumerate(zip(eval_problems, eval_results)):
             nodes = result.all_nodes()
             parent_reward = _trajectory_total_reward(result.root.trajectory)
-            is_correct = (
-                result.root.answer is not None
-                and _normalize_answer(result.root.answer)
-                == _normalize_answer(result.gold_answer)
+            ruler_score = grade_answer(
+                result.root.answer, result.gold_answers, eval_grading_mode(result.task)
             )
-            if is_correct:
-                n_eval_correct += 1
+            train_score = grade_answer(
+                result.root.answer, result.gold_answers, grading_mode(result.task)
+            )
+            eval_ruler_by_task.setdefault(result.task, []).append(ruler_score)
+            eval_train_by_task.setdefault(result.task, []).append(train_score)
             print()
             print("#" * 72)
             print(
-                f"# Eval rollout {ri}  gold={result.gold_answer}  "
-                f"needle_pos={problem.needle_position}/{len(problem.document_tokens)}  "
+                f"# Eval rollout {ri}  task={result.task}  "
+                f"gold={result.gold_answers}  "
+                f"doc_tokens={len(problem.document_tokens)}  "
                 f"nodes={len(nodes)}  parent_reward={parent_reward:.3f}  "
-                f"correct={is_correct}"
+                f"ruler_score={ruler_score:.3f}  train_score={train_score:.3f}"
             )
             print("#" * 72)
             print_rollout_tree_verbose(result.root, tokenizer)
         print()
-        print(f"Eval: {n_eval_correct}/{EVAL_N_ROLLOUTS} correct")
+        for t in sorted(eval_ruler_by_task):
+            rs = eval_ruler_by_task[t]
+            ts = eval_train_by_task[t]
+            print(
+                f"Eval {t}:  ruler {sum(rs)/len(rs):.3f}  "
+                f"strict {sum(ts)/len(ts):.3f}  ({len(rs)} rollouts)"
+            )
+        all_ruler = [s for ss in eval_ruler_by_task.values() for s in ss]
+        all_train = [s for ss in eval_train_by_task.values() for s in ss]
+        print(
+            f"Eval overall:  ruler {sum(all_ruler)/len(all_ruler):.3f}  "
+            f"strict {sum(all_train)/len(all_train):.3f}  ({len(all_ruler)} rollouts)"
+        )
 
 
 if __name__ == "__main__":
