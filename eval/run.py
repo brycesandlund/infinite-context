@@ -43,7 +43,7 @@ TEMPERATURE = 1.0
 
 # Which tasks to eval, and how many problems each.
 EVAL_TASKS = ["niah_single_2", "niah_multiquery", "vt", "cwe"]
-N_PER_TASK = 1
+N_PER_TASK = 3
 SEED_OFFSET = 2_000_000          # held-out seeds, distinct from train/eval-in-train
 CONCURRENCY = 4                  # max parent rollouts in flight (mind API rate limits)
 VERBOSE = True                   # dump full transcripts
@@ -137,11 +137,14 @@ async def main() -> None:
 
     backend = await _build_backend(tokenizer)
 
-    # Build (task, problem) work items.
+    # Build (task, problem) work items. Seeds are a deterministic function of
+    # (task index, sample index) — NOT Python's hash(), which randomizes string
+    # hashes per process and would give each backend different problems. This
+    # keeps the problem set identical across backends for a paired comparison.
     work: list[tuple[str, int, object]] = []
-    for task in EVAL_TASKS:
+    for ti, task in enumerate(EVAL_TASKS):
         for i in range(N_PER_TASK):
-            seed = SEED_OFFSET + abs(hash(task)) % 10_000 + i
+            seed = SEED_OFFSET + ti * 1000 + i
             problem = make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
             work.append((task, seed, problem))
 
