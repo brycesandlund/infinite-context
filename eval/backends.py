@@ -25,6 +25,7 @@ import json
 import re
 import uuid
 from abc import ABC, abstractmethod
+from collections import Counter
 from dataclasses import dataclass, field
 
 import harness
@@ -278,29 +279,35 @@ class APIBackend(ModelBackend):
 _RANGE_RE = re.compile(r"tokens (\d+)\.\.(\d+)")
 
 
+_VT_STMT_RE = re.compile(r"VAR (\w+) = (VAR \w+|\d+)")
+
+
 class OracleBackend(ModelBackend):
     """Plays the canonical delegation strategy through `run_agent`, producing
     clean gold traces to warm-start SFT.
 
-    Strategy:
-    - Root: the document exceeds the budget, so split it into overlapping
-      budget-sized chunks and spawn one subagent per chunk. Then aggregate the
-      children's findings and box the formatted gold answer.
-    - Subagent: read its assigned range once, then box the gold value(s) present
-      in that range (or 'none').
+    Task-family-aware so subagents report *extractable evidence* (what a model
+    could actually compute from a chunk), never gold-derived answers — otherwise
+    the skill doesn't transfer (a model can't reproduce "I happen to know the
+    answer is here"). Root then does the real aggregation/tracing.
 
-    It "knows" the answer by decoding each chunk and substring-matching the gold
-    values — overlap between chunks prevents a needle being split across a
-    boundary. count_tokens is a (deliberate under-)estimate; by construction the
-    oracle never approaches the budget (one read per subagent, small root convo).
+    | family | subagent reports (from its chunk)              | root does            |
+    |--------|------------------------------------------------|----------------------|
+    | niah   | the magic value(s) for the queried key(s)      | collect, dedup       |
+    | cwe    | per-chunk word counts (words seen >= 2x)       | sum -> top-10        |
+    | fwe    | per-chunk coded-word counts (excluding '...')  | sum -> top-3         |
+    | vt     | the raw `VAR x = ...` statements it finds      | trace chain -> names |
+
+    Overlapping chunks prevent a needle/statement being split across a boundary.
+    count_tokens is a deliberate under-estimate; by construction the oracle never
+    approaches the budget (one read per subagent, small root conversation).
     """
 
     name = "oracle"
 
     def __init__(
         self,
-        document_tokens: list[int],
-        gold_answers: list[str],
+        problem,
         tokenizer,
         *,
         budget: int,
@@ -308,13 +315,18 @@ class OracleBackend(ModelBackend):
         chunk_size: int = 6000,
         overlap: int = 1000,
     ):
-        self.doc = document_tokens
-        self.doc_len = len(document_tokens)
-        self.gold = list(gold_answers)
+        self.doc = problem.document_tokens
+        self.doc_len = len(self.doc)
+        self.gold = list(problem.gold_answers)
+        self.task = problem.task
+        self.metadata = dict(problem.metadata)
         self.tokenizer = tokenizer
         self.budget = budget
         self.max_chunk_tokens = min(max_chunk_tokens, chunk_size)
         self.chunks = self._compute_chunks(chunk_size, overlap)
+
+    def _family(self) -> str:
+        return "niah" if self.task.startswith("niah") else self.task
 
     def _compute_chunks(self, chunk_size: int, overlap: int) -> list[tuple[int, int]]:
         step = max(1, chunk_size - overlap)
@@ -327,9 +339,97 @@ class OracleBackend(ModelBackend):
             s += step
         return [(s, min(s + chunk_size, self.doc_len)) for s in starts]
 
-    def _findings(self, start: int, end: int) -> list[str]:
-        text = self.tokenizer.decode(self.doc[start:end]).lower()
-        return [g for g in self.gold if g.lower() in text]
+    # -- task-aware subtask, per-chunk report, and root aggregation ----------
+
+    def _subtask_for(self, a: int, b: int) -> str:
+        fam = self._family()
+        head = f"Read tokens {a}..{b} of the document and "
+        if fam == "niah":
+            keys = self.metadata.get("query", "the queried key")
+            return head + (f"report the special magic value(s) for {keys} found in this "
+                           f"range, or 'none' if there are none.")
+        if self.task == "cwe":
+            return head + ("count how many times each word appears in this range; report the "
+                           "words that appear more than once as 'word:count', or 'none'.")
+        if self.task == "fwe":
+            return head + ("count how often each coded word appears in this range (ignore '...'); "
+                           "report the most frequent as 'word:count', or 'none'.")
+        if self.task == "vt":
+            return head + ("report every variable-assignment statement you find verbatim "
+                           "(e.g. 'VAR ABCDE = 12345' or 'VAR FGHIJ = VAR ABCDE'), or 'none'.")
+        return head + "report any values relevant to the question, or 'none'."
+
+    def _subagent_report(self, a: int, b: int) -> str:
+        text = self.tokenizer.decode(self.doc[a:b])
+        fam = self._family()
+        if fam == "niah":
+            present = [g for g in self.gold if g.lower() in text.lower()]
+            return ", ".join(present) if present else "none"
+        if self.task == "cwe":
+            ctr = Counter(re.findall(r"\d+\.\s+(\S+)", text))
+            common = [(w, c) for w, c in ctr.most_common() if c >= 2]
+            return ", ".join(f"{w}:{c}" for w, c in common) if common else "none"
+        if self.task == "fwe":
+            ctr = Counter(w for w in text.split() if w != "...")
+            top = [(w, c) for w, c in ctr.most_common(8) if c >= 2]
+            return ", ".join(f"{w}:{c}" for w, c in top) if top else "none"
+        if self.task == "vt":
+            stmts = [f"VAR {v} = {rhs}" for v, rhs in _VT_STMT_RE.findall(text)]
+            return "; ".join(stmts) if stmts else "none"
+        present = [g for g in self.gold if g.lower() in text.lower()]
+        return ", ".join(present) if present else "none"
+
+    def _aggregate(self, reports: list[str]) -> str:
+        fam = self._family()
+        usable = [r for r in reports if r and r.strip().lower() != "none"]
+        if fam == "niah":
+            seen, out = set(), []
+            for r in usable:
+                for v in (x.strip() for x in r.split(",")):
+                    if v and v not in seen:
+                        seen.add(v)
+                        out.append(v)
+            return ", ".join(out)
+        if self.task in ("cwe", "fwe"):
+            total: Counter = Counter()
+            for r in usable:
+                for pair in r.split(","):
+                    w, sep, c = pair.rpartition(":")
+                    if sep:
+                        try:
+                            total[w.strip()] += int(c.strip())
+                        except ValueError:
+                            pass
+            total.pop("...", None)
+            k = 10 if self.task == "cwe" else 3
+            return ", ".join(w for w, _ in total.most_common(k))
+        if self.task == "vt":
+            stmts = [s.strip() for r in usable for s in r.split(";") if s.strip()]
+            return ", ".join(self._trace(stmts))
+        return ", ".join(self.gold)
+
+    def _trace(self, stmts: list[str]) -> list[str]:
+        """Return the variables transitively assigned the queried value."""
+        value = str(self.metadata.get("queried_value", ""))
+        assign: dict[str, tuple[str, str]] = {}
+        for s in stmts:
+            m = _VT_STMT_RE.search(s)
+            if not m:
+                continue
+            var, rhs = m.group(1), m.group(2)
+            if rhs.startswith("VAR "):
+                assign[var] = ("ref", rhs[4:].strip())
+            else:
+                assign[var] = ("lit", rhs)
+        holds = {v for v, (k, x) in assign.items() if k == "lit" and x == value}
+        changed = True
+        while changed:
+            changed = False
+            for v, (k, x) in assign.items():
+                if k == "ref" and x in holds and v not in holds:
+                    holds.add(v)
+                    changed = True
+        return sorted(holds)
 
     def count_tokens(self, messages: list[dict]) -> int:
         total = 0
@@ -344,37 +444,34 @@ class OracleBackend(ModelBackend):
         has_tool_result = any(m["role"] == "tool" for m in messages)
         m = _RANGE_RE.search(user_msg if isinstance(user_msg, str) else "")
 
-        if m is not None:  # subagent
+        if m is not None:  # subagent: read my range once, then report evidence
             a, b = int(m.group(1)), int(m.group(2))
             if not has_tool_result:
                 return AssistantTurn(
-                    text=f"I'll read my assigned range {a}..{b} and look for relevant values.",
+                    text=f"I'll read my assigned range {a}..{b} and report what I find.",
                     tool_calls=[ToolCall(id=f"call_{uuid.uuid4().hex[:8]}", name="read_chunk",
                                          arguments={"start": a, "end": b})],
                 )
-            present = self._findings(a, b)
-            ans = ", ".join(present) if present else "none"
+            report = self._subagent_report(a, b)
             return AssistantTurn(
-                text=f"In my range I found: {ans}.\n\\boxed{{{ans}}}", tool_calls=[]
+                text=f"From my range I found: {report}.\n\\boxed{{{report}}}", tool_calls=[]
             )
 
-        # root
+        # root: split + delegate, then aggregate the children's evidence
         if not has_tool_result:
-            calls = []
-            for (a, b) in self.chunks:
-                sub = (
-                    f"Read tokens {a}..{b} of the document and report any values relevant "
-                    f"to the question, or 'none' if there are none."
-                )
-                calls.append(ToolCall(id=f"call_{uuid.uuid4().hex[:8]}", name="spawn_subagent",
-                                      arguments={"subtask": sub}))
+            calls = [
+                ToolCall(id=f"call_{uuid.uuid4().hex[:8]}", name="spawn_subagent",
+                         arguments={"subtask": self._subtask_for(a, b)})
+                for (a, b) in self.chunks
+            ]
             return AssistantTurn(
                 text=("The document is larger than my context window, so I'll split it into "
-                      "ranges and delegate each to a subagent, then combine their findings."),
+                      "ranges, delegate each to a subagent, then combine their findings."),
                 tool_calls=calls,
             )
 
-        final = ", ".join(self.gold)
+        reports = [m["content"] for m in messages if m["role"] == "tool"]
+        final = self._aggregate(reports)
         return AssistantTurn(
             text=f"Combining the findings from all ranges, the answer is:\n\\boxed{{{final}}}",
             tool_calls=[],

@@ -78,7 +78,7 @@ async def _gen_traces(corpus_tokens, tokenizer):
             seed = DATA_SEED + ti * 1000 + i
             problem = make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
             oracle = OracleBackend(
-                problem.document_tokens, problem.gold_answers, tokenizer,
+                problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
             )
             coros.append(
