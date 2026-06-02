@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import asyncio
 import random
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated
@@ -40,6 +39,7 @@ from tinker_cookbook.tool_use import (
     tool,
 )
 
+import harness
 from tasks import (
     GradingMode,
     Problem,
@@ -143,20 +143,13 @@ class ReadChunkTool:
         end: Annotated[int, "Last token position to read (exclusive)."],
     ) -> ToolResult:
         """Read a slice of the document and return the decoded text of tokens [start, end). The document has a fixed length (stated in the system prompt). Each call is capped at the chunk limit; for larger ranges, issue multiple reads or delegate to a subagent."""
-        n = len(self.document_tokens)
-        if start < 0:
-            start = 0
-        if end > n:
-            end = n
-        if end <= start:
-            return simple_tool_result("Empty range.")
-        if end - start > self.max_chunk_tokens:
-            return simple_tool_result(
-                f"Range too large ({end - start} tokens > {self.max_chunk_tokens} cap). "
-                f"Issue smaller reads or delegate to a subagent."
+        # Slicing/decode/cap semantics live in harness.read_chunk_impl so the
+        # eval driver hits the exact same behavior.
+        return simple_tool_result(
+            harness.read_chunk_impl(
+                self.document_tokens, self.tokenizer, start, end, self.max_chunk_tokens
             )
-        text = self.tokenizer.decode(self.document_tokens[start:end])
-        return simple_tool_result(text)
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -187,47 +180,10 @@ def flatten_tree(node: RolloutNode) -> list[RolloutNode]:
 # ---------------------------------------------------------------------------
 
 
-def _make_system_prompt(
-    doc_length: int,
-    context_budget: int,
-    max_chunk_tokens: int,
-    task_context: str,
-) -> str:
-    """Build the system prompt shared by parent and every spawned subagent.
-
-    `task_context` carries per-task instructions (label space, format hint, etc.)
-    pinned at the top so a freshly-spawned subagent already knows the task
-    without the parent re-explaining it in each subtask string."""
-    task_block = f"{task_context}\n\n" if task_context else ""
-    return (
-        f"{task_block}"
-        f"You are a long-document assistant. The document is {doc_length} tokens "
-        f"long; you cannot see it directly. Your own context window is {context_budget} "
-        f"tokens — the conversation (system prompt, user message, your responses, "
-        f"and all tool results) must fit in this budget or the episode ends.\n\n"
-        f"You have two tools:\n"
-        f"- `read_chunk(start, end)`: read the document tokens in [start, end). A "
-        f"single read returns at most {max_chunk_tokens} tokens — most of your context "
-        f"window — so plan accordingly: typically you can do one read of any range and "
-        f"then must either answer or delegate further.\n"
-        f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself "
-        f"(also {context_budget} tokens) with the same tools and the same task "
-        f"instructions above. Pass an explicit subtask string that names a token "
-        f"range and the sub-question, e.g. \"Read tokens 5000..7000 and list any "
-        f"matching needles you find, or 'none'.\" The subagent returns its final "
-        f"\\boxed{{}} answer as a string.\n\n"
-        f"You may call spawn_subagent multiple times in parallel within a single turn "
-        f"to scan disjoint ranges concurrently. When you are confident in the final "
-        f"answer, emit it as \\boxed{{value}} and stop."
-    )
-
-
-_BOXED_RE = re.compile(r"\\boxed\{([^}]+)\}")
-
-
-def _extract_boxed(text: str) -> str | None:
-    matches = _BOXED_RE.findall(text)
-    return matches[-1].strip() if matches else None
+# System prompt + boxed extraction live in harness.py (shared with the eval
+# driver). Thin aliases keep call sites below unchanged.
+_make_system_prompt = harness.make_system_prompt
+_extract_boxed = harness.extract_boxed
 
 
 def _last_assistant_text(traj: Trajectory, tokenizer) -> str:
@@ -324,6 +280,18 @@ class SubagentTool:
         )
         self.child_nodes.append(child_node)
         return simple_tool_result(answer if answer is not None else "No answer found")
+
+
+# Drift guard: the model must see the same tool descriptions in training and in
+# the eval driver. These cookbook @tool docstrings are the training-side spec;
+# harness.* are the eval-side canonical strings. Fail loudly at import if they
+# diverge. (FunctionTool exposes `.description` = the captured docstring.)
+assert ReadChunkTool.read_chunk.description == harness.READ_CHUNK_DESCRIPTION, (
+    "read_chunk docstring drifted from harness.READ_CHUNK_DESCRIPTION"
+)
+assert SubagentTool.spawn_subagent.description == harness.SPAWN_SUBAGENT_DESCRIPTION, (
+    "spawn_subagent docstring drifted from harness.SPAWN_SUBAGENT_DESCRIPTION"
+)
 
 
 # ---------------------------------------------------------------------------
