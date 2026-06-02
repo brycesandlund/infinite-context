@@ -19,6 +19,7 @@ and the Qwen3.5 renderer.
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -62,7 +63,7 @@ RENDERER_NAME = "qwen3_5"      # thinking enabled
 LORA_RANK = 32
 LEARNING_RATE = 4e-5
 
-N_STEPS = 20
+N_STEPS = 3                # short validation run from the SFT warm-start; scale up once the refactored loop is confirmed
 BATCH_SIZE = 4              # problems per training step
 GROUP_SIZE = 4              # parent rollouts per problem
 MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
@@ -101,8 +102,9 @@ DATA_SEED = 0               # base seed for problem generation; per-problem seed
 # Checkpointing. After training, save under this name (overwrite-safe). Set to None to skip saving.
 # To resume: paste a tinker:// path into LOAD_CHECKPOINT_PATH below.
 SAVE_CHECKPOINT_NAME: str | None = "final"
-LOAD_CHECKPOINT_PATH: str | None = None  # e.g. "tinker://<run-id>/weights/final"; cat ~/.cache/infinite-context/last_checkpoint.txt to recall the last save
-RESUME_OPTIMIZER = True     # if loading, also restore Adam momentum (use False when starting a fresh fine-tune from a base ckpt)
+# CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt) to warm-start RL from SFT.
+LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # tinker:// path; None = base model
+RESUME_OPTIMIZER = False    # restore Adam momentum too. False when starting a fresh fine-tune from an SFT/base ckpt (the SFT optimizer state is for cross_entropy, not RL).
 EVAL_ONLY = False           # skip training, go straight to eval (requires LOAD_CHECKPOINT_PATH to be useful)
 LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_checkpoint.txt"
 
@@ -114,7 +116,7 @@ EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 # sampling from TASK_MIXTURE. Cycles through the list if EVAL_N_ROLLOUTS exceeds
 # its length. Set to None to sample from TASK_MIXTURE like the training loop.
 # Handy for a smoke test where you want to SEE one of each family render+grade.
-EVAL_TASKS: list[str] | None = None
+EVAL_TASKS: list[str] | None = ["niah_single_2", "niah_multiquery", "vt", "cwe"]
 
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
 DEBUG_ONE_ROLLOUT = False
@@ -254,12 +256,15 @@ class SubagentTool:
             reward_fn=_trivial_reward,
             max_turns=self.max_turns,
             max_trajectory_tokens=self.context_budget,
-            # 1-token reserve so the env terminates cleanly (with
-            # context_overflow_reward) at obs == context_budget instead of letting
-            # the completer raise "No room for generation". Not a generation cap —
-            # TinkerTokenCompleter dynamically caps max_tokens to fill whatever
-            # room is actually left.
+            # 1-token reserve so the env terminates cleanly at obs == context_budget
+            # instead of letting the completer raise "No room for generation". Not a
+            # generation cap — TinkerTokenCompleter dynamically caps max_tokens.
             max_generation_tokens=1,
+            # Neutral (0.0), NOT the default -0.1: a negative overflow reward makes
+            # "read thoroughly and risk overflow" score WORSE than "box a fast wrong
+            # guess (0.0)", which collapses the policy into not reading. Keep all
+            # failure modes at 0 so the only positive signal is a correct answer.
+            context_overflow_reward=0.0,
         )
         policy = TinkerTokenCompleter(
             sampling_client=self.sampling_client,
@@ -401,6 +406,7 @@ async def _rollout_one_parent(
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
         max_generation_tokens=1,  # see SubagentTool.spawn_subagent for rationale
+        context_overflow_reward=0.0,  # neutral failure — see child env note above
     )
     policy = TinkerTokenCompleter(
         sampling_client=sampling_client,
