@@ -38,7 +38,8 @@ from tasks import eval_grading_mode, grade_answer, list_tasks, load_pg_essays_te
 BACKEND = os.environ.get("BACKEND", "tinker")
 
 # Tinker-backend knobs (ignored for API backends).
-TINKER_LOAD_CHECKPOINT_PATH: str | None = None  # None = base model
+# CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt)
+TINKER_LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # None = base model
 TEMPERATURE = 1.0
 
 # Which tasks to eval, and how many problems each.

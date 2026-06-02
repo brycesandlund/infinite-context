@@ -270,7 +270,12 @@ class APIBackend(ModelBackend):
 # ---------------------------------------------------------------------------
 
 
-_ORACLE_MARK_RE = re.compile(r"\[ORACLE range=(\d+):(\d+)\]")
+# Detect "I'm a subagent for range [a,b]" from the natural subtask text the root
+# writes ("Read tokens 6000..12000 ..."). No special marker — so the trained
+# model reproduces natural subtasks, and the subagent read-and-answer behavior
+# keys off text the model actually generates. RULER questions never contain a
+# "tokens N..M" span, so this won't misfire on a root.
+_RANGE_RE = re.compile(r"tokens (\d+)\.\.(\d+)")
 
 
 class OracleBackend(ModelBackend):
@@ -337,7 +342,7 @@ class OracleBackend(ModelBackend):
     async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
         user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
         has_tool_result = any(m["role"] == "tool" for m in messages)
-        m = _ORACLE_MARK_RE.search(user_msg if isinstance(user_msg, str) else "")
+        m = _RANGE_RE.search(user_msg if isinstance(user_msg, str) else "")
 
         if m is not None:  # subagent
             a, b = int(m.group(1)), int(m.group(2))
@@ -358,8 +363,8 @@ class OracleBackend(ModelBackend):
             calls = []
             for (a, b) in self.chunks:
                 sub = (
-                    f"[ORACLE range={a}:{b}] Read tokens {a}..{b} of the document and "
-                    f"report any values relevant to the question, or 'none' if there are none."
+                    f"Read tokens {a}..{b} of the document and report any values relevant "
+                    f"to the question, or 'none' if there are none."
                 )
                 calls.append(ToolCall(id=f"call_{uuid.uuid4().hex[:8]}", name="spawn_subagent",
                                       arguments={"subtask": sub}))
