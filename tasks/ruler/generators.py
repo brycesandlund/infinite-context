@@ -540,13 +540,79 @@ def _build_fwe_problem(
     )
 
 
+# ---------------------------------------------------------------------------
+# QA (SQuAD / HotpotQA) — vendored from RULER/scripts/data/synthetic/qa.py
+# Held-out eval: golden paragraph(s) buried among distractor paragraphs.
+# ---------------------------------------------------------------------------
+
+
+_QA_DOCUMENT_PROMPT = "Document {i}:\n{document}"
+
+
+def _qa_make_context(rng, qas, docs, index, num_docs):
+    """Build the document block for QA question `index` with `num_docs` total
+    documents (golden always included), shuffled. Returns (context, query, answers)."""
+    curr_q = qas[index]["query"]
+    curr_a = qas[index]["outputs"]
+    curr_docs = qas[index]["context"]
+    curr_more = qas[index].get("more_context", [])
+    if num_docs < len(docs):
+        if (num_docs - len(curr_docs)) > len(curr_more):
+            taken = set(curr_docs) | set(curr_more)
+            addition = [i for i in range(len(docs)) if i not in taken]
+            n_extra = max(0, num_docs - len(curr_docs) - len(curr_more))
+            all_idx = curr_docs + curr_more + rng.sample(addition, min(n_extra, len(addition)))
+        else:
+            all_idx = curr_docs + rng.sample(curr_more, num_docs - len(curr_docs))
+        all_docs = [docs[i] for i in all_idx]
+    else:
+        repeats = (num_docs + len(docs) - 1) // len(docs)
+        all_docs = (docs * repeats)[:num_docs]
+    rng.shuffle(all_docs)
+    context = "\n\n".join(
+        _QA_DOCUMENT_PROMPT.format(i=i + 1, document=d) for i, d in enumerate(all_docs)
+    )
+    return context, curr_q, curr_a
+
+
+def _build_qa_problem(
+    task_name: str, args: dict, tokenizer, doc_size_tokens: int, seed: int,
+) -> Problem:
+    from tasks.ruler.qa_data import load_qa
+
+    qas, docs = load_qa(args["dataset"])
+    index = seed % len(qas)
+    template = TASK_TEMPLATES["qa"]["template"]
+
+    def sizer(n: int) -> int:
+        ctx, _, _ = _qa_make_context(random.Random(seed), qas, docs, index, n)
+        return len(tokenizer.encode(ctx, add_special_tokens=False))
+
+    num_docs = _binary_search_haystack(
+        sizer=sizer, target_tokens=doc_size_tokens, incremental=10,
+    )
+    rng = random.Random(seed)
+    context, query, answers = _qa_make_context(rng, qas, docs, index, num_docs)
+    doc_tokens = tokenizer.encode(context, add_special_tokens=False)
+    _, question = render_question(
+        template, context=context, doc_token_count=len(doc_tokens), query=query,
+    )
+    return Problem(
+        document_tokens=doc_tokens,
+        question=question,
+        gold_answers=list(answers),
+        task=task_name,
+        task_context="",  # RULER fidelity — instruction lives in the question.
+        metadata={"num_docs": num_docs, "qa_index": index, "dataset": args["dataset"]},
+    )
+
+
 _BUILDERS = {
     "niah": _build_niah_problem,
     "variable_tracking": _build_vt_problem,
     "common_words_extraction": _build_cwe_problem,
     "freq_words_extraction": _build_fwe_problem,
-    # "qa" deferred — needs SQuAD/HotpotQA downloads; handled separately as a
-    # held-out eval task.
+    "qa": _build_qa_problem,
 }
 
 

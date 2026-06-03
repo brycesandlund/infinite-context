@@ -43,8 +43,8 @@ TINKER_LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # None
 TEMPERATURE = 1.0
 
 # Which tasks to eval, and how many problems each.
-EVAL_TASKS = ["niah_single_2", "niah_multiquery", "vt", "cwe"]
-N_PER_TASK = 3
+EVAL_TASKS = ["qa_1", "qa_2"]   # held-out generalization probe: real-text QA, never trained on
+N_PER_TASK = 4
 SEED_OFFSET = 2_000_000          # held-out seeds, distinct from train/eval-in-train
 CONCURRENCY = 4                  # max parent rollouts in flight (mind API rate limits)
 VERBOSE = True                   # dump full transcripts
