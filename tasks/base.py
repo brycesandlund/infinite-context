@@ -92,9 +92,22 @@ def grade_answer(
         return 1.0 if normalize_answer(extracted) == normalize_answer(gold_answers[0]) else 0.0
 
     if mode == "set":
+        # Partial-credit set F1 (precision * recall), NOT binary set-equality.
+        # Binary all-or-nothing gives RL no within-group variance on multi-answer
+        # tasks (3/4 correct scores the same 0 as 0/4) — so the gradient vanishes
+        # exactly where it's needed (vt, cwe, fwe, multivalue, multiquery). F1
+        # rewards partial progress AND penalizes over-listing (precision), so it
+        # can't be gamed by dumping every candidate. Exact set match -> 1.0.
         model_items = {normalize_answer(s) for s in split_list(extracted)}
         gold_items = {normalize_answer(g) for g in gold_answers}
-        return 1.0 if model_items == gold_items else 0.0
+        if not gold_items:
+            return 0.0
+        inter = len(model_items & gold_items)
+        if inter == 0:
+            return 0.0
+        precision = inter / len(model_items)  # model_items nonempty since inter>0
+        recall = inter / len(gold_items)
+        return 2 * precision * recall / (precision + recall)
 
     if mode == "numeric":
         y_hat = _extract_number(extracted)

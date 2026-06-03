@@ -63,8 +63,8 @@ RENDERER_NAME = "qwen3_5"      # thinking enabled
 LORA_RANK = 32
 LEARNING_RATE = 4e-5
 
-N_STEPS = 3                # short validation run from the SFT warm-start; scale up once the refactored loop is confirmed
-BATCH_SIZE = 4              # problems per training step
+N_STEPS = 25               # full RL run from the SFT warm-start (overflow-reward collapse fixed)
+BATCH_SIZE = 4             # problems per training step
 GROUP_SIZE = 4              # parent rollouts per problem
 MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
 MAX_TURNS = 8               # per-agent multi-turn cap
@@ -110,7 +110,7 @@ LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_check
 
 # After training, run this many rollouts on held-out problem seeds (no fwd/bwd)
 # and print each full tree. 0 = skip.
-EVAL_N_ROLLOUTS = 4
+EVAL_N_ROLLOUTS = 12       # 3 per EVAL_TASKS family for a less-noisy post-run readout
 EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 # Optional: force the eval rollouts onto specific task families instead of
 # sampling from TASK_MIXTURE. Cycles through the list if EVAL_N_ROLLOUTS exceeds
@@ -709,13 +709,13 @@ async def main() -> None:
             ts = eval_train_by_task[t]
             print(
                 f"Eval {t}:  ruler {sum(rs)/len(rs):.3f}  "
-                f"strict {sum(ts)/len(ts):.3f}  ({len(rs)} rollouts)"
+                f"train {sum(ts)/len(ts):.3f}  ({len(rs)} rollouts)"
             )
         all_ruler = [s for ss in eval_ruler_by_task.values() for s in ss]
         all_train = [s for ss in eval_train_by_task.values() for s in ss]
         print(
             f"Eval overall:  ruler {sum(all_ruler)/len(all_ruler):.3f}  "
-            f"strict {sum(all_train)/len(all_train):.3f}  ({len(all_ruler)} rollouts)"
+            f"train {sum(all_train)/len(all_train):.3f}  ({len(all_ruler)} rollouts)"
         )
 
 
