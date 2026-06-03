@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 
-GradingMode = Literal["exact", "set", "numeric", "ruler_all", "ruler_part"]
+GradingMode = Literal["exact", "set", "numeric", "ruler_all", "ruler_part", "oolong_exact"]
 
 
 @dataclass
@@ -129,6 +129,13 @@ def grade_answer(
         pred_lc = extracted.lower()
         hits = sum(1.0 for g in gold_answers if g.lower() in pred_lc)
         return hits / len(gold_answers)
+
+    if mode == "oolong_exact":
+        # OOLONG's official categorical scoring: parse the candidate after the
+        # last ':' (their `attempted_parse = out.split(":")[-1]`), then EXACT
+        # membership against the acceptable answers. Faithful to OOLONG's metric.
+        cand = normalize_answer(extracted.split(":")[-1])
+        return 1.0 if cand in {normalize_answer(g) for g in gold_answers} else 0.0
 
     if mode == "ruler_part":
         # RULER's `string_match_part`: max over golds. Used for QA where any

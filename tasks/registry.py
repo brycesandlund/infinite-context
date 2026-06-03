@@ -45,7 +45,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "qa_1": "ruler_part", "qa_2": "ruler_part",
     # OOLONG-synth families: per-PROBLEM grader (Problem.grading_mode) since
     # answer types are mixed within a family; these are fallbacks only.
-    "oolong_counting": "exact", "oolong_user": "exact", "oolong_temporal": "exact",
+    "oolong_counting": "oolong_exact", "oolong_user": "oolong_exact", "oolong_temporal": "oolong_exact",
 }
 
 
@@ -59,7 +59,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "qa_1": "ruler_part", "qa_2": "ruler_part",
     # OOLONG uses its own metric (exact categorical / numeric partial credit),
     # decided per-problem via Problem.grading_mode; these are fallbacks only.
-    "oolong_counting": "exact", "oolong_user": "exact", "oolong_temporal": "exact",
+    "oolong_counting": "oolong_exact", "oolong_user": "oolong_exact", "oolong_temporal": "oolong_exact",
 }
 
 

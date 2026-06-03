@@ -106,12 +106,11 @@ def make_oolong_problem(
         "Do NOT add counts, prefixes like 'Label:'/'User:', or any extra words."
     )
     gold = [str(a).strip() for a in task.answer]
-    # numeric counts -> partial-credit numeric grader; categorical answers
-    # (label/user/date/comparison) -> substring match (ruler_part), which is
-    # robust to the model wrapping the answer (e.g. boxing 'spam: 12' for gold
-    # 'spam'). Slightly more lenient than OOLONG's official exact-match, to fit
-    # our \boxed harness; swap to "exact" for strict OOLONG comparability.
-    grading_mode = "numeric" if task.answer_type == ANSWER_TYPE.NUMERIC else "ruler_part"
+    # OOLONG-official scoring: 0.75^|err| numeric for counts; exact membership
+    # (their split(":")[-1] parse) for categorical answers. Kept faithful for
+    # apples-to-apples eval. (A more granular *training* reward can be layered on
+    # separately later — resolve_grading_mode vs resolve_eval_grading_mode.)
+    grading_mode = "numeric" if task.answer_type == ANSWER_TYPE.NUMERIC else "oolong_exact"
 
     return Problem(
         document_tokens=doc_tokens,
