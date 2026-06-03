@@ -37,6 +37,11 @@ class Problem:
     gold_answers: list[str]
     task: str
     task_context: str = ""
+    # Optional per-problem grader override. Most tasks have a fixed grader per
+    # task name (registry tables), but OOLONG questions mix answer types
+    # (numeric counts vs exact labels/users/dates) within a family, so the
+    # grader is decided per problem. None -> fall back to the registry by task.
+    grading_mode: "GradingMode | None" = None
     metadata: dict = field(default_factory=dict)
 
 

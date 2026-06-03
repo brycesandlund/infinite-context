@@ -50,6 +50,8 @@ from tasks import (
     list_tasks,
     load_pg_essays_text,
     make_problem,
+    resolve_eval_grading_mode,
+    resolve_grading_mode,
 )
 
 
@@ -401,7 +403,7 @@ async def _rollout_one_parent(
         tools=tool_list,
         initial_messages=initial_messages,
         reward_fn=LongContextReward(
-            gold_answers=problem.gold_answers, mode=grading_mode(problem.task)
+            gold_answers=problem.gold_answers, mode=resolve_grading_mode(problem)
         ),
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
@@ -601,7 +603,7 @@ async def main() -> None:
         # which families the policy is improving on.
         per_task_scores: dict[str, list[float]] = {}
         for r in parent_results:
-            score = grade_answer(r.root.answer, r.gold_answers, grading_mode(r.task))
+            score = grade_answer(r.root.answer, r.gold_answers, resolve_grading_mode(r.problem))
             per_task_scores.setdefault(r.task, []).append(score)
         per_task_summary = ", ".join(
             f"{t}={sum(s) / len(s):.2f}({len(s)})"
@@ -685,10 +687,10 @@ async def main() -> None:
             nodes = result.all_nodes()
             parent_reward = _trajectory_total_reward(result.root.trajectory)
             ruler_score = grade_answer(
-                result.root.answer, result.gold_answers, eval_grading_mode(result.task)
+                result.root.answer, result.gold_answers, resolve_eval_grading_mode(problem)
             )
             train_score = grade_answer(
-                result.root.answer, result.gold_answers, grading_mode(result.task)
+                result.root.answer, result.gold_answers, resolve_grading_mode(problem)
             )
             eval_ruler_by_task.setdefault(result.task, []).append(ruler_score)
             eval_train_by_task.setdefault(result.task, []).append(train_score)

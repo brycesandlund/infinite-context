@@ -15,6 +15,7 @@ in `_GENERATORS`, and add its training+eval grader modes below.
 from __future__ import annotations
 
 from tasks.base import GradingMode, Problem
+from tasks.oolong import OOLONG_TASKS, make_oolong_problem
 from tasks.ruler import RULER_TASKS, make_ruler_problem
 
 
@@ -22,13 +23,14 @@ from tasks.ruler import RULER_TASKS, make_ruler_problem
 # config lives in tasks/ruler/constants.py (RULER_TASKS). Each entry binds
 # the task name as the first arg so the registry's invocation signature stays
 # uniform: (corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem.
-def _bind_ruler(name: str):
+def _bind(make_fn, name: str):
     def gen(corpus_tokens, tokenizer, doc_size_tokens, seed):
-        return make_ruler_problem(name, corpus_tokens, tokenizer, doc_size_tokens, seed)
+        return make_fn(name, corpus_tokens, tokenizer, doc_size_tokens, seed)
     return gen
 
 
-_GENERATORS = {name: _bind_ruler(name) for name in RULER_TASKS}
+_GENERATORS = {name: _bind(make_ruler_problem, name) for name in RULER_TASKS}
+_GENERATORS.update({name: _bind(make_oolong_problem, name) for name in OOLONG_TASKS})
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -41,6 +43,9 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "vt": "set", "cwe": "set", "fwe": "set",
     # QA (qa_1, qa_2) deferred to held-out eval; substring match.
     "qa_1": "ruler_part", "qa_2": "ruler_part",
+    # OOLONG-synth families: per-PROBLEM grader (Problem.grading_mode) since
+    # answer types are mixed within a family; these are fallbacks only.
+    "oolong_counting": "exact", "oolong_user": "exact", "oolong_temporal": "exact",
 }
 
 
@@ -52,6 +57,9 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "niah_multivalue": "ruler_all", "niah_multiquery": "ruler_all",
     "vt": "ruler_all", "cwe": "ruler_all", "fwe": "ruler_all",
     "qa_1": "ruler_part", "qa_2": "ruler_part",
+    # OOLONG uses its own metric (exact categorical / numeric partial credit),
+    # decided per-problem via Problem.grading_mode; these are fallbacks only.
+    "oolong_counting": "exact", "oolong_user": "exact", "oolong_temporal": "exact",
 }
 
 
@@ -76,6 +84,17 @@ def grading_mode(task: str) -> GradingMode:
     if task not in _TRAIN_GRADING_MODES:
         raise ValueError(f"Unknown task: {task!r}. Known: {list_tasks()}")
     return _TRAIN_GRADING_MODES[task]
+
+
+def resolve_grading_mode(problem) -> GradingMode:
+    """Training-reward grader for a specific problem: its per-problem override
+    (Problem.grading_mode) if set, else the registry default for its task."""
+    return problem.grading_mode or grading_mode(problem.task)
+
+
+def resolve_eval_grading_mode(problem) -> GradingMode:
+    """Eval grader for a specific problem (per-problem override, else registry)."""
+    return problem.grading_mode or eval_grading_mode(problem.task)
 
 
 def eval_grading_mode(task: str) -> GradingMode:

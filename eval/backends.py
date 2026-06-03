@@ -323,10 +323,17 @@ class OracleBackend(ModelBackend):
         self.tokenizer = tokenizer
         self.budget = budget
         self.max_chunk_tokens = min(max_chunk_tokens, chunk_size)
-        self.chunks = self._compute_chunks(chunk_size, overlap)
+        # OOLONG counts examples by which chunk their token-span starts in, so
+        # chunks must PARTITION the doc (overlap=0) or examples get double-counted.
+        eff_overlap = 0 if self._family() == "oolong" else overlap
+        self.chunks = self._compute_chunks(chunk_size, eff_overlap)
 
     def _family(self) -> str:
-        return "niah" if self.task.startswith("niah") else self.task
+        if self.task.startswith("niah"):
+            return "niah"
+        if self.task.startswith("oolong"):
+            return "oolong"
+        return self.task
 
     def _compute_chunks(self, chunk_size: int, overlap: int) -> list[tuple[int, int]]:
         step = max(1, chunk_size - overlap)
@@ -357,6 +364,10 @@ class OracleBackend(ModelBackend):
         if self.task == "vt":
             return head + ("report every variable-assignment statement you find verbatim "
                            "(e.g. 'VAR ABCDE = 12345' or 'VAR FGHIJ = VAR ABCDE'), or 'none'.")
+        if fam == "oolong":
+            labels = ", ".join(self.metadata.get("labels", []))
+            return head + (f"classify each example in this range into one of [{labels}] and "
+                           f"report the count of each label as 'label:count'.")
         return head + "report any values relevant to the question, or 'none'."
 
     def _subagent_report(self, a: int, b: int) -> str:
@@ -376,6 +387,13 @@ class OracleBackend(ModelBackend):
         if self.task == "vt":
             stmts = [f"VAR {v} = {rhs}" for v, rhs in _VT_STMT_RE.findall(text)]
             return "; ".join(stmts) if stmts else "none"
+        if fam == "oolong":
+            # Count true labels of examples whose token-span STARTS in [a, b).
+            ctr: Counter = Counter()
+            for start, _end, label, _u, _d in self.metadata.get("example_spans", []):
+                if a <= start < b:
+                    ctr[label] += 1
+            return ", ".join(f"{l}:{c}" for l, c in ctr.items()) if ctr else "none"
         present = [g for g in self.gold if g.lower() in text.lower()]
         return ", ".join(present) if present else "none"
 
@@ -406,6 +424,26 @@ class OracleBackend(ModelBackend):
         if self.task == "vt":
             stmts = [s.strip() for r in usable for s in r.split(";") if s.strip()]
             return ", ".join(self._trace(stmts))
+        if fam == "oolong":
+            # Sum per-label counts from the subagents' 'label:count' reports.
+            total: Counter = Counter()
+            for r in usable:
+                for pair in r.split(","):
+                    lbl, sep, c = pair.rpartition(":")
+                    if sep:
+                        try:
+                            total[lbl.strip()] += int(c.strip())
+                        except ValueError:
+                            pass
+            qtype = self.metadata.get("question_type")
+            if qtype == "count":
+                return str(total.get(self.metadata.get("target_label", ""), 0))
+            if qtype == "common":
+                labels = self.metadata.get("labels", [])
+                if not labels:
+                    return total.most_common(1)[0][0] if total else ""
+                return max(labels, key=lambda l: (total.get(l, 0), -labels.index(l)))
+            return ", ".join(self.gold)
         return ", ".join(self.gold)
 
     def _trace(self, stmts: list[str]) -> list[str]:

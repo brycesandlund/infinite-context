@@ -25,7 +25,7 @@ from tinker_cookbook.renderers import get_renderer
 import train  # single source of truth for budget/recursion/data constants
 from eval.agent import AgentNode, flatten, run_agent
 from eval.backends import APIBackend, ModelBackend, TinkerBackend
-from tasks import eval_grading_mode, grade_answer, list_tasks, load_pg_essays_text, make_problem
+from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
 
 
 # ---------------------------------------------------------------------------
@@ -43,7 +43,7 @@ TINKER_LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # None
 TEMPERATURE = 1.0
 
 # Which tasks to eval, and how many problems each.
-EVAL_TASKS = ["qa_1", "qa_2"]   # held-out generalization probe: real-text QA, never trained on
+EVAL_TASKS = ["oolong_counting", "oolong_user", "oolong_temporal"]  # OOLONG-synth capability probe
 N_PER_TASK = 4
 SEED_OFFSET = 2_000_000          # held-out seeds, distinct from train/eval-in-train
 CONCURRENCY = 4                  # max parent rollouts in flight (mind API rate limits)
@@ -174,7 +174,7 @@ async def main() -> None:
     print(f"EVAL: backend={BACKEND}")
     print("=" * 72)
     for (task, seed, problem), node in zip(work, nodes):
-        score = grade_answer(node.answer, problem.gold_answers, eval_grading_mode(task))
+        score = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
         scores_by_task.setdefault(task, []).append(score)
         n_nodes = len(flatten(node))
         print(

@@ -21,7 +21,14 @@ from tasks.base import (
     split_list,
 )
 from tasks.corpus import load_pg_essays_text, NOISE_SENTENCE
-from tasks.registry import eval_grading_mode, grading_mode, list_tasks, make_problem
+from tasks.registry import (
+    eval_grading_mode,
+    grading_mode,
+    list_tasks,
+    make_problem,
+    resolve_eval_grading_mode,
+    resolve_grading_mode,
+)
 
 __all__ = [
     "GradingMode",
@@ -35,5 +42,7 @@ __all__ = [
     "load_pg_essays_text",
     "make_problem",
     "normalize_answer",
+    "resolve_eval_grading_mode",
+    "resolve_grading_mode",
     "split_list",
 ]
