@@ -60,13 +60,20 @@ def make_oolong_problem(
     tokenizer,
     doc_size_tokens: int,
     seed: int,
+    dataset: str | None = None,  # pin the source dataset (else sampled from seed)
 ) -> Problem:
     if task_name not in OOLONG_TASKS:
         raise ValueError(f"Unknown OOLONG task: {task_name!r}")
     family = OOLONG_TASKS[task_name]
     rng = random.Random(seed)
 
-    dataset = rng.choice(_DATASETS)
+    # Dataset is normally sampled per-seed; eval can pin it for even coverage
+    # across the 10 datasets (so per-dataset stats aren't starved). Consume the
+    # same rng draw either way so the rest of the synthesis is seed-stable.
+    sampled = rng.choice(_DATASETS)
+    if dataset is not None and dataset not in _DATASETS:
+        raise ValueError(f"Unknown OOLONG dataset {dataset!r}. Known: {_DATASETS}")
+    dataset = dataset or sampled
     data_obj = SUPPORTED_DATASETS[dataset]()
     num_labels = len(data_obj.label_list)
     temperature = rng.randint(2, 6)               # OOLONG's label-skew temperature
