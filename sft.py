@@ -33,6 +33,7 @@ from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.renderers import TrainOnWhat, get_renderer
 from tinker_cookbook.supervised import datum_from_model_input_weights
 
+import metrics  # optional W&B logging (no-op unless WANDB=1)
 import train  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
 from eval.backends import make_oracle, neutral_to_cookbook
@@ -178,7 +179,19 @@ async def main() -> None:
     )
     adam_params = tinker.AdamParams(learning_rate=LEARNING_RATE, beta1=0.9, beta2=0.95)
 
+    metrics.init(
+        project="infinite-context",
+        config={
+            "phase": "sft", "model": MODEL_NAME, "renderer": RENDERER_NAME,
+            "lora_rank": LORA_RANK, "lr": LEARNING_RATE, "epochs": EPOCHS,
+            "sft_batch_size": SFT_BATCH_SIZE, "n_datums": len(datums),
+            "tasks": SFT_TASKS, "n_per_task": N_PER_TASK,
+            "n_per_task_override": N_PER_TASK_OVERRIDE,
+        },
+    )
+
     rng = random.Random(0)
+    global_batch = 0
     for epoch in range(EPOCHS):
         rng.shuffle(datums)
         n_batches = (len(datums) + SFT_BATCH_SIZE - 1) // SFT_BATCH_SIZE
@@ -197,12 +210,17 @@ async def main() -> None:
                 num = sum(float(l.to_torch().dot(wi.to_torch())) for l, wi in zip(lp, w))
                 den = sum(float(wi.to_torch().sum()) for wi in w)
                 if den:
-                    epoch_nll += -(num / den)
+                    batch_nll = -(num / den)
+                    epoch_nll += batch_nll
                     n_logged += 1
+                    metrics.log({"sft/batch_nll": batch_nll, "sft/epoch": epoch}, step=global_batch)
             except Exception:
                 pass
+            global_batch += 1
         nll_str = f"{epoch_nll / n_logged:.4f}" if n_logged else "n/a"
         print(f"Epoch {epoch}: batches {n_batches} | mean batch NLL {nll_str}")
+        if n_logged:
+            metrics.log({"sft/epoch_nll": epoch_nll / n_logged}, step=global_batch)
 
         # Checkpoint after EVERY epoch (overwrite). Tinker runs are slow (~15
         # min/epoch) and occasionally drop connection, so a kill/crash should
@@ -216,6 +234,7 @@ async def main() -> None:
         print(f"  saved: {save_resp.path}  (path -> {LAST_SFT_CHECKPOINT_FILE})")
     print("\nTo warm-start RL: set train.py LOAD_CHECKPOINT_PATH to the path above "
           "and RESUME_OPTIMIZER=False.")
+    metrics.finish()
 
 
 if __name__ == "__main__":

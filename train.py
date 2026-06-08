@@ -41,6 +41,7 @@ from tinker_cookbook.tool_use import (
 )
 
 import harness
+import metrics  # optional W&B logging (no-op unless WANDB=1)
 from tasks import (
     GradingMode,
     Problem,
@@ -462,6 +463,18 @@ async def main() -> None:
     adam_params = tinker.AdamParams(learning_rate=LEARNING_RATE, beta1=0.9, beta2=0.95)
 
     print(f"Loaded model {MODEL_NAME}, renderer {RENDERER_NAME}, max_depth {MAX_DEPTH}")
+    metrics.init(
+        project="infinite-context",
+        config={
+            "phase": "rl", "model": MODEL_NAME, "renderer": RENDERER_NAME,
+            "lora_rank": LORA_RANK, "lr": LEARNING_RATE, "n_steps": N_STEPS,
+            "batch_size": BATCH_SIZE, "group_size": GROUP_SIZE,
+            "max_depth": MAX_DEPTH, "max_turns": MAX_TURNS,
+            "agent_context": AGENT_CONTEXT, "doc_size": DOC_SIZE_TOKENS,
+            "max_chunk": MAX_CHUNK_TOKENS, "task_mixture": TASK_MIXTURE,
+            "warmstart": LOAD_CHECKPOINT_PATH, "resume_optimizer": RESUME_OPTIMIZER,
+        },
+    )
     print("Loading Paul Graham essays + tokenizing corpus...")
     corpus_text = load_pg_essays_text()
     corpus_tokens = tokenizer.encode(corpus_text, add_special_tokens=False)
@@ -630,6 +643,34 @@ async def main() -> None:
             f"trained: {bool(all_datums and nonzero_adv)}"
         )
 
+        # W&B: per-step curves. The two we care about most given our history are
+        # score/<task> (does the new capability climb? is the mix balanced?) and
+        # rollout/root_no_answer_rate (early-warning for the reward-collapse mode
+        # where the policy stops reading and boxes fast guesses / overflows).
+        root_no_answer = sum(
+            1 for r in parent_results if r.root.answer is None
+        ) / len(parent_results)
+        mean_tree_size = sum(len(r.all_nodes()) for r in parent_results) / len(parent_results)
+        mean_root_turns = sum(
+            len(r.root.trajectory.transitions) for r in parent_results
+        ) / len(parent_results)
+        metrics.log(
+            {
+                "reward/mean": mean_reward,
+                "score/mean": mean_score,
+                **{f"score/{t}": sum(s) / len(s) for t, s in per_task_scores.items()},
+                "train/frac_nonzero_adv": sum(1 for a in advantages if abs(a) > 1e-9)
+                / len(advantages),
+                "train/datums": len(all_datums),
+                "train/trained": int(bool(all_datums and nonzero_adv)),
+                "rollout/root_no_answer_rate": root_no_answer,
+                "rollout/mean_tree_size": mean_tree_size,
+                "rollout/mean_root_turns": mean_root_turns,
+                **{f"traj/d{d}": n for d, n in trajectories_per_depth.items()},
+            },
+            step=step,
+        )
+
         if DEBUG_PRINT_TREE_EACH_STEP:
             from debug import print_rollout_tree
 
@@ -723,6 +764,17 @@ async def main() -> None:
             f"Eval overall:  ruler {sum(all_ruler)/len(all_ruler):.3f}  "
             f"train {sum(all_train)/len(all_train):.3f}  ({len(all_ruler)} rollouts)"
         )
+        # W&B: held-out eval as run-summary scalars (one comparison point per run).
+        metrics.summary(
+            {
+                **{f"eval/ruler/{t}": sum(v) / len(v) for t, v in eval_ruler_by_task.items()},
+                **{f"eval/train/{t}": sum(v) / len(v) for t, v in eval_train_by_task.items()},
+                "eval/ruler/overall": sum(all_ruler) / len(all_ruler),
+                "eval/train/overall": sum(all_train) / len(all_train),
+            }
+        )
+
+    metrics.finish()
 
 
 if __name__ == "__main__":

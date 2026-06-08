@@ -17,3 +17,6 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Weights & Biases local run artifacts
+wandb/

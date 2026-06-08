@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "marimo>=0.23.8",
     "matplotlib>=3.10.9",
-    "tinker>=0.22.0",
+    "tinker>=0.22.3",
     "tinker-cookbook>=0.4.1",
     # RULER vendoring: wonderwords supplies the adj/noun/verb pools RULER uses
     # for needle keys; nltk supplies sent_tokenize which RULER uses to insert
@@ -17,4 +17,5 @@ dependencies = [
     # Multi-backend eval: one interface over Anthropic + OpenAI (+ others) for
     # the cross-model recursive-agent comparison.
     "litellm>=1.40",
+    "wandb>=0.27.2",
 ]
