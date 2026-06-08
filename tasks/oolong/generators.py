@@ -100,17 +100,21 @@ def make_oolong_problem(
         labels_chosen=list(true_counts.keys()),
     ).strip()
 
-    question = task.question.strip() + (
-        "\n\nReply with ONLY the final answer inside \\boxed{} — just the value "
-        "itself (a single label, number, user ID, or the exact comparison phrase). "
-        "Do NOT add counts, prefixes like 'Label:'/'User:', or any extra words."
-    )
+    # Official OOLONG prompt verbatim (it already specifies the answer format,
+    # e.g. "Give your final answer in the form 'Label: answer'"); we only add the
+    # minimal \boxed{} mechanism our harness extracts from. OOLONG's own grader
+    # parse (split(":")[-1]) handles the "Label: X" form, so this stays faithful.
+    question = task.question.strip() + "\n\nPut your final answer inside \\boxed{}."
     gold = [str(a).strip() for a in task.answer]
-    # OOLONG-official scoring: 0.75^|err| numeric for counts; exact membership
-    # (their split(":")[-1] parse) for categorical answers. Kept faithful for
-    # apples-to-apples eval. (A more granular *training* reward can be layered on
-    # separately later — resolve_grading_mode vs resolve_eval_grading_mode.)
-    grading_mode = "numeric" if task.answer_type == ANSWER_TYPE.NUMERIC else "oolong_exact"
+    is_numeric = task.answer_type == ANSWER_TYPE.NUMERIC
+    # EVAL grader = OOLONG-official: 0.75^|err| numeric for counts; exact
+    # membership (their split(":")[-1] parse) for categorical. Leaderboard-faithful.
+    grading_mode = "numeric" if is_numeric else "oolong_exact"
+    # TRAINING REWARD = softer/denser: numeric stays partial-credit; categorical
+    # uses whole-word membership (oolong_soft) so RL gets gradient toward the
+    # answer even when the format is off, WITHOUT substring false-positives
+    # (e.g. 'correct' must not match 'incorrect'). Eval stays exact (above).
+    reward_mode = "numeric" if is_numeric else "oolong_soft"
 
     return Problem(
         document_tokens=doc_tokens,
@@ -119,6 +123,7 @@ def make_oolong_problem(
         task=task_name,
         task_context=task_context,
         grading_mode=grading_mode,
+        reward_mode=reward_mode,
         metadata={
             "dataset": dataset,
             "family": family,

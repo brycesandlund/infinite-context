@@ -17,7 +17,9 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 
-GradingMode = Literal["exact", "set", "numeric", "ruler_all", "ruler_part", "oolong_exact"]
+GradingMode = Literal[
+    "exact", "set", "numeric", "ruler_all", "ruler_part", "oolong_exact", "oolong_soft"
+]
 
 
 @dataclass
@@ -37,11 +39,17 @@ class Problem:
     gold_answers: list[str]
     task: str
     task_context: str = ""
-    # Optional per-problem grader override. Most tasks have a fixed grader per
-    # task name (registry tables), but OOLONG questions mix answer types
+    # Optional per-problem EVAL grader override. Most tasks have a fixed grader
+    # per task name (registry tables), but OOLONG questions mix answer types
     # (numeric counts vs exact labels/users/dates) within a family, so the
     # grader is decided per problem. None -> fall back to the registry by task.
     grading_mode: "GradingMode | None" = None
+    # Optional per-problem TRAINING-REWARD grader override. Lets the RL reward be
+    # softer/denser than the (strict, leaderboard-faithful) eval grader — e.g.
+    # OOLONG: eval = exact membership, reward = substring, so the model gets
+    # gradient toward the answer even before it nails the exact format. None ->
+    # fall back to grading_mode, then the registry.
+    reward_mode: "GradingMode | None" = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -136,6 +144,19 @@ def grade_answer(
         # membership against the acceptable answers. Faithful to OOLONG's metric.
         cand = normalize_answer(extracted.split(":")[-1])
         return 1.0 if cand in {normalize_answer(g) for g in gold_answers} else 0.0
+
+    if mode == "oolong_soft":
+        # Softer OOLONG *training-reward* grader: credit the gold appearing as a
+        # whole word/token in the prediction (word boundaries — so 'correct' does
+        # NOT match 'incorrect', and '65985' does not match '165985'). Denser than
+        # exact for RL (rewards the right answer even when format is off), without
+        # the substring false-positives of ruler_part. NOT used for eval.
+        pred = normalize_answer(extracted)
+        for g in gold_answers:
+            gn = normalize_answer(g)
+            if gn and re.search(r"\b" + re.escape(gn) + r"\b", pred):
+                return 1.0
+        return 0.0
 
     if mode == "ruler_part":
         # RULER's `string_match_part`: max over golds. Used for QA where any

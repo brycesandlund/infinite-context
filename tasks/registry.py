@@ -87,9 +87,10 @@ def grading_mode(task: str) -> GradingMode:
 
 
 def resolve_grading_mode(problem) -> GradingMode:
-    """Training-reward grader for a specific problem: its per-problem override
-    (Problem.grading_mode) if set, else the registry default for its task."""
-    return problem.grading_mode or grading_mode(problem.task)
+    """Training-reward grader for a specific problem: its softer reward override
+    (Problem.reward_mode) if set, else its eval override (Problem.grading_mode),
+    else the registry default for its task."""
+    return problem.reward_mode or problem.grading_mode or grading_mode(problem.task)
 
 
 def resolve_eval_grading_mode(problem) -> GradingMode:
