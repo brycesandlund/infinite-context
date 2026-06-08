@@ -95,6 +95,10 @@ TASK_MIXTURE: dict[str, float] = {
     "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
     "niah_multivalue": 1.0, "niah_multiquery": 1.0,
     "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
+    # OOLONG counting/aggregation — the new capability. Taught via the tree-reduce
+    # oracle (fine decomposition: no agent counts >~12 items). Weighted ~3x a single
+    # RULER task (~21% of the mix) so RL gets ample aggregation signal.
+    "oolong_counting": 3.0,
 }
 DOC_SIZE_TOKENS = 15_000    # haystack length per problem
 MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to AGENT_CONTEXT so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.

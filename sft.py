@@ -35,7 +35,7 @@ from tinker_cookbook.supervised import datum_from_model_input_weights
 
 import train  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
-from eval.backends import OracleBackend, neutral_to_cookbook
+from eval.backends import make_oracle, neutral_to_cookbook
 from tasks import list_tasks, load_pg_essays_text, make_problem
 
 
@@ -45,10 +45,16 @@ from tasks import list_tasks, load_pg_essays_text, make_problem
 
 # Tasks to generate warm-start traces over (default: all trainable RULER tasks).
 SFT_TASKS = [t for t in train.TASK_MIXTURE]
-N_PER_TASK = 20                 # gold traces per task
+N_PER_TASK = 20                 # gold traces per task (default)
+# Per-task overrides. oolong_counting traces are deep (root -> mids -> ~26 leaves
+# => ~33 agents, ~66 datums each), so fewer traces still yield plenty of datums;
+# this keeps counting from swamping the RULER pattern in the SFT pool.
+N_PER_TASK_OVERRIDE = {"oolong_counting": 8}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 
-EPOCHS = 3
+EPOCHS = 2                      # NLL saturates by epoch 1 (~0.04) on the scripted
+                                # oracle traces; a 3rd epoch just memorizes phrasings
+                                # RL would undo. 2 captures the pattern, not the quirks.
 SFT_BATCH_SIZE = 16             # datums per optim step
 LEARNING_RATE = 1e-5
 
@@ -74,10 +80,10 @@ MAX_TURNS = train.MAX_TURNS
 async def _gen_traces(corpus_tokens, tokenizer):
     coros, meta = [], []
     for ti, task in enumerate(SFT_TASKS):
-        for i in range(N_PER_TASK):
+        for i in range(N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)):
             seed = DATA_SEED + ti * 1000 + i
             problem = make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
-            oracle = OracleBackend(
+            oracle = make_oracle(
                 problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
             )
@@ -198,13 +204,16 @@ async def main() -> None:
         nll_str = f"{epoch_nll / n_logged:.4f}" if n_logged else "n/a"
         print(f"Epoch {epoch}: batches {n_batches} | mean batch NLL {nll_str}")
 
-    print(f"Saving checkpoint '{SAVE_CHECKPOINT_NAME}'...")
-    save_future = await training_client.save_state_async(SAVE_CHECKPOINT_NAME, overwrite=True)
-    save_resp = await save_future.result_async()
-    print(f"  saved: {save_resp.path}")
-    LAST_SFT_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    LAST_SFT_CHECKPOINT_FILE.write_text(save_resp.path)
-    print(f"  (path written to {LAST_SFT_CHECKPOINT_FILE})")
+        # Checkpoint after EVERY epoch (overwrite). Tinker runs are slow (~15
+        # min/epoch) and occasionally drop connection, so a kill/crash should
+        # never cost a full redo — last_sft_checkpoint.txt always points at the
+        # latest completed epoch's weights, which are usable for RL warm-start.
+        print(f"  saving checkpoint '{SAVE_CHECKPOINT_NAME}' (after epoch {epoch})...")
+        save_future = await training_client.save_state_async(SAVE_CHECKPOINT_NAME, overwrite=True)
+        save_resp = await save_future.result_async()
+        LAST_SFT_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LAST_SFT_CHECKPOINT_FILE.write_text(save_resp.path)
+        print(f"  saved: {save_resp.path}  (path -> {LAST_SFT_CHECKPOINT_FILE})")
     print("\nTo warm-start RL: set train.py LOAD_CHECKPOINT_PATH to the path above "
           "and RESUME_OPTIMIZER=False.")
 

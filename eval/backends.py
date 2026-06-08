@@ -653,11 +653,50 @@ class TreeCountOracle(ModelBackend):
                 tool_calls=calls,
             )
         total = self._sum_reports([mm["content"] for mm in messages if mm["role"] == "tool"])
-        # Derive the answer from the tree-reduced totals (count questions); else
-        # fall back to gold for non-count question types.
-        target = re.search(r"classified as label '([^']+)'", user if isinstance(user, str) else "")
-        ans = str(total.get(target.group(1), 0)) if target else ", ".join(self.gold)
+        ans = self._answer_from_total(user if isinstance(user, str) else "", total)
         return AssistantTurn(
             text=f"Combining section subtotals: {self._fmt(total)}.\n\\boxed{{{ans}}}",
             tool_calls=[],
         )
+
+    def _answer_from_total(self, q, total):
+        """Derive the answer to ANY OOLONG counting question from the tree-reduced
+        per-label totals — so the boxed answer verifies the recursive arithmetic,
+        not a gold leak. Mirrors CountingTasks' four question forms exactly."""
+        if not total:
+            return ", ".join(self.gold)
+        # absolute count: "how many ... classified as label 'X'?"
+        m = re.search(r"classified as label '([^']+)'", q)
+        if m:
+            return str(total.get(m.group(1), 0))
+        # A-vs-B comparison: "is label 'A' more common, less common, or the same
+        # frequency as label 'B'?" -> phrase matching CountingTasks' answer.
+        m = re.search(r"is label '([^']+)' more common, less common, or the same "
+                      r"frequency as label '([^']+)'", q)
+        if m:
+            a, b = total.get(m.group(1), 0), total.get(m.group(2), 0)
+            return ("more common than" if a > b
+                    else "less common than" if a < b else "same frequency as")
+        # most / least common label across the whole document.
+        if "is the most common" in q:
+            return max(total, key=total.get)
+        if "is the least common" in q:
+            return min(total, key=total.get)
+        return ", ".join(self.gold)
+
+
+def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):
+    """Pick the scripted oracle that best decomposes this task.
+
+    `oolong_counting` uses the tree-reduce oracle (leaves count <= ~12 items,
+    parents sum a handful) so aggregation never requires one agent to tally the
+    whole document — the fine-decomposition pattern we want SFT to teach. Every
+    other task uses the standard split-and-delegate OracleBackend.
+    """
+    if problem.task == "oolong_counting":
+        return TreeCountOracle(
+            problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens
+        )
+    return OracleBackend(
+        problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens
+    )
