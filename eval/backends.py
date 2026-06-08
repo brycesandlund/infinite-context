@@ -514,3 +514,150 @@ class OracleBackend(ModelBackend):
             text=f"Combining the findings from all ranges, the answer is:\n\\boxed{{{final}}}",
             tool_calls=[],
         )
+
+
+# ---------------------------------------------------------------------------
+# Tree-reduce counting oracle (prototype) — fine decomposition so no agent
+# counts more than ~LEAF_EXAMPLES items, and every parent sums only a handful.
+# ---------------------------------------------------------------------------
+
+
+_ONODE_RE = re.compile(r"\[ONODE (mid|leaf) (\d+):(\d+)\]")
+
+
+def _new_id() -> str:
+    return f"call_{uuid.uuid4().hex[:8]}"
+
+
+class TreeCountOracle(ModelBackend):
+    """Demonstrates that aggregation never requires one agent to count 100.
+
+    Three levels (root depth0 -> mids depth1 -> leaves depth2):
+    - LEAF reads a small token range (~LEAF_EXAMPLES items) and counts them.
+    - MID sums the per-label counts of its few leaves.
+    - ROOT sums the few mid subtotals and answers.
+
+    Every agent's arithmetic load stays <= ~max(LEAF_EXAMPLES, MID_LEAVES).
+    OOLONG counting family (uses metadata['example_spans']).
+    """
+
+    name = "tree_count_oracle"
+    LEAF_EXAMPLES = 12
+    MID_LEAVES = 5
+
+    def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens):
+        self.doc = problem.document_tokens
+        self.doc_len = len(self.doc)
+        self.gold = list(problem.gold_answers)
+        self.meta = dict(problem.metadata)
+        self.spans = self.meta["example_spans"]  # (start,end,label,user,date), in order
+        self.tok = tokenizer
+        self.budget = budget
+
+    def count_tokens(self, messages):
+        total = sum(
+            len(self.tok.encode(m["content"], add_special_tokens=False))
+            for m in messages if isinstance(m.get("content"), str)
+        )
+        return total + 600
+
+    # -- range subdivision (by example boundaries) --------------------------
+
+    def _leaf_ranges(self, a, b):
+        idxs = [i for i, s in enumerate(self.spans) if a <= s[0] < b]
+        out = []
+        for k in range(0, len(idxs), self.LEAF_EXAMPLES):
+            grp = idxs[k:k + self.LEAF_EXAMPLES]
+            out.append((self.spans[grp[0]][0], self.spans[grp[-1]][1]))
+        return out
+
+    def _mid_ranges(self):
+        leaves = self._leaf_ranges(0, self.doc_len)
+        out = []
+        for k in range(0, len(leaves), self.MID_LEAVES):
+            grp = leaves[k:k + self.MID_LEAVES]
+            out.append((grp[0][0], grp[-1][1]))
+        return out
+
+    def _leaf_count(self, a, b):
+        ctr = Counter()
+        for s in self.spans:
+            if a <= s[0] < b:
+                ctr[s[2]] += 1
+        return ctr
+
+    @staticmethod
+    def _fmt(ctr):
+        return ", ".join(f"{l}:{c}" for l, c in ctr.items()) if ctr else "none"
+
+    @staticmethod
+    def _sum_reports(reports):
+        total = Counter()
+        for r in reports:
+            if not r or r.strip().lower() == "none":
+                continue
+            for pair in r.split(","):
+                lbl, sep, c = pair.rpartition(":")
+                if sep:
+                    try:
+                        total[lbl.strip()] += int(c.strip())
+                    except ValueError:
+                        pass
+        return total
+
+    async def sample(self, messages, max_tokens):
+        user = next((m["content"] for m in messages if m["role"] == "user"), "")
+        has_tool = any(m["role"] == "tool" for m in messages)
+        m = _ONODE_RE.search(user if isinstance(user, str) else "")
+
+        if m and m.group(1) == "leaf":
+            a, b = int(m.group(2)), int(m.group(3))
+            if not has_tool:
+                return AssistantTurn(
+                    text=f"Reading my small range {a}..{b} to count its few items.",
+                    tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": a, "end": b})],
+                )
+            ctr = self._leaf_count(a, b)
+            return AssistantTurn(
+                text=f"This range has {sum(ctr.values())} items: {self._fmt(ctr)}.\n\\boxed{{{self._fmt(ctr)}}}",
+                tool_calls=[],
+            )
+
+        if m and m.group(1) == "mid":
+            a, b = int(m.group(2)), int(m.group(3))
+            if not has_tool:
+                calls = [
+                    ToolCall(_new_id(), "spawn_subagent", {"subtask":
+                        f"[ONODE leaf {la}:{lb}] Read tokens {la}..{lb}, classify each "
+                        f"example, and report the per-label counts as 'label:count'."})
+                    for (la, lb) in self._leaf_ranges(a, b)
+                ]
+                return AssistantTurn(text="Subdividing my section into small leaf ranges.", tool_calls=calls)
+            total = self._sum_reports([mm["content"] for mm in messages if mm["role"] == "tool"])
+            return AssistantTurn(
+                text=f"Summing my leaves' counts -> {self._fmt(total)}.\n\\boxed{{{self._fmt(total)}}}",
+                tool_calls=[],
+            )
+
+        # ROOT
+        if not has_tool:
+            calls = [
+                ToolCall(_new_id(), "spawn_subagent", {"subtask":
+                    f"[ONODE mid {a}:{b}] Subdivide tokens {a}..{b} into small ranges, "
+                    f"count each, and report the per-label totals as 'label:count'."})
+                for (a, b) in self._mid_ranges()
+            ]
+            return AssistantTurn(
+                text="The document is large; I'll split it into sections, each of which "
+                     "subdivides further so every batch counted is small.",
+                tool_calls=calls,
+            )
+        total = self._sum_reports([mm["content"] for mm in messages if mm["role"] == "tool"])
+        # Derive the answer from the tree-reduced totals (count questions); else
+        # fall back to gold for non-count question types.
+        target = re.search(r"classified as label '([^']+)'", user if isinstance(user, str) else "")
+        ans = str(total.get(target.group(1), 0)) if target else ", ".join(self.gold)
+        return AssistantTurn(
+            text=f"Combining section subtotals: {self._fmt(total)}.\n\\boxed{{{ans}}}",
+            tool_calls=[],
+        )
