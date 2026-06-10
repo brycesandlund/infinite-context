@@ -561,8 +561,14 @@ class OolongOracle(ModelBackend):
     """
 
     name = "oolong_oracle"
-    LEAF_EXAMPLES = 12
-    MID_LEAVES = 5
+    # Split-vs-read is decided by TOKEN-RANGE WIDTH (not example count), because a
+    # token range is the one thing the policy CAN compute from its subtask without
+    # reading. A node whose range is wider than LEAF_TOKENS splits; otherwise it
+    # reads + classifies. MID_TOKENS bounds how wide a mid range gets so the tree
+    # stays depth-2 (root -> mids -> leaves). These MUST match the threshold quoted
+    # in the OOLONG decomposition directive (tasks/oolong/generators.py).
+    LEAF_TOKENS = 3000
+    MID_TOKENS = 9000
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens):
         self.doc = problem.document_tokens
@@ -602,21 +608,25 @@ class OolongOracle(ModelBackend):
     def _spans_in(self, a, b):
         return [s for s in self.spans if a <= s[0] < b]
 
-    def _leaf_ranges(self, a, b):
-        idxs = [i for i, s in enumerate(self.spans) if a <= s[0] < b]
-        out = []
-        for k in range(0, len(idxs), self.LEAF_EXAMPLES):
-            grp = idxs[k:k + self.LEAF_EXAMPLES]
-            out.append((self.spans[grp[0]][0], self.spans[grp[-1]][1]))
+    def _greedy_ranges(self, a, b, width):
+        """Partition [a,b] into example-aligned sub-ranges each <= `width` tokens
+        (one example may exceed it; then that range is just that example)."""
+        spans = self._spans_in(a, b)
+        out, cur = [], []
+        for s in spans:
+            if cur and (s[1] - cur[0][0]) > width:
+                out.append((cur[0][0], cur[-1][1]))
+                cur = []
+            cur.append(s)
+        if cur:
+            out.append((cur[0][0], cur[-1][1]))
         return out
 
+    def _leaf_ranges(self, a, b):
+        return self._greedy_ranges(a, b, self.LEAF_TOKENS)
+
     def _mid_ranges(self):
-        leaves = self._leaf_ranges(0, self.doc_len)
-        out = []
-        for k in range(0, len(leaves), self.MID_LEAVES):
-            grp = leaves[k:k + self.MID_LEAVES]
-            out.append((grp[0][0], grp[-1][1]))
-        return out
+        return self._greedy_ranges(0, self.doc_len, self.MID_TOKENS)
 
     # -- tally formatting / summing --------------------------------------------
 
@@ -673,11 +683,10 @@ class OolongOracle(ModelBackend):
         has_tool = any(m["role"] == "tool" for m in messages)
         rng = _RANGE_RE.search(user)
 
-        if rng:  # internal node: routed leaf-or-split by its load
+        if rng:  # internal node: leaf-or-split decided by token-range WIDTH
             a, b = int(rng.group(1)), int(rng.group(2))
-            spans_in = self._spans_in(a, b)
-            if len(spans_in) <= self.LEAF_EXAMPLES:
-                return self._leaf(a, b, spans_in, has_tool)
+            if (b - a) <= self.LEAF_TOKENS:
+                return self._leaf(a, b, self._spans_in(a, b), has_tool)
             return self._mid(a, b, has_tool, messages)
 
         return self._root(user, has_tool, messages)  # root: original question
