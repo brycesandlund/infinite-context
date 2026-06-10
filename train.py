@@ -96,10 +96,11 @@ TASK_MIXTURE: dict[str, float] = {
     "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
     "niah_multivalue": 1.0, "niah_multiquery": 1.0,
     "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
-    # OOLONG counting/aggregation — the new capability. Taught via the tree-reduce
-    # oracle (fine decomposition: no agent counts >~12 items). Weighted ~3x a single
-    # RULER task (~21% of the mix) so RL gets ample aggregation signal.
-    "oolong_counting": 3.0,
+    # OOLONG classify-and-aggregate — the new capability, all three families.
+    # Taught via the unified show-your-work oracle (each leaf classifies <=12
+    # enumerated examples; parents sum). 2.0 each => OOLONG ~35% of the mix
+    # (each family ~12%), substantial signal without swamping the RULER tasks.
+    "oolong_counting": 2.0, "oolong_user": 2.0, "oolong_temporal": 2.0,
 }
 DOC_SIZE_TOKENS = 15_000    # haystack length per problem
 MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to AGENT_CONTEXT so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
@@ -117,13 +118,16 @@ LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_check
 
 # After training, run this many rollouts on held-out problem seeds (no fwd/bwd)
 # and print each full tree. 0 = skip.
-EVAL_N_ROLLOUTS = 12       # 3 per EVAL_TASKS family for a less-noisy post-run readout
+EVAL_N_ROLLOUTS = 21       # 3 per EVAL_TASKS family for a less-noisy post-run readout
 EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 # Optional: force the eval rollouts onto specific task families instead of
 # sampling from TASK_MIXTURE. Cycles through the list if EVAL_N_ROLLOUTS exceeds
 # its length. Set to None to sample from TASK_MIXTURE like the training loop.
 # Handy for a smoke test where you want to SEE one of each family render+grade.
-EVAL_TASKS: list[str] | None = ["niah_single_2", "niah_multiquery", "vt", "cwe"]
+EVAL_TASKS: list[str] | None = [
+    "niah_single_2", "niah_multiquery", "vt", "cwe",
+    "oolong_counting", "oolong_user", "oolong_temporal",  # see OOLONG at end of RL
+]
 
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
 DEBUG_ONE_ROLLOUT = False

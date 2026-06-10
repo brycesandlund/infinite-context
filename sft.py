@@ -47,10 +47,13 @@ from tasks import list_tasks, load_pg_essays_text, make_problem
 # Tasks to generate warm-start traces over (default: all trainable RULER tasks).
 SFT_TASKS = [t for t in train.TASK_MIXTURE]
 N_PER_TASK = 20                 # gold traces per task (default)
-# Per-task overrides. oolong_counting traces are deep (root -> mids -> ~26 leaves
-# => ~33 agents, ~66 datums each), so fewer traces still yield plenty of datums;
-# this keeps counting from swamping the RULER pattern in the SFT pool.
-N_PER_TASK_OVERRIDE = {"oolong_counting": 8}
+# Per-task overrides. OOLONG traces are deep (root -> mids -> ~25 leaves => ~30
+# agents, and each show-your-work leaf turn is long), so fewer traces still yield
+# plenty of datums; this keeps the three OOLONG families from swamping the RULER
+# pattern in the SFT pool.
+N_PER_TASK_OVERRIDE = {
+    "oolong_counting": 8, "oolong_user": 8, "oolong_temporal": 8,
+}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 
 EPOCHS = 2                      # NLL saturates by epoch 1 (~0.04) on the scripted
