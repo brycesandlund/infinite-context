@@ -517,31 +517,50 @@ class OracleBackend(ModelBackend):
 
 
 # ---------------------------------------------------------------------------
-# Tree-reduce counting oracle (prototype) — fine decomposition so no agent
-# counts more than ~LEAF_EXAMPLES items, and every parent sums only a handful.
+# Unified OOLONG tree-reduce oracle — one "show-your-work" leaf serves all three
+# families (counting / user / temporal). Fine decomposition so no agent ever
+# classifies more than ~LEAF_EXAMPLES items, and every parent sums a handful.
+#
+# Leaf:  reads a small range, ENUMERATES each example (User / Date verbatim +
+#        classified Label — the show-your-work the model must learn), then
+#        reports a compact family-keyed tally.
+# Mid:   subdivides its range into leaves and sums their tallies.
+# Root:  splits the whole doc into mids, sums, and derives the answer.
+#
+# Routing carries NO hidden marker: a node decides leaf-vs-split purely from how
+# many example spans fall in the token range named in its (descriptive) subtask.
+# The root is the only agent whose user message has no "tokens A..B" range.
 # ---------------------------------------------------------------------------
 
 
-_ONODE_RE = re.compile(r"\[ONODE (mid|leaf) (\d+):(\d+)\]")
+_RANGE_RE = re.compile(r"tokens (\d+)\.\.(\d+)")
+_PAIR_SEP = " || "
 
 
 def _new_id() -> str:
     return f"call_{uuid.uuid4().hex[:8]}"
 
 
-class TreeCountOracle(ModelBackend):
-    """Demonstrates that aggregation never requires one agent to count 100.
+class OolongOracle(ModelBackend):
+    """One scripted oracle for all three OOLONG families (counting / user /
+    temporal). The leaf shows its work — it enumerates each example, reading the
+    User and Date verbatim from the line and committing a classified Label — then
+    reports a compact family-keyed tally. Parents only ever SUM a handful of
+    tallies, so no single agent classifies more than ~LEAF_EXAMPLES items.
 
-    Three levels (root depth0 -> mids depth1 -> leaves depth2):
-    - LEAF reads a small token range (~LEAF_EXAMPLES items) and counts them.
-    - MID sums the per-label counts of its few leaves.
-    - ROOT sums the few mid subtotals and answers.
+    Family key (what a leaf tallies by):
+      counting -> label            user -> 'user|label'       temporal -> 'date|label'
 
-    Every agent's arithmetic load stays <= ~max(LEAF_EXAMPLES, MID_LEAVES).
-    OOLONG counting family (uses metadata['example_spans']).
+    Root answer derivation: counting + user are derived from the tree-reduced
+    tallies (so the boxed answer verifies the recursive arithmetic). Temporal's
+    per-date arithmetic (most-frequent-date, before/after, per-month) is the
+    stage-2 follow-up; for now it falls back to gold — still a CORRECT trace,
+    since the oracle's leaf counts come from ground-truth labels, so the gold IS
+    the tree-reduced distribution. The unified show-your-work leaf + structure
+    (the classification-bottleneck fix) is identical across all three families.
     """
 
-    name = "tree_count_oracle"
+    name = "oolong_oracle"
     LEAF_EXAMPLES = 12
     MID_LEAVES = 5
 
@@ -551,6 +570,7 @@ class TreeCountOracle(ModelBackend):
         self.gold = list(problem.gold_answers)
         self.meta = dict(problem.metadata)
         self.spans = self.meta["example_spans"]  # (start,end,label,user,date), in order
+        self.family = self.meta.get("family", "counting")
         self.tok = tokenizer
         self.budget = budget
 
@@ -561,7 +581,26 @@ class TreeCountOracle(ModelBackend):
         )
         return total + 600
 
-    # -- range subdivision (by example boundaries) --------------------------
+    # -- family key -------------------------------------------------------------
+
+    def _key(self, span):
+        label, user, date = span[2], span[3], span[4]
+        if self.family == "user":
+            return f"{user}|{label}"
+        if self.family == "temporal":
+            return f"{date}|{label}"
+        return label
+
+    def _counts(self, spans):
+        ctr = Counter()
+        for s in spans:
+            ctr[self._key(s)] += 1
+        return ctr
+
+    # -- range subdivision (by example boundaries) ------------------------------
+
+    def _spans_in(self, a, b):
+        return [s for s in self.spans if a <= s[0] < b]
 
     def _leaf_ranges(self, a, b):
         idxs = [i for i, s in enumerate(self.spans) if a <= s[0] < b]
@@ -579,16 +618,11 @@ class TreeCountOracle(ModelBackend):
             out.append((grp[0][0], grp[-1][1]))
         return out
 
-    def _leaf_count(self, a, b):
-        ctr = Counter()
-        for s in self.spans:
-            if a <= s[0] < b:
-                ctr[s[2]] += 1
-        return ctr
+    # -- tally formatting / summing --------------------------------------------
 
     @staticmethod
     def _fmt(ctr):
-        return ", ".join(f"{l}:{c}" for l, c in ctr.items()) if ctr else "none"
+        return _PAIR_SEP.join(f"{k}:{c}" for k, c in ctr.items()) if ctr else "none"
 
     @staticmethod
     def _sum_reports(reports):
@@ -596,105 +630,200 @@ class TreeCountOracle(ModelBackend):
         for r in reports:
             if not r or r.strip().lower() == "none":
                 continue
-            for pair in r.split(","):
-                lbl, sep, c = pair.rpartition(":")
+            for pair in r.split(_PAIR_SEP):
+                key, sep, c = pair.rpartition(":")
                 if sep:
                     try:
-                        total[lbl.strip()] += int(c.strip())
+                        total[key.strip()] += int(c.strip())
                     except ValueError:
                         pass
         return total
 
+    # -- descriptive subtask (the child only sees THIS, not the root question) --
+
+    def _report_hint(self):
+        if self.family == "user":
+            return ("report your tally as 'userID|label:count' pairs joined by ' || ' "
+                    "(e.g. 17568|positive:2 || 40231|negative:1)")
+        if self.family == "temporal":
+            return ("report your tally as 'date|label:count' pairs joined by ' || ' "
+                    "(e.g. Dec 27, 2024|positive:2 || Dec 27, 2024|negative:1)")
+        return ("report your tally as 'label:count' pairs joined by ' || ' "
+                "(e.g. positive:7 || negative:5)")
+
+    def _subtask(self, a, b):
+        return (
+            f"Read the document range covering tokens {a}..{b}. Go through each example "
+            f"in that range one at a time: read its User and Date (both written verbatim "
+            f"in the line) and classify its Instance into one of the labels described in "
+            f"the task. Then {self._report_hint()}. If the range is large, first split it "
+            f"into smaller sub-ranges, delegate each to a subagent, and sum their tallies."
+        )
+
+    def _snippet(self, span):
+        raw = self.tok.decode(self.doc[span[0]:span[1]])
+        inst = raw.split("Instance:", 1)[-1].strip()
+        return inst[:48].replace("\n", " ")
+
+    # -- the policy -------------------------------------------------------------
+
     async def sample(self, messages, max_tokens):
         user = next((m["content"] for m in messages if m["role"] == "user"), "")
+        user = user if isinstance(user, str) else ""
         has_tool = any(m["role"] == "tool" for m in messages)
-        m = _ONODE_RE.search(user if isinstance(user, str) else "")
+        rng = _RANGE_RE.search(user)
 
-        if m and m.group(1) == "leaf":
-            a, b = int(m.group(2)), int(m.group(3))
-            if not has_tool:
-                return AssistantTurn(
-                    text=f"Reading my small range {a}..{b} to count its few items.",
-                    tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": a, "end": b})],
-                )
-            ctr = self._leaf_count(a, b)
+        if rng:  # internal node: routed leaf-or-split by its load
+            a, b = int(rng.group(1)), int(rng.group(2))
+            spans_in = self._spans_in(a, b)
+            if len(spans_in) <= self.LEAF_EXAMPLES:
+                return self._leaf(a, b, spans_in, has_tool)
+            return self._mid(a, b, has_tool, messages)
+
+        return self._root(user, has_tool, messages)  # root: original question
+
+    def _leaf(self, a, b, spans_in, has_tool):
+        if not has_tool:
             return AssistantTurn(
-                text=f"This range has {sum(ctr.values())} items: {self._fmt(ctr)}.\n\\boxed{{{self._fmt(ctr)}}}",
-                tool_calls=[],
+                text=f"My range {a}..{b} holds {len(spans_in)} examples — small enough to "
+                     f"classify directly. Reading it.",
+                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": a, "end": b})],
             )
+        lines = [
+            f'- User {s[3]}, {s[4]}: "{self._snippet(s)}…" -> {s[2]}'
+            for s in spans_in
+        ]
+        report = self._fmt(self._counts(spans_in))
+        body = "Classifying each example in my range:\n" + "\n".join(lines)
+        return AssistantTurn(
+            text=f"{body}\n\nTally for this range: {report}\n\\boxed{{{report}}}",
+            tool_calls=[],
+        )
 
-        if m and m.group(1) == "mid":
-            a, b = int(m.group(2)), int(m.group(3))
-            if not has_tool:
-                calls = [
-                    ToolCall(_new_id(), "spawn_subagent", {"subtask":
-                        f"[ONODE leaf {la}:{lb}] Read tokens {la}..{lb}, classify each "
-                        f"example, and report the per-label counts as 'label:count'."})
-                    for (la, lb) in self._leaf_ranges(a, b)
-                ]
-                return AssistantTurn(text="Subdividing my section into small leaf ranges.", tool_calls=calls)
-            total = self._sum_reports([mm["content"] for mm in messages if mm["role"] == "tool"])
-            return AssistantTurn(
-                text=f"Summing my leaves' counts -> {self._fmt(total)}.\n\\boxed{{{self._fmt(total)}}}",
-                tool_calls=[],
-            )
-
-        # ROOT
+    def _mid(self, a, b, has_tool, messages):
         if not has_tool:
             calls = [
-                ToolCall(_new_id(), "spawn_subagent", {"subtask":
-                    f"[ONODE mid {a}:{b}] Subdivide tokens {a}..{b} into small ranges, "
-                    f"count each, and report the per-label totals as 'label:count'."})
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(la, lb)})
+                for (la, lb) in self._leaf_ranges(a, b)
+            ]
+            return AssistantTurn(
+                text="My section is large; splitting it into smaller ranges so each "
+                     "subagent classifies only a few examples.",
+                tool_calls=calls,
+            )
+        total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
+        return AssistantTurn(
+            text=f"Summing my subagents' tallies -> {self._fmt(total)}.\n\\boxed{{{self._fmt(total)}}}",
+            tool_calls=[],
+        )
+
+    def _root(self, question, has_tool, messages):
+        if not has_tool:
+            calls = [
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(a, b)})
                 for (a, b) in self._mid_ranges()
             ]
             return AssistantTurn(
                 text="The document is large; I'll split it into sections, each of which "
-                     "subdivides further so every batch counted is small.",
+                     "subdivides further so every batch classified is small, then combine.",
                 tool_calls=calls,
             )
-        total = self._sum_reports([mm["content"] for mm in messages if mm["role"] == "tool"])
-        ans = self._answer_from_total(user if isinstance(user, str) else "", total)
+        total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
+        ans = self._derive(question, total)
+        if ans is None:
+            # Gold fallback: emit ONE acceptable answer (the grader accepts any
+            # gold by membership) — never join multiple, which a tie-case gold
+            # list would otherwise turn into a single unrecognized string.
+            ans = self.gold[0] if self.gold else ""
         return AssistantTurn(
             text=f"Combining section subtotals: {self._fmt(total)}.\n\\boxed{{{ans}}}",
             tool_calls=[],
         )
 
-    def _answer_from_total(self, q, total):
-        """Derive the answer to ANY OOLONG counting question from the tree-reduced
-        per-label totals — so the boxed answer verifies the recursive arithmetic,
-        not a gold leak. Mirrors CountingTasks' four question forms exactly."""
+    # -- answer derivation from the tree-reduced tally --------------------------
+
+    def _derive(self, q, total):
+        """Derive the answer from the tally; None -> fall back to gold."""
         if not total:
-            return ", ".join(self.gold)
-        # absolute count: "how many ... classified as label 'X'?"
+            return None
+        if self.family == "counting":
+            return self._derive_counting(q, total)
+        if self.family == "user":
+            return self._derive_user(q, total)
+        return None  # temporal: stage-2 (gold fallback)
+
+    @staticmethod
+    def _derive_counting(q, label_counts):
         m = re.search(r"classified as label '([^']+)'", q)
         if m:
-            return str(total.get(m.group(1), 0))
-        # A-vs-B comparison: "is label 'A' more common, less common, or the same
-        # frequency as label 'B'?" -> phrase matching CountingTasks' answer.
+            return str(label_counts.get(m.group(1), 0))
         m = re.search(r"is label '([^']+)' more common, less common, or the same "
                       r"frequency as label '([^']+)'", q)
         if m:
-            a, b = total.get(m.group(1), 0), total.get(m.group(2), 0)
+            a, b = label_counts.get(m.group(1), 0), label_counts.get(m.group(2), 0)
             return ("more common than" if a > b
                     else "less common than" if a < b else "same frequency as")
-        # most / least common label across the whole document.
         if "is the most common" in q:
-            return max(total, key=total.get)
+            return max(label_counts, key=label_counts.get)
         if "is the least common" in q:
-            return min(total, key=total.get)
-        return ", ".join(self.gold)
+            return min(label_counts, key=label_counts.get)
+        return None
+
+    def _derive_user(self, q, counts):
+        """User-family answers from per-'user|label' tallies."""
+        # Subset is "... user IDs 25049." or "... user IDs [25049, 30511]." — a
+        # bare id or a list. Grab the clause after "IDs" up to the sentence end
+        # and pull every numeric id out of it (tolerant of brackets/commas).
+        subset = None
+        ms = re.search(r"\bIDs ([\d,\s\[\]']+?)[.?]", q)
+        if ms:
+            ids = set(re.findall(r"\d+", ms.group(1)))
+            if ids:
+                subset = ids
+
+        def users_for_label(label):
+            out = Counter()
+            for k, c in counts.items():
+                u, _, lbl = k.partition("|")
+                if lbl == label and (subset is None or u in subset):
+                    out[u] += c
+            return out
+
+        def label_counts():
+            out = Counter()
+            for k, c in counts.items():
+                u, _, lbl = k.partition("|")
+                if subset is None or u in subset:
+                    out[lbl] += c
+            return out
+
+        # "which user has more instances with the label X: User A or User B?"
+        m = re.search(r"with the label (.+?): User (\S+) or User (\S+)\?", q)
+        if m:
+            label, a, b = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
+            uc = users_for_label(label)
+            return a if uc.get(a, 0) >= uc.get(b, 0) else b
+        # "...which user has the most instances with the label X?"
+        m = re.search(r"which user has the most instances with the label (.+?)\?", q)
+        if m:
+            uc = users_for_label(m.group(1).strip())
+            return max(uc, key=uc.get) if uc else None
+        # user-subset COUNTING question (quoted label, CountingTasks-style)
+        if "classified as label '" in q or "is the most common" in q or "is the least common" in q:
+            return self._derive_counting(q, label_counts())
+        return None
 
 
 def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):
     """Pick the scripted oracle that best decomposes this task.
 
-    `oolong_counting` uses the tree-reduce oracle (leaves count <= ~12 items,
-    parents sum a handful) so aggregation never requires one agent to tally the
-    whole document — the fine-decomposition pattern we want SFT to teach. Every
-    other task uses the standard split-and-delegate OracleBackend.
+    All three OOLONG families (counting / user / temporal) use the unified
+    OolongOracle: a show-your-work leaf (classify <= ~12 enumerated examples)
+    plus tree-reduce summing, so no agent ever classifies the whole document.
+    Every other task uses the standard split-and-delegate OracleBackend.
     """
-    if problem.task == "oolong_counting":
-        return TreeCountOracle(
+    if problem.task in ("oolong_counting", "oolong_user", "oolong_temporal"):
+        return OolongOracle(
             problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens
         )
     return OracleBackend(
