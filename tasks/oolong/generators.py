@@ -114,9 +114,14 @@ def make_oolong_problem(
     question = task.question.strip() + "\n\nPut your final answer inside \\boxed{}."
     gold = [str(a).strip() for a in task.answer]
     is_numeric = task.answer_type == ANSWER_TYPE.NUMERIC
-    # EVAL grader = OOLONG-official: 0.75^|err| numeric for counts; exact
-    # membership (their split(":")[-1] parse) for categorical. Leaderboard-faithful.
-    grading_mode = "numeric" if is_numeric else "oolong_exact"
+    is_comparison = task.answer_type == ANSWER_TYPE.COMPARISON
+    # EVAL grader = OOLONG-official, by answer type: 0.75^|err| numeric for counts;
+    # word-boundary containment of the gold phrase for COMPARISON ("A is [X] B",
+    # gold is only [X] — exact can't match); exact membership (split(":")[-1]) for
+    # categorical / user / date. Leaderboard-faithful per the question format.
+    grading_mode = (
+        "numeric" if is_numeric else "oolong_compare" if is_comparison else "oolong_exact"
+    )
     # TRAINING REWARD = softer/denser: numeric stays partial-credit; categorical
     # uses whole-word membership (oolong_soft) so RL gets gradient toward the
     # answer even when the format is off, WITHOUT substring false-positives

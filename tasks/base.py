@@ -18,7 +18,8 @@ from typing import Literal
 
 
 GradingMode = Literal[
-    "exact", "set", "numeric", "ruler_all", "ruler_part", "oolong_exact", "oolong_soft"
+    "exact", "set", "numeric", "ruler_all", "ruler_part",
+    "oolong_exact", "oolong_compare", "oolong_soft",
 ]
 
 
@@ -89,6 +90,16 @@ def _extract_number(s: str) -> float | None:
         return None
 
 
+# Closed sets of OOLONG comparison phrases (the answer space for COMPARISON
+# questions), used to parse the candidate phrase out of an "A is [X] B" answer.
+# Counting A-vs-B uses the "...than/as" forms; temporal before/after uses the
+# shorter forms. A gold belongs to exactly one set, which selects the parse set.
+_OOLONG_CMP_SETS = [
+    ["more common than", "less common than", "same frequency as"],   # counting
+    ["more common", "less common", "the same frequency"],            # temporal
+]
+
+
 # ---------------------------------------------------------------------------
 # Grader
 # ---------------------------------------------------------------------------
@@ -142,8 +153,30 @@ def grade_answer(
         # OOLONG's official categorical scoring: parse the candidate after the
         # last ':' (their `attempted_parse = out.split(":")[-1]`), then EXACT
         # membership against the acceptable answers. Faithful to OOLONG's metric.
+        # Used for CATEGORICAL / USER / DATE answers (gold is a single token).
         cand = normalize_answer(extracted.split(":")[-1])
         return 1.0 if cand in {normalize_answer(g) for g in gold_answers} else 0.0
+
+    if mode == "oolong_compare":
+        # OOLONG comparison scoring is EXACT MATCH (per the paper), but on the
+        # PARSED comparison phrase, not the whole "A is [X] B" string. Faithful to
+        # the paper's parse rule ("the last substring that appears to match the
+        # desired answer type") for a closed phrase set: take the LAST comparison
+        # phrase that occurs in the output, then require it to equal the gold.
+        cand = normalize_answer(extracted)
+        golds = {normalize_answer(g) for g in gold_answers}
+        phrase_set = next(
+            (s for s in _OOLONG_CMP_SETS if any(normalize_answer(p) in golds for p in s)),
+            None,
+        )
+        if phrase_set is None:  # not a known comparison gold — fall back to parsed-tail exact
+            return 1.0 if normalize_answer(extracted.split(":")[-1]) in golds else 0.0
+        best_pos, best = -1, None
+        for p in phrase_set:
+            pos = cand.rfind(normalize_answer(p))
+            if pos > best_pos:
+                best_pos, best = pos, normalize_answer(p)
+        return 1.0 if best is not None and best in golds else 0.0
 
     if mode == "oolong_soft":
         # Softer OOLONG *training-reward* grader: credit the gold appearing as a
