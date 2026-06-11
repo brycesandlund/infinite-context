@@ -35,7 +35,7 @@ import train  # single source of truth for budget/recursion/data constants
 from eval.agent import AgentNode, flatten, run_agent
 from eval.backends import APIBackend, ModelBackend, TinkerBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
-from tasks.oolong.generators import _DATASETS as OOLONG_DATASETS, make_oolong_problem
+from tasks.oolong import make_oolong_problem, oolong_spec
 
 
 # ---------------------------------------------------------------------------
@@ -57,22 +57,28 @@ EVAL_TASKS = os.environ.get(
     "EVAL_TASKS", "oolong_counting,oolong_user,oolong_temporal"
 ).split(",")
 N_PER_TASK = int(os.environ.get("N_PER_TASK", "5"))
-SEED_OFFSET = 2_000_000          # held-out seeds, distinct from train/eval-in-train
+SEED_OFFSET = 2_000_000          # RULER held-out seeds (OOLONG uses OOLONG_BASE below)
+# OOLONG problems are indexed by the SHARED oolong_spec(task, idx, base). Eval
+# defaults to a held-out base; set OOLONG_BASE to SFT's DATA_SEED (500000) to run
+# the EXACT same problems SFT trained on.
+OOLONG_BASE = int(os.environ.get("OOLONG_BASE", "2000000"))
+# Only keep problems whose question type is in this set (csv); empty = all. Lets
+# us target the HARD exact-count questions, e.g. QTYPE=numeric_one_class,represented_n_times.
+QTYPE = set(filter(None, os.environ.get("QTYPE", "").split(",")))
 CONCURRENCY = 4                  # max parent rollouts in flight (mind API rate limits)
 VERBOSE = os.environ.get("VERBOSE", "0") == "1"   # also dump trees to stdout (all are saved regardless)
-# EVERY rollout (full tree) is persisted here — OUT.jsonl (structured) + OUT.txt
-# (readable). No more sampling a handful and discarding the rest.
+# EVERY rollout (full tree) is persisted here — OUT.jsonl (structured) + OUT.txt.
 OUT = os.environ.get("OUT", "/tmp/eval_rollouts")
-# Round-robin the source dataset across OOLONG rollouts so a small run still
-# spreads over the 10 datasets (instead of make_problem's per-seed random pick).
-PIN_OOLONG_DATASETS = os.environ.get("PIN_OOLONG_DATASETS", "1") == "1"
 
 
-# Pull the shared harness constants from train.py so they can't drift.
-AGENT_CONTEXT = train.AGENT_CONTEXT
+# Pull the shared harness constants from train.py so they can't drift. AGENT_CONTEXT
+# and MAX_CHUNK_TOKENS are env-overridable so we can probe a backend's RAW capability
+# at a task by lifting the budget (e.g. give an API model 50k so it can hold the whole
+# doc and just answer — isolating "can it do the task" from "can it operate the 10k harness").
+AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", train.AGENT_CONTEXT))
+MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", train.MAX_CHUNK_TOKENS))
 MAX_DEPTH = train.MAX_DEPTH
 MAX_TURNS = train.MAX_TURNS
-MAX_CHUNK_TOKENS = train.MAX_CHUNK_TOKENS
 DOC_SIZE_TOKENS = train.DOC_SIZE_TOKENS
 MODEL_NAME = train.MODEL_NAME
 RENDERER_NAME = train.RENDERER_NAME
@@ -212,22 +218,32 @@ async def main() -> None:
     backend = await _build_backend(tokenizer)
     print(f"temp={TEMPERATURE} | out={OUT}.{{jsonl,txt}}")
 
-    # Build (task, problem) work items. Seeds are a deterministic function of
-    # (task index, sample index) — NOT Python's hash(), which randomizes string
-    # hashes per process and would give each backend different problems. This
-    # keeps the problem set identical across backends for a paired comparison.
-    # OOLONG tasks round-robin the source dataset for even coverage in small runs.
-    def _make(task: str, i: int, seed: int):
-        if PIN_OOLONG_DATASETS and task.startswith("oolong"):
-            ds = OOLONG_DATASETS[i % len(OOLONG_DATASETS)]
-            return make_oolong_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=ds)
-        return make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
+    # Build (task, seed, problem) work items deterministically. OOLONG problems
+    # come from the SHARED oolong_spec(task, idx, OOLONG_BASE) — so a given
+    # (base, task, idx) is the IDENTICAL problem in SFT and eval. RULER keeps its
+    # own deterministic seed scheme. With a QTYPE filter we oversample idx and keep
+    # only matching question types (e.g. the hard exact-count ones).
+    def _make(task: str, ti: int, idx: int):
+        if task.startswith("oolong"):
+            seed, ds = oolong_spec(task, idx, OOLONG_BASE)
+            return seed, make_oolong_problem(
+                task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=ds)
+        seed = SEED_OFFSET + ti * 1000 + idx
+        return seed, make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
 
     work: list[tuple[str, int, object]] = []
     for ti, task in enumerate(EVAL_TASKS):
-        for i in range(N_PER_TASK):
-            seed = SEED_OFFSET + ti * 1000 + i
-            work.append((task, seed, _make(task, i, seed)))
+        collected, idx = 0, 0
+        while collected < N_PER_TASK and idx < 100_000:
+            seed, problem = _make(task, ti, idx)
+            idx += 1
+            if QTYPE and problem.metadata.get("task_type") not in QTYPE:
+                continue
+            work.append((task, seed, problem))
+            collected += 1
+        if collected < N_PER_TASK:
+            print(f"WARNING: only found {collected}/{N_PER_TASK} {task} problems "
+                  f"matching QTYPE={QTYPE} in {idx} tries")
 
     sem = asyncio.Semaphore(CONCURRENCY)
 

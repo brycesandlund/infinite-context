@@ -43,6 +43,22 @@ OOLONG_TASKS = {
 
 _DATASETS = list(SUPPORTED_DATASETS.keys())
 
+# Deterministic problem indexing shared by SFT and eval, so a given (base, task,
+# idx) is the IDENTICAL problem in both — letting us train and probe on the same
+# questions. The dataset round-robins for even coverage; the per-task offset keeps
+# tasks from colliding; `base` separates train vs held-out draws.
+_OOLONG_TASK_ORD = {"oolong_counting": 0, "oolong_user": 1, "oolong_temporal": 2}
+
+
+def oolong_spec(task: str, idx: int, base: int) -> tuple[int, str]:
+    """(seed, dataset) for OOLONG problem `idx` of `task` under seed `base`.
+    Same (base, task, idx) -> same problem everywhere. Use a different `base`
+    to draw a disjoint set (e.g. held-out eval vs SFT train)."""
+    if task not in _OOLONG_TASK_ORD:
+        raise ValueError(f"Not an OOLONG task: {task!r}")
+    seed = base + _OOLONG_TASK_ORD[task] * 100_000 + idx
+    return seed, _DATASETS[idx % len(_DATASETS)]
+
 
 def _build_tasks(family, true_counts, final_data):
     if family == "counting":

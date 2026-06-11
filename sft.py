@@ -39,7 +39,8 @@ import train  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
 from eval.backends import make_oracle, neutral_to_cookbook
 from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
-from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
+from tasks import grade_answer, list_tasks, load_pg_essays_text, resolve_eval_grading_mode
+from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministic spec
 
 
 # ---------------------------------------------------------------------------
@@ -95,10 +96,14 @@ MAX_TURNS = train.MAX_TURNS
 
 async def _gen_traces(corpus_tokens, tokenizer):
     coros, meta = [], []
-    for ti, task in enumerate(SFT_TASKS):
+    for task in SFT_TASKS:
         for i in range(N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)):
-            seed = DATA_SEED + ti * 1000 + i
-            problem = make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
+            # Shared deterministic spec (same (base, task, idx) -> same problem as
+            # eval), so we can train and probe on identical questions.
+            seed, dataset = oolong_spec(task, i, DATA_SEED)
+            problem = make_oolong_problem(
+                task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=dataset
+            )
             oracle = make_oracle(
                 problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
@@ -116,7 +121,7 @@ async def _gen_traces(corpus_tokens, tokenizer):
                     max_turns=MAX_TURNS,
                 )
             )
-            meta.append((task, problem))
+            meta.append((task, seed, problem))
     nodes = await asyncio.gather(*coros)
     return list(zip(meta, nodes))
 
@@ -181,11 +186,11 @@ async def main() -> None:
     # clipped) and grades the oracle's answer as a sanity check that it solved.
     if PRINT_TRACES:
         with open(f"{TRACE_OUT}.txt", "w") as tf:
-            for (task, problem), node in traces:
+            for (task, seed, problem), node in traces:
                 sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
                 ds = problem.metadata.get("dataset")
                 qt = problem.metadata.get("task_type")
-                hdr = _rollout_header(task, "-", ds, qt, problem.question,
+                hdr = _rollout_header(task, seed, ds, qt, problem.question,
                                       problem.gold_answers, node.answer, node.termination, sc)
                 tf.write(hdr)
                 tf.write(_tree_to_text(node))
@@ -194,7 +199,7 @@ async def main() -> None:
     # Convert to datums; also sanity-check oracle traces actually solved the task.
     datums: list[tinker.Datum] = []
     n_agents = 0
-    for (_task, _problem), node in traces:
+    for (_task, _seed, _problem), node in traces:
         for agent in flatten(node):
             n_agents += 1
             datums.extend(_node_to_datums(agent, renderer, tool_specs))
