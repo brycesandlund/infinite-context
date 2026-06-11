@@ -24,6 +24,7 @@ Run: uv run python sft.py
 from __future__ import annotations
 
 import asyncio
+import os
 import random
 from pathlib import Path
 
@@ -37,7 +38,8 @@ import metrics  # optional W&B logging (no-op unless WANDB=1)
 import train  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
 from eval.backends import make_oracle, neutral_to_cookbook
-from tasks import list_tasks, load_pg_essays_text, make_problem
+from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
+from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
 
 
 # ---------------------------------------------------------------------------
@@ -51,7 +53,7 @@ from tasks import list_tasks, load_pg_essays_text, make_problem
 # here, RULER becomes a separate, later concern. Decoupled from train.TASK_MIXTURE
 # on purpose (that's the RL mixture).
 SFT_TASKS = ["oolong_counting", "oolong_user", "oolong_temporal"]
-N_PER_TASK = 30                 # generous coverage (~3 per dataset x 10 datasets)
+N_PER_TASK = int(os.environ.get("N_PER_TASK", "30"))  # generous coverage (~3/dataset x 10)
 N_PER_TASK_OVERRIDE: dict[str, int] = {}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 
@@ -63,6 +65,17 @@ LEARNING_RATE = 1e-5
 
 SAVE_CHECKPOINT_NAME = "sft_oolong"   # OOLONG-only warm-start (distinct from combined)
 LAST_SFT_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_sft_checkpoint.txt"
+
+# Debug toggles (env-overridable):
+#   TRAIN=0          -> generate (+optionally print) oracle traces, but SKIP the
+#                       Tinker training/save. Pure-CPU dry run to inspect the data.
+#   PRINT_TRACES=1   -> print every oracle trace we build SFT datums FROM, using
+#                       the eval tree renderer (full text, read_chunk clipped),
+#                       and save them to $TRACE_OUT.txt. This is the ground-truth
+#                       behaviour we're teaching — check it's actually clean.
+TRAIN = os.environ.get("TRAIN", "1") == "1"
+PRINT_TRACES = os.environ.get("PRINT_TRACES", "0") == "1"
+TRACE_OUT = os.environ.get("TRACE_OUT", "/tmp/sft_traces")
 
 # Shared with training / eval (single source of truth).
 MODEL_NAME = train.MODEL_NAME
@@ -163,6 +176,21 @@ async def main() -> None:
     print("Generating oracle traces (scripted, CPU)...")
     traces = await _gen_traces(corpus_tokens, tokenizer)
 
+    # Optionally dump every oracle trace we train FROM — the ground-truth
+    # behaviour being taught. Uses the eval tree renderer (full text, read_chunk
+    # clipped) and grades the oracle's answer as a sanity check that it solved.
+    if PRINT_TRACES:
+        with open(f"{TRACE_OUT}.txt", "w") as tf:
+            for (task, problem), node in traces:
+                sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
+                ds = problem.metadata.get("dataset")
+                qt = problem.metadata.get("task_type")
+                hdr = _rollout_header(task, "-", ds, qt, problem.question,
+                                      problem.gold_answers, node.answer, node.termination, sc)
+                tf.write(hdr)
+                tf.write(_tree_to_text(node))
+        print(f"Printed {len(traces)} oracle traces -> {TRACE_OUT}.txt")
+
     # Convert to datums; also sanity-check oracle traces actually solved the task.
     datums: list[tinker.Datum] = []
     n_agents = 0
@@ -173,6 +201,11 @@ async def main() -> None:
     print(f"Traces: {len(traces)} | agents (root+subagents): {n_agents} | datums: {len(datums)}")
     if not datums:
         raise SystemExit("No datums produced — check oracle trace generation.")
+
+    if not TRAIN:
+        print("TRAIN=0: skipping Tinker training/save (dry run). "
+              f"{'Traces at ' + TRACE_OUT + '.txt' if PRINT_TRACES else 'Set PRINT_TRACES=1 to inspect traces.'}")
+        return
 
     # Training client.
     service_client = tinker.ServiceClient()
