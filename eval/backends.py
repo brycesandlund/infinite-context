@@ -593,6 +593,26 @@ class OolongOracle(ModelBackend):
         # transferable instinct "extract what's asked" AND keeps the leaf output
         # tiny (the 6-label enumeration was what overflowed).
         self.targets = self._parse_targets(problem.question)
+        # User family is ALSO adaptive on the user axis: an "A or B" question needs
+        # just those two users, a user-subset question just that subset — not all
+        # ~40 users. None = every user (most/2nd-most-often need the full ranking).
+        self.user_targets = (
+            self._parse_user_targets(problem.question) if self.family == "user" else None
+        )
+
+    @staticmethod
+    def _parse_user_targets(q: str):
+        # "...: User A or User B?" -> just those two users
+        m = re.search(r"User (\S+?) or User (\S+?)[?.]", q)
+        if m:
+            return frozenset({m.group(1), m.group(2)})
+        # "...user IDs [a, b, ...]" / "user IDs N" subset -> those users
+        m = re.search(r"user(?:s with)? IDs \[?([\d,\s]+?)\]?\s*[.?]", q)
+        if m:
+            ids = frozenset(re.findall(r"\d+", m.group(1)))
+            if ids:
+                return ids
+        return None  # most/second-most-often -> need the full per-user ranking
 
     @staticmethod
     def _parse_targets(q: str):
@@ -633,8 +653,14 @@ class OolongOracle(ModelBackend):
         return label
 
     def _relevant(self, span):
-        """Does this example's label matter for the question? (targets None -> all)."""
-        return self.targets is None or span[2] in self.targets
+        """Does this example matter for the question? Filters on BOTH the label
+        axis (targets) and, for the user family, the user axis (user_targets).
+        None on an axis means "all" on that axis."""
+        if self.targets is not None and span[2] not in self.targets:
+            return False
+        if self.user_targets is not None and str(span[3]) not in self.user_targets:
+            return False
+        return True
 
     def _counts(self, spans):
         ctr = Counter()
@@ -711,11 +737,15 @@ class OolongOracle(ModelBackend):
             tnames = ", ".join(f"'{t}'" for t in sorted(self.targets))
             scope = f"decide whether its Instance should be classified as one of {tnames}"
             countwhat = f"count ONLY {tnames} (ignore the other labels)"
+        userscope = ""
+        if self.user_targets is not None:
+            unames = ", ".join(sorted(self.user_targets))
+            userscope = f" Only consider examples from users {unames}; skip all other users."
         return (
             f"Read the document range covering tokens {a}..{b}. Go through each example one "
-            f"at a time: read its User and Date (verbatim in the line) and {scope}; {countwhat}. "
-            f"Then report your tally as '{self._key_fmt()}' pairs joined by ' || '. If the range "
-            f"is large, first split it into smaller sub-ranges, delegate each, and sum the tallies."
+            f"at a time: read its User and Date (verbatim in the line) and {scope}; {countwhat}."
+            f"{userscope} Then report your tally as '{self._key_fmt()}' pairs joined by ' || '. "
+            f"If the range is large, first split it into smaller sub-ranges, delegate each, and sum."
         )
 
     def _snippet(self, span):
