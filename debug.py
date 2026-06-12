@@ -3,13 +3,14 @@
 Kept separate so the main training loop stays uncluttered. Functions here
 accept rolled-out `ParentRollout` / `RolloutNode` instances and inspect them —
 they never construct policy state themselves.
+
+Tree PRINTING lives in eval/render.py (single source of truth shared with the
+eval driver and SFT traces); this module only inspects datum/trajectory shapes.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
-import re
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
@@ -18,14 +19,11 @@ from tinker_cookbook.renderers.base import Renderer
 from tinker_cookbook.rl.data_processing import trajectory_to_data
 from tinker_cookbook.rl.types import Trajectory
 
+from eval.render import rollout_to_agent_node, tree_to_text
+
 if TYPE_CHECKING:
-    from eval.agent import AgentNode
     from tasks import Problem
-    from train import ParentRollout, RolloutNode
-
-
-def _action_token_count(traj: Trajectory) -> int:
-    return sum(len(t.ac.tokens) for t in traj.transitions)
+    from train import ParentRollout
 
 
 def _trajectory_total_reward(traj: Trajectory) -> float:
@@ -42,156 +40,6 @@ def _summarize_datum(datum: tinker.Datum) -> dict[str, int]:
     return out
 
 
-def _flatten_ob_tokens(ob) -> list[int]:
-    """Pull all token ids out of a tinker.ModelInput, ignoring non-text chunks."""
-    out: list[int] = []
-    for chunk in ob.chunks:
-        toks = getattr(chunk, "tokens", None)
-        if toks is not None:
-            out.extend(toks)
-    return out
-
-
-def _full_transcript_text(traj: Trajectory, tokenizer) -> str:
-    """Reconstruct the full conversation text (system + user + every assistant
-    turn + every tool result) by decoding the trajectory's final observation
-    plus the final action. Includes the renderer's role/control tokens
-    (`<|im_start|>...`, `<|im_end|>`, `<tool_call>`, etc.) verbatim."""
-    if not traj.transitions:
-        return ""
-    ob_tokens = _flatten_ob_tokens(traj.transitions[-1].ob)
-    ac_tokens = list(traj.transitions[-1].ac.tokens)
-    return tokenizer.decode(ob_tokens + ac_tokens)
-
-
-# ---------------------------------------------------------------------------
-# RolloutNode (token trajectories) -> AgentNode (neutral messages), so RL
-# rollouts render through the SAME eval/render.py code as eval + SFT traces.
-# ---------------------------------------------------------------------------
-
-_BLOCK_RE = re.compile(r"<\|im_start\|>(\w+)\n(.*?)(?:<\|im_end\|>|$)", re.S)
-_TOOL_RESP_RE = re.compile(r"<tool_response>\n?(.*?)\n?</tool_response>", re.S)
-
-
-def _neutral_tool_calls(cb_tool_calls):
-    from eval.backends import ToolCall as NeutralToolCall
-
-    out = []
-    for tc in cb_tool_calls or []:
-        try:
-            args = json.loads(tc.function.arguments or "{}")
-        except (json.JSONDecodeError, TypeError):
-            args = {"raw": tc.function.arguments}
-        out.append(NeutralToolCall(id=tc.id or "", name=tc.function.name, arguments=args))
-    return out
-
-
-def rollout_to_agent_node(node: "RolloutNode", tokenizer, renderer) -> "AgentNode":
-    """Convert an RL rollout tree into the neutral AgentNode shape used by the
-    eval driver. Assistant turns are recovered with the renderer's own
-    parse_response (exact tool-call parsing); tool results are recovered from the
-    token DELTA between consecutive observations (a conversation only grows by
-    [prev action][tool results][next generation prompt])."""
-    from eval.agent import AgentNode
-
-    traj = node.trajectory
-    messages: list[dict] = []
-
-    # System + first user message from the first observation.
-    first_ob = _flatten_ob_tokens(traj.transitions[0].ob) if traj.transitions else []
-    for role, content in _BLOCK_RE.findall(tokenizer.decode(first_ob)):
-        if role in ("system", "user"):
-            messages.append({"role": role, "content": content.strip()})
-
-    prev_tokens = list(first_ob)
-    for i, tr in enumerate(traj.transitions):
-        ac_tokens = list(tr.ac.tokens)
-        try:
-            parsed, _ = renderer.parse_response(ac_tokens)
-        except Exception:
-            parsed = {"content": tokenizer.decode(ac_tokens)}
-        from tinker_cookbook.renderers import get_text_content
-
-        tool_calls = _neutral_tool_calls(parsed.get("tool_calls"))
-        messages.append({
-            "role": "assistant",
-            "content": get_text_content(parsed) or "",
-            "tool_calls": tool_calls,
-        })
-        prev_tokens += ac_tokens
-        if i + 1 < len(traj.transitions):
-            next_ob = _flatten_ob_tokens(traj.transitions[i + 1].ob)
-            delta = tokenizer.decode(next_ob[len(prev_tokens):])
-            # Pair tool responses positionally with this turn's tool calls.
-            for j, resp in enumerate(_TOOL_RESP_RE.findall(delta)):
-                name = tool_calls[j].name if j < len(tool_calls) else "tool"
-                messages.append({"role": "tool", "name": name, "content": resp})
-            prev_tokens = list(next_ob)
-
-    tm = getattr(traj, "metrics", None) or {}
-    if node.answer is not None:
-        termination = "answered"
-    elif tm.get("context_overflow") or tm.get("max_tokens_reached"):
-        termination = "overflow"
-    else:
-        termination = "stopped_no_answer"
-
-    return AgentNode(
-        depth=node.depth,
-        subtask=node.subtask,
-        answer=node.answer,
-        n_turns=len(traj.transitions),
-        termination=termination,
-        messages=messages,
-        children=[rollout_to_agent_node(c, tokenizer, renderer) for c in node.children],
-    )
-
-
-def print_rollout_tree_verbose(
-    node: "RolloutNode", tokenizer, indent: int = 0
-) -> None:
-    """Dump the full transcript of each agent in the tree (parent first, then
-    children depth-first). Each agent block contains its own system prompt,
-    user message, every assistant turn, and every tool result. Subagent calls
-    are NOT inlined into the parent's print — they appear as their own block,
-    indented one level deeper."""
-    prefix = "  " * indent
-    reward = _trajectory_total_reward(node.trajectory)
-    n_turns = len(node.trajectory.transitions)
-    bar = "=" * max(8, 76 - len(prefix))
-    print(f"{prefix}{bar}")
-    print(
-        f"{prefix}[depth={node.depth}] turns={n_turns} "
-        f"reward={reward:.3f} answer={node.answer!r}"
-    )
-    if node.subtask:
-        print(f"{prefix}SUBTASK (from parent): {node.subtask}")
-    print(f"{prefix}{bar}")
-    transcript = _full_transcript_text(node.trajectory, tokenizer)
-    for line in transcript.splitlines():
-        print(f"{prefix}{line}")
-    print()
-    for c in node.children:
-        print_rollout_tree_verbose(c, tokenizer, indent + 1)
-
-
-def print_rollout_tree(node: "RolloutNode", indent: int = 0) -> None:
-    prefix = "  " * indent
-    n_turns = len(node.trajectory.transitions)
-    n_action_tokens = _action_token_count(node.trajectory)
-    reward = _trajectory_total_reward(node.trajectory)
-    print(
-        f"{prefix}- depth={node.depth} turns={n_turns} "
-        f"action_tokens={n_action_tokens} reward={reward:.3f} "
-        f"answer={node.answer!r}"
-    )
-    if node.subtask:
-        sub_short = node.subtask if len(node.subtask) <= 100 else node.subtask[:97] + "..."
-        print(f"{prefix}    subtask: {sub_short!r}")
-    for c in node.children:
-        print_rollout_tree(c, indent + 1)
-
-
 async def debug_run_rollouts_niah(
     n_rollouts: int,
     sampling_client: tinker.SamplingClient,
@@ -200,11 +48,11 @@ async def debug_run_rollouts_niah(
     problems: list["Problem"],
     rollout_fn: Callable[..., Awaitable["ParentRollout"]],
 ) -> None:
-    """Run `n_rollouts` NIAH rollouts concurrently. Print every tree + datum
-    shapes. No training."""
+    """Run `n_rollouts` rollouts concurrently. Print every tree (via the shared
+    eval/render.py printer) + datum shapes. No training."""
     n = min(n_rollouts, len(problems))
     print("=" * 72)
-    print(f"DEBUG: {n} NIAH rollouts, concurrent")
+    print(f"DEBUG: {n} rollouts, concurrent")
     print("=" * 72)
     coros = [
         rollout_fn(problems[i], sampling_client, tokenizer, renderer) for i in range(n)
@@ -234,7 +82,7 @@ async def debug_run_rollouts_niah(
         )
         print(f"Question: {q_short}")
         print("Tree:")
-        print_rollout_tree(result.root)
+        print(tree_to_text(rollout_to_agent_node(result.root, tokenizer, renderer)))
 
         total_datums = 0
         for node in nodes:

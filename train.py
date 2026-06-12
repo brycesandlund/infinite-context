@@ -712,8 +712,7 @@ async def main() -> None:
         # the policy actually did in the steps where behavior shifted. Set
         # ROLLOUT_DUMP="" to disable.
         if ROLLOUT_DUMP:
-            from debug import rollout_to_agent_node
-            from eval.render import rollout_header, tree_to_text
+            from eval.render import rollout_header, rollout_to_agent_node, tree_to_text
 
             with open(ROLLOUT_DUMP, "a") as f:
                 for ri, (r, adv, rew) in enumerate(zip(parent_results, advantages, rewards)):
@@ -730,11 +729,11 @@ async def main() -> None:
                     f.write(tree_to_text(rollout_to_agent_node(r.root, tokenizer, renderer)))
 
         if DEBUG_PRINT_TREE_EACH_STEP:
-            from debug import print_rollout_tree
+            from eval.render import print_tree, rollout_to_agent_node
 
             for ri, parent_result in enumerate(parent_results):
                 print(f"--- rollout {ri} (advantage={advantages[ri]:+.3f}) ---")
-                print_rollout_tree(parent_result.root)
+                print_tree(rollout_to_agent_node(parent_result.root, tokenizer, renderer))
 
     # ------------------------------------------------------------------ #
     # Save checkpoint (skipped on EVAL_ONLY to avoid overwriting with    #
@@ -757,8 +756,6 @@ async def main() -> None:
     # assistant turn + every tool result).                               #
     # ------------------------------------------------------------------ #
     if EVAL_N_ROLLOUTS > 0:
-        from debug import print_rollout_tree_verbose
-
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
         if EVAL_TASKS:
             # Force one problem per listed task (cycling if N > len), so the
@@ -809,8 +806,7 @@ async def main() -> None:
             print("#" * 72)
             # Render through the SAME tree printer as eval/run.py + sft.py, so a
             # rollout reads identically no matter which pipeline produced it.
-            from debug import rollout_to_agent_node
-            from eval.render import tree_to_text
+            from eval.render import rollout_to_agent_node, tree_to_text
 
             print(tree_to_text(rollout_to_agent_node(result.root, tokenizer, renderer)))
         print()
