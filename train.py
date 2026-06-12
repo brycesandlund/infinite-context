@@ -628,16 +628,20 @@ async def main() -> None:
             await fwd_bwd_future.result_async()
             await optim_future.result_async()
 
-        # Per-task aggregation: mean score (the grader's float output) per task
-        # name. Lets us see at a glance whether the mixture is balanced and
-        # which families the policy is improving on.
+        # Per-task aggregation of REWARD (the gated quantity the policy is actually
+        # trained on — grounded success = score, any failure = -0.1), so by_task
+        # tracks legitimate RL progress per family. Raw scores still appear as
+        # mean_score; a score>>reward gap (or low grounded:) = guessing creep.
+        # per_task_scores (raw grader) is kept for the W&B score/<task> curves.
         per_task_scores: dict[str, list[float]] = {}
-        for r in parent_results:
+        per_task_rewards: dict[str, list[float]] = {}
+        for r, rew in zip(parent_results, rewards):
             score = grade_answer(r.root.answer, r.gold_answers, resolve_grading_mode(r.problem))
             per_task_scores.setdefault(r.task, []).append(score)
+            per_task_rewards.setdefault(r.task, []).append(rew)
         per_task_summary = ", ".join(
             f"{t}={sum(s) / len(s):.2f}({len(s)})"
-            for t, s in sorted(per_task_scores.items())
+            for t, s in sorted(per_task_rewards.items())
         )
         mean_reward = sum(rewards) / len(rewards)
         mean_score = sum(
@@ -674,6 +678,7 @@ async def main() -> None:
                 "reward/mean": mean_reward,
                 "score/mean": mean_score,
                 **{f"score/{t}": sum(s) / len(s) for t, s in per_task_scores.items()},
+                **{f"reward/{t}": sum(s) / len(s) for t, s in per_task_rewards.items()},
                 "train/frac_nonzero_adv": sum(1 for a in advantages if abs(a) > 1e-9)
                 / len(advantages),
                 "train/datums": len(all_datums),
