@@ -570,13 +570,13 @@ class OolongOracle(ModelBackend):
     name = "oolong_oracle"
     # Split-vs-read is decided by TOKEN-RANGE WIDTH (not example count), because a
     # token range is the one thing the policy CAN compute from its subtask without
-    # reading. A node whose range is wider than LEAF_TOKENS splits; otherwise it
-    # reads + classifies. MID_TOKENS bounds how wide a mid range gets so the tree
-    # stays depth-2 (root -> mids -> leaves). LEAF_TOKENS is kept small so a leaf's
-    # read + classify-enumeration fits even a tight budget (a dense ~2000-tok chunk
-    # is ~45 short examples; the terse counting lines keep the output well under 1k).
+    # reading. A leaf is a fixed LEAF_TOKENS window read in one read_chunk; anything
+    # wider splits. The tree is sqrt-balanced (root -> ~sqrt(L) mids -> ~sqrt(L)
+    # leaves; see _mid_ranges), so it stays depth-2 across a wide range of doc sizes.
+    # LEAF_TOKENS is kept small so a leaf's read + classify-enumeration fits even a
+    # tight budget (a dense 2000-tok window is ~45 short examples; terse counting
+    # lines keep the output well under 1k).
     LEAF_TOKENS = 2000
-    MID_TOKENS = 8000
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens):
         self.doc = problem.document_tokens
@@ -674,42 +674,32 @@ class OolongOracle(ModelBackend):
     def _spans_in(self, a, b):
         return [s for s in self.spans if a <= s[0] < b]
 
-    def _greedy_ranges(self, a, b, width):
-        """Partition [a,b] into example-aligned chunks, each <= `width` tokens
-        (a single example bigger than width is its own chunk). Every chunk staying
-        <= width is REQUIRED for correctness: a chunk over LEAF_TOKENS routes as a
-        mid that can't spawn at max depth and silently drops its examples."""
-        spans = self._spans_in(a, b)
-        out, cur = [], []
-        for s in spans:
-            if cur and (s[1] - cur[0][0]) > width:
-                out.append((cur[0][0], cur[-1][1]))
-                cur = []
-            cur.append(s)
-        if cur:
-            out.append((cur[0][0], cur[-1][1]))
-        # If the trailing chunk is tiny, REBALANCE the last two: merge them and
-        # re-split by example count into two even halves. Only applied when BOTH
-        # halves still fit in `width` (else keep the original, correct split) — so
-        # this never produces an over-width chunk, just removes degenerate 1-example
-        # leaves. Falls back to a plain merge when the two fit together.
-        if len(out) >= 2 and (out[-1][1] - out[-1][0]) * 3 < (out[-2][1] - out[-2][0]):
-            if (out[-1][1] - out[-2][0]) <= width:          # they fit as one chunk
-                out[-2] = (out[-2][0], out[-1][1]); out.pop()
-            else:
-                combo = [s for s in spans if out[-2][0] <= s[0] < out[-1][1]]
-                h = len(combo) // 2
-                c1 = (combo[0][0], combo[h - 1][1])
-                c2 = (combo[h][0], combo[-1][1])
-                if (c1[1] - c1[0]) <= width and (c2[1] - c2[0]) <= width:
-                    out[-2], out[-1] = c1, c2
+    def _leaf_ranges(self, a, b):
+        """Fixed LEAF_TOKENS-wide windows tiling [a,b) (the last may be shorter).
+        NOT example-aligned — the leaf pattern is exactly one read_chunk(s, s+2000).
+        Examples straddling a window boundary are counted in the window where they
+        START (see _spans_in), so every example is counted exactly once."""
+        out, s = [], a
+        while s < b:
+            out.append((s, min(s + self.LEAF_TOKENS, b)))
+            s += self.LEAF_TOKENS
         return out
 
-    def _leaf_ranges(self, a, b):
-        return self._greedy_ranges(a, b, self.LEAF_TOKENS)
-
     def _mid_ranges(self):
-        return self._greedy_ranges(0, self.doc_len, self.MID_TOKENS)
+        """sqrt-balanced split. The doc is L = ceil(doc/2000) fixed leaf windows;
+        group them into M = round(sqrt(L)) mids of ~sqrt(L) leaves each. The tree is
+        then root -> ~sqrt(L) mids -> ~sqrt(L) leaves (depth 2) across a wide range
+        of doc sizes. Boundaries sit on the global 2000-token grid, so leaves tile
+        [0, doc_len) exactly and no example's start is double-covered."""
+        L = max(1, -(-self.doc_len // self.LEAF_TOKENS))
+        M = max(1, round(L ** 0.5))
+        per = -(-L // M)                                  # leaves per mid (ceil)
+        out = []
+        for i in range(0, L, per):
+            lo = i * self.LEAF_TOKENS
+            hi = min((i + per) * self.LEAF_TOKENS, self.doc_len)
+            out.append((lo, hi))
+        return out
 
     # -- tally formatting / summing --------------------------------------------
 
@@ -739,7 +729,10 @@ class OolongOracle(ModelBackend):
             self.family, "label:count"
         )
 
-    def _subtask(self, a, b):
+    def _task_core(self):
+        """The shared 'what to classify/count' clause (label + user scope), the same
+        whether the recipient will read directly or fan out. Only asks to read the
+        line fields the family needs (counting needs neither User nor Date)."""
         if self.targets is None:
             scope = "classify its Instance into one of the labels described in the task"
             countwhat = "tally every label"
@@ -751,17 +744,37 @@ class OolongOracle(ModelBackend):
         if self.user_targets is not None:
             unames = ", ".join(sorted(self.user_targets))
             userscope = f" Only consider examples from users {unames}; skip all other users."
-        # Only ask to read the line fields the family actually needs (counting needs
-        # neither User nor Date — asking for them teaches a pointless step).
         read_dims = {"user": "read its User and ", "temporal": "read its Date and "}.get(
             self.family, ""
         )
+        return scope, countwhat, userscope, read_dims
+
+    def _leaf_subtask(self, a, b):
+        """Read-and-classify leaf: one read_chunk over a <=2000-token window."""
+        scope, countwhat, userscope, read_dims = self._task_core()
         return (
-            f"Read the document range covering tokens {a}..{b}. Go through each example one "
-            f"at a time: {read_dims}{scope}; {countwhat}."
-            f"{userscope} Then report your tally as '{self._key_fmt()}' pairs joined by ' || '. "
-            f"If the range is large, first split it into smaller sub-ranges, delegate each, and sum."
+            f"Read tokens {a}..{b} with a single read_chunk call. Go through each example in "
+            f"that window one at a time: {read_dims}{scope}; {countwhat}.{userscope} If the "
+            f"window begins or ends mid-example, count an example only in the window where it "
+            f"STARTS. Report your tally as '{self._key_fmt()}' pairs joined by ' || '."
         )
+
+    def _mid_subtask(self, a, b):
+        """Split-and-delegate mid: EXPLICIT fan-out instructions (no 'if large' — the
+        root already knows this range is large, so it tells the mid exactly what to do)."""
+        scope, countwhat, userscope, read_dims = self._task_core()
+        return (
+            f"Your assigned range is tokens {a}..{b}. Do not read it yourself — split it into "
+            f"consecutive {self.LEAF_TOKENS}-token windows and spawn one subagent per window, "
+            f"each of which reads its window and reports a '{self._key_fmt()}' tally (for every "
+            f"example, {read_dims}{scope}; {countwhat}{userscope}). Then SUM the subagents' "
+            f"tallies and report the combined tally."
+        )
+
+    def _subtask_for(self, a, b):
+        """Pick the role by range width so the instruction matches what the child does:
+        a <=2000-token range becomes a read-leaf, anything wider a split-mid."""
+        return self._leaf_subtask(a, b) if (b - a) <= self.LEAF_TOKENS else self._mid_subtask(a, b)
 
     def _snippet(self, span):
         raw = self.tok.decode(self.doc[span[0]:span[1]])
@@ -820,13 +833,14 @@ class OolongOracle(ModelBackend):
 
     def _mid(self, a, b, has_tool, messages):
         if not has_tool:
+            ranges = self._leaf_ranges(a, b)
             calls = [
-                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(la, lb)})
-                for (la, lb) in self._leaf_ranges(a, b)
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask_for(la, lb)})
+                for (la, lb) in ranges
             ]
             return AssistantTurn(
-                text="My section is large; splitting it into smaller ranges so each "
-                     "subagent classifies only a few examples.",
+                text=f"My range {a}..{b} is wider than one chunk; splitting it into "
+                     f"{len(ranges)} {self.LEAF_TOKENS}-token windows and delegating each.",
                 tool_calls=calls,
             )
         total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
@@ -837,13 +851,15 @@ class OolongOracle(ModelBackend):
 
     def _root(self, question, has_tool, messages):
         if not has_tool:
+            mids = self._mid_ranges()
             calls = [
-                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(a, b)})
-                for (a, b) in self._mid_ranges()
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask_for(a, b)})
+                for (a, b) in mids
             ]
             return AssistantTurn(
-                text="The document is large; I'll split it into sections, each of which "
-                     "subdivides further so every batch classified is small, then combine.",
+                text=f"The document is {self.doc_len} tokens — too large to read directly. "
+                     f"Splitting it into {len(mids)} sections, each of which subdivides into "
+                     f"{self.LEAF_TOKENS}-token windows, then combining the section tallies.",
                 tool_calls=calls,
             )
         total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
