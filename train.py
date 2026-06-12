@@ -295,7 +295,18 @@ class SubagentTool:
             children=child_subagent.child_nodes,
         )
         self.child_nodes.append(child_node)
-        return simple_tool_result(answer if answer is not None else "No answer found")
+        # Tell the parent WHY a subagent failed, so it can react (shrink the range
+        # on overflow, retry on a non-answer) — matches eval/agent.py semantics.
+        if answer is not None:
+            result = answer
+        elif any(
+            (tr.metrics or {}).get("context_overflow") or (tr.metrics or {}).get("max_tokens_reached")
+            for tr in child_trajectory.transitions
+        ):
+            result = "agent overflowed context"
+        else:
+            result = "agent did not box an answer"
+        return simple_tool_result(result)
 
 
 # Drift guard: the model must see the same tool descriptions in training and in

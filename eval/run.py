@@ -79,10 +79,13 @@ AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", train.AGENT_CONTEXT))
 MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", train.MAX_CHUNK_TOKENS))
 MAX_DEPTH = train.MAX_DEPTH
 MAX_TURNS = train.MAX_TURNS
-DOC_SIZE_TOKENS = train.DOC_SIZE_TOKENS
-MODEL_NAME = train.MODEL_NAME
-RENDERER_NAME = train.RENDERER_NAME
-LORA_RANK = train.LORA_RANK
+DOC_SIZE_TOKENS = int(os.environ.get("DOC_SIZE_TOKENS", train.DOC_SIZE_TOKENS))
+# Tinker base model + renderer are env-overridable so we can probe ANY Tinker-hosted
+# model (e.g. MODEL_NAME=moonshotai/Kimi-K2.6 RENDERER_NAME=kimi_k26) through the same
+# harness — no checkpoint = base-model behaviour.
+MODEL_NAME = os.environ.get("MODEL_NAME", train.MODEL_NAME)
+RENDERER_NAME = os.environ.get("RENDERER_NAME", train.RENDERER_NAME)
+LORA_RANK = int(os.environ.get("LORA_RANK", train.LORA_RANK))
 
 
 # ---------------------------------------------------------------------------

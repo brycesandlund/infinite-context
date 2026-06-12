@@ -162,7 +162,14 @@ async def _handle_call(
             depth=depth + 1,
             subtask=child_subtask,
         )
-        result = child.answer if child.answer is not None else "No answer found"
+        # Tell the parent WHY a subagent failed, so it can react (e.g. shrink the
+        # range on overflow, or retry on a non-answer) rather than guessing.
+        if child.answer is not None:
+            result = child.answer
+        elif child.termination == "overflow":
+            result = "agent overflowed context"
+        else:
+            result = "agent did not box an answer"
         return _tool_msg(tc, result), child
 
     return _tool_msg(tc, f"Error: unknown tool {tc.name!r}."), None
