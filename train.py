@@ -45,13 +45,10 @@ import metrics  # optional W&B logging (no-op unless WANDB=1)
 from tasks import (
     GradingMode,
     Problem,
-    eval_grading_mode,
     grade_answer,
-    grading_mode,
     list_tasks,
     load_pg_essays_text,
     make_problem,
-    resolve_eval_grading_mode,
     resolve_grading_mode,
 )
 
@@ -116,21 +113,8 @@ SAVE_CHECKPOINT_NAME: str | None = "final"
 # CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt) to warm-start RL from SFT.
 LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # tinker:// path; None = base model
 RESUME_OPTIMIZER = False    # restore Adam momentum too. False when starting a fresh fine-tune from an SFT/base ckpt (the SFT optimizer state is for cross_entropy, not RL).
-EVAL_ONLY = False           # skip training, go straight to eval (requires LOAD_CHECKPOINT_PATH to be useful)
 LAST_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_checkpoint.txt"
-
-# After training, run this many rollouts on held-out problem seeds (no fwd/bwd)
-# and print each full tree. 0 = skip.
-EVAL_N_ROLLOUTS = 21       # 3 per EVAL_TASKS family for a less-noisy post-run readout
-EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
-# Optional: force the eval rollouts onto specific task families instead of
-# sampling from TASK_MIXTURE. Cycles through the list if EVAL_N_ROLLOUTS exceeds
-# its length. Set to None to sample from TASK_MIXTURE like the training loop.
-# Handy for a smoke test where you want to SEE one of each family render+grade.
-EVAL_TASKS: list[str] | None = [
-    # "niah_single_2", "niah_multiquery", "vt", "cwe",  # restore with full mixture
-    "oolong_counting", "oolong_user", "oolong_temporal",  # OOLONG-only RL phase
-]
+# Post-training eval lives in eval/run.py (run it on the saved checkpoint).
 
 # Every training rollout (full tree) is appended here, rendered by the SAME
 # eval/render.py printer as eval + SFT traces. "" disables.
@@ -553,22 +537,6 @@ async def main() -> None:
             seed=gen_seed,
         )
 
-    def gen_problem_for_task(task: str, seed: int) -> Problem:
-        """Generate a problem for a SPECIFIC task (bypasses TASK_MIXTURE).
-        Used by EVAL_TASKS to force coverage of chosen families."""
-        return make_problem(
-            task=task,
-            corpus_tokens=corpus_tokens,
-            tokenizer=tokenizer,
-            doc_size_tokens=DOC_SIZE_TOKENS,
-            seed=random.Random(seed).randrange(2**32),
-        )
-
-    if EVAL_TASKS:
-        unknown_eval = [t for t in EVAL_TASKS if t not in list_tasks()]
-        if unknown_eval:
-            raise SystemExit(f"Unknown tasks in EVAL_TASKS: {unknown_eval}. Available: {list_tasks()}")
-
     # Optional: load a previously saved checkpoint before doing anything else.
     if LOAD_CHECKPOINT_PATH:
         print(f"Loading checkpoint: {LOAD_CHECKPOINT_PATH}")
@@ -595,10 +563,7 @@ async def main() -> None:
         )
         return
 
-    if EVAL_ONLY:
-        print("EVAL_ONLY: skipping training loop.")
-
-    for step in range(0 if EVAL_ONLY else N_STEPS):
+    for step in range(N_STEPS):
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
 
         # One problem per slot in the batch (task sampled from TASK_MIXTURE);
@@ -736,10 +701,9 @@ async def main() -> None:
                 print_tree(rollout_to_agent_node(parent_result.root, tokenizer, renderer))
 
     # ------------------------------------------------------------------ #
-    # Save checkpoint (skipped on EVAL_ONLY to avoid overwriting with    #
-    # a model we didn't train).                                          #
+    # Save checkpoint                                                    #
     # ------------------------------------------------------------------ #
-    if SAVE_CHECKPOINT_NAME and not EVAL_ONLY:
+    if SAVE_CHECKPOINT_NAME:
         print(f"Saving checkpoint '{SAVE_CHECKPOINT_NAME}'...")
         save_future = await training_client.save_state_async(
             SAVE_CHECKPOINT_NAME, overwrite=True
@@ -750,89 +714,9 @@ async def main() -> None:
         LAST_CHECKPOINT_FILE.write_text(save_resp.path)
         print(f"  (path written to {LAST_CHECKPOINT_FILE})")
 
-    # ------------------------------------------------------------------ #
-    # Post-training eval: K rollouts on held-out problems. Each rollout  #
-    # gets a full per-agent transcript dump (system + user + every       #
-    # assistant turn + every tool result).                               #
-    # ------------------------------------------------------------------ #
-    if EVAL_N_ROLLOUTS > 0:
-        sampling_client = await training_client.save_weights_and_get_sampling_client_async()
-        if EVAL_TASKS:
-            # Force one problem per listed task (cycling if N > len), so the
-            # smoke test exercises a known spread of families.
-            eval_problems = [
-                gen_problem_for_task(EVAL_TASKS[i % len(EVAL_TASKS)], EVAL_SEED_OFFSET + i)
-                for i in range(EVAL_N_ROLLOUTS)
-            ]
-        else:
-            eval_problems = [gen_problem(EVAL_SEED_OFFSET + i) for i in range(EVAL_N_ROLLOUTS)]
-        print()
-        print("=" * 72)
-        print(f"POST-TRAINING EVAL: {EVAL_N_ROLLOUTS} held-out rollouts (verbose)")
-        print("=" * 72)
-        eval_coros = [
-            _rollout_one_parent(p, sampling_client, tokenizer, renderer)
-            for p in eval_problems
-        ]
-        eval_results = await asyncio.gather(*eval_coros)
-        # Two scores per eval rollout:
-        # - `ruler_score`: RULER's official substring matcher (string_match_all /
-        #   string_match_part). Comparable to NVIDIA's published leaderboard.
-        # - `train_score`: strict grader matching the training reward — useful
-        #   for diagnosing whether the agent learned the strict format or only
-        #   the looser substring criterion.
-        eval_ruler_by_task: dict[str, list[float]] = {}
-        eval_train_by_task: dict[str, list[float]] = {}
-        for ri, (problem, result) in enumerate(zip(eval_problems, eval_results)):
-            nodes = result.all_nodes()
-            parent_reward = _trajectory_total_reward(result.root.trajectory)
-            ruler_score = grade_answer(
-                result.root.answer, result.gold_answers, resolve_eval_grading_mode(problem)
-            )
-            train_score = grade_answer(
-                result.root.answer, result.gold_answers, resolve_grading_mode(problem)
-            )
-            eval_ruler_by_task.setdefault(result.task, []).append(ruler_score)
-            eval_train_by_task.setdefault(result.task, []).append(train_score)
-            print()
-            print("#" * 72)
-            print(
-                f"# Eval rollout {ri}  task={result.task}  "
-                f"gold={result.gold_answers}  "
-                f"doc_tokens={len(problem.document_tokens)}  "
-                f"nodes={len(nodes)}  parent_reward={parent_reward:.3f}  "
-                f"ruler_score={ruler_score:.3f}  train_score={train_score:.3f}"
-            )
-            print("#" * 72)
-            # Render through the SAME tree printer as eval/run.py + sft.py, so a
-            # rollout reads identically no matter which pipeline produced it.
-            from eval.render import rollout_to_agent_node, tree_to_text
-
-            print(tree_to_text(rollout_to_agent_node(result.root, tokenizer, renderer)))
-        print()
-        for t in sorted(eval_ruler_by_task):
-            rs = eval_ruler_by_task[t]
-            ts = eval_train_by_task[t]
-            print(
-                f"Eval {t}:  ruler {sum(rs)/len(rs):.3f}  "
-                f"train {sum(ts)/len(ts):.3f}  ({len(rs)} rollouts)"
-            )
-        all_ruler = [s for ss in eval_ruler_by_task.values() for s in ss]
-        all_train = [s for ss in eval_train_by_task.values() for s in ss]
-        print(
-            f"Eval overall:  ruler {sum(all_ruler)/len(all_ruler):.3f}  "
-            f"train {sum(all_train)/len(all_train):.3f}  ({len(all_ruler)} rollouts)"
-        )
-        # W&B: held-out eval as run-summary scalars (one comparison point per run).
-        metrics.summary(
-            {
-                **{f"eval/ruler/{t}": sum(v) / len(v) for t, v in eval_ruler_by_task.items()},
-                **{f"eval/train/{t}": sum(v) / len(v) for t, v in eval_train_by_task.items()},
-                "eval/ruler/overall": sum(all_ruler) / len(all_ruler),
-                "eval/train/overall": sum(all_train) / len(all_train),
-            }
-        )
-
+    # Post-training eval lives in eval/run.py (the dedicated multi-backend eval
+    # harness — grounded metric, per-dataset/qtype breakdowns, OUT.{jsonl,txt}):
+    #   CKPT=$(cat ~/.cache/infinite-context/last_checkpoint.txt) uv run python -m eval.run
     metrics.finish()
 
 
