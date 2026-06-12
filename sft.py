@@ -54,13 +54,17 @@ from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministi
 # inherent bookkeeping (all-user tallies) or non-sequitur gold-fallback traces
 # (date-keyed temporal), so they're poor teaching data — left to RL to generalize.
 SFT_TASKS = ["oolong_counting"]
-N_PER_TASK = int(os.environ.get("N_PER_TASK", "30"))  # generous coverage (~3/dataset x 10)
+# 150 traces (~15/dataset): MoE LoRA gets gradient only from tokens routed to each
+# expert, so the sparse 35B-A3B needs materially more data than a dense model to
+# absorb the same behavior; also widens prefix coverage against exposure bias.
+N_PER_TASK = int(os.environ.get("N_PER_TASK", "150"))
 N_PER_TASK_OVERRIDE: dict[str, int] = {}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 
-EPOCHS = 2                      # NLL saturates by epoch 1 (~0.04) on the scripted
-                                # oracle traces; a 3rd epoch just memorizes phrasings
-                                # RL would undo. 2 captures the pattern, not the quirks.
+EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: the 2nd
+                                # epoch on 30 traces bought NLL via surface memorization
+                                # (e.g. degenerate '\'-loops at sampling). With 150
+                                # traces a single pass captures the pattern.
 SFT_BATCH_SIZE = 16             # datums per optim step
 LEARNING_RATE = 1e-5
 
@@ -148,11 +152,17 @@ def _node_to_datums(node, renderer, tool_specs) -> list[tinker.Datum]:
         )
         if float(weights.sum()) == 0.0:  # nothing trainable (shouldn't happen)
             continue
-        datums.append(
-            datum_from_model_input_weights(
-                model_input, weights, max_length=AGENT_CONTEXT, reduction="mean"
-            )
+        datum = datum_from_model_input_weights(
+            model_input, weights, max_length=AGENT_CONTEXT, reduction="mean"
         )
+        datums.append(datum)
+        # Rebalance: spawn turns (the delegation decision — the behavior we exist to
+        # teach) are ~19% of datums while '...\boxed{}' report turns are ~50%, so the
+        # box-emission surface dominates the loss and the model learns to glue plan
+        # prose onto a premature \boxed{} (the narrate-then-guess artifact). Duplicate
+        # spawn-turn datums so delegation carries comparable total weight.
+        if any(tc.function.name == "spawn_subagent" for tc in (m.get("tool_calls") or [])):
+            datums.append(datum)
     return datums
 
 

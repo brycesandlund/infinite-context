@@ -91,19 +91,12 @@ AGENT_CONTEXT = 8_000
 #
 # Set to a single-task dict to lock training to one task family — handy for
 # debugging or ablations. Weights need not sum to 1; they're renormalized.
+# OOLONG-only for this phase: the counting-only SFT primer made delegation
+# samplable; RL's job is to make it dominant and to GENERALIZE it to the user and
+# temporal families (which SFT deliberately skipped). RULER returns to the mix
+# once the recursive-aggregation loop is stable.
 TASK_MIXTURE: dict[str, float] = {
-    # 11 RULER training tasks (canonical names per NVIDIA/RULER/scripts/synthetic.yaml).
-    # qa_1/qa_2 are held out for eval (require SQuAD+HotpotQA downloads and
-    # we want a clean train/eval split).
-    "niah_single_1": 1.0, "niah_single_2": 1.0, "niah_single_3": 1.0,
-    "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
-    "niah_multivalue": 1.0, "niah_multiquery": 1.0,
-    "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
-    # OOLONG classify-and-aggregate — the new capability, all three families.
-    # Taught via the unified show-your-work oracle (each leaf classifies <=12
-    # enumerated examples; parents sum). 2.0 each => OOLONG ~35% of the mix
-    # (each family ~12%), substantial signal without swamping the RULER tasks.
-    "oolong_counting": 2.0, "oolong_user": 2.0, "oolong_temporal": 2.0,
+    "oolong_counting": 1.0, "oolong_user": 1.0, "oolong_temporal": 1.0,
 }
 DOC_SIZE_TOKENS = 10_000    # haystack length per problem (> AGENT_CONTEXT, so read-it-all can't fit)
 MAX_CHUNK_TOKENS = 6_000    # cap on a single read_chunk return; < DOC_SIZE so no single read covers the doc, and < AGENT_CONTEXT so a max read still leaves headroom to act on it.
@@ -128,8 +121,7 @@ EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 # its length. Set to None to sample from TASK_MIXTURE like the training loop.
 # Handy for a smoke test where you want to SEE one of each family render+grade.
 EVAL_TASKS: list[str] | None = [
-    "niah_single_2", "niah_multiquery", "vt", "cwe",
-    "oolong_counting", "oolong_user", "oolong_temporal",  # see OOLONG at end of RL
+    "oolong_counting", "oolong_user", "oolong_temporal",  # OOLONG-only RL phase
 ]
 
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
@@ -151,6 +143,10 @@ class ReadChunkTool:
     document_tokens: list[int]
     tokenizer: object
     max_chunk_tokens: int
+    # Tree-wide read counter (the instance is shared by every agent in the tree, and
+    # children complete before the parent's final turn) — lets the reward check that
+    # an answer is GROUNDED in at least one actual document read, not a blind guess.
+    n_reads: int = 0
 
     @tool
     async def read_chunk(
@@ -159,6 +155,7 @@ class ReadChunkTool:
         end: Annotated[int, "Last token position to read (exclusive)."],
     ) -> ToolResult:
         """Read a slice of the document and return the decoded text of tokens [start, end). The document has a fixed length (stated in the system prompt). Each call is capped at the chunk limit; for larger ranges, issue multiple reads or delegate to a subagent."""
+        self.n_reads += 1
         # Slicing/decode/cap semantics live in harness.read_chunk_impl so the
         # eval driver hits the exact same behavior.
         return simple_tool_result(
@@ -346,17 +343,24 @@ class LongContextReward:
     gold_answers: list[str]
     mode: GradingMode = "exact"
     format_coef: float = 0.1
+    # Tree-shared ReadChunkTool. Training reward is GATED on the tree having read the
+    # document at least once: on binary/comparison questions a blind \boxed{} guess
+    # pays ~0.5 EV for free, an exploit GRPO would find and amplify. An answer the
+    # agent could not possibly know earns nothing. (Eval grading stays paper-faithful
+    # and ungated; eval/run.py reports raw and grounded scores separately.)
+    read_tool: ReadChunkTool | None = None
 
     async def __call__(self, history: list[Message]) -> tuple[float, dict[str, float]]:
         final = next((m for m in reversed(history) if m.get("role") == "assistant"), None)
         if final is None:
-            return 0.0, {"format": 0.0, "score": 0.0}
+            return 0.0, {"format": 0.0, "score": 0.0, "grounded": 0.0}
         content = get_text_content(final) or ""
         extracted = _extract_boxed(content)
         correct_format = float(extracted is not None)
         score = grade_answer(extracted, self.gold_answers, self.mode)
-        reward = self.format_coef * (correct_format - 1) + score
-        return reward, {"format": correct_format, "score": score}
+        grounded = float(self.read_tool is None or self.read_tool.n_reads > 0)
+        reward = self.format_coef * (correct_format - 1) + score * grounded
+        return reward, {"format": correct_format, "score": score, "grounded": grounded}
 
 
 # ---------------------------------------------------------------------------
@@ -426,7 +430,9 @@ async def _rollout_one_parent(
         tools=tool_list,
         initial_messages=initial_messages,
         reward_fn=LongContextReward(
-            gold_answers=problem.gold_answers, mode=resolve_grading_mode(problem)
+            gold_answers=problem.gold_answers,
+            mode=resolve_grading_mode(problem),
+            read_tool=read_chunk_tool,
         ),
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
