@@ -93,9 +93,16 @@ AGENT_CONTEXT = 8_000
 # debugging or ablations. Weights need not sum to 1; they're renormalized.
 # OOLONG-only for this phase: the counting-only SFT primer made delegation
 # samplable; RL's job is to make it dominant and to GENERALIZE it to the user and
-# temporal families (which SFT deliberately skipped). RULER returns to the mix
-# once the recursive-aggregation loop is stable.
+# temporal families (which SFT deliberately skipped). Uncomment the RULER block
+# to return to the full mixture once the recursive-aggregation loop is stable.
 TASK_MIXTURE: dict[str, float] = {
+    # 11 RULER training tasks (canonical names per NVIDIA/RULER/scripts/synthetic.yaml).
+    # qa_1/qa_2 are held out for eval (require SQuAD+HotpotQA downloads and
+    # we want a clean train/eval split).
+    # "niah_single_1": 1.0, "niah_single_2": 1.0, "niah_single_3": 1.0,
+    # "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
+    # "niah_multivalue": 1.0, "niah_multiquery": 1.0,
+    # "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
     "oolong_counting": 1.0, "oolong_user": 1.0, "oolong_temporal": 1.0,
 }
 DOC_SIZE_TOKENS = 10_000    # haystack length per problem (> AGENT_CONTEXT, so read-it-all can't fit)
@@ -121,6 +128,7 @@ EVAL_SEED_OFFSET = 1_000_000  # held-out seeds start here
 # its length. Set to None to sample from TASK_MIXTURE like the training loop.
 # Handy for a smoke test where you want to SEE one of each family render+grade.
 EVAL_TASKS: list[str] | None = [
+    # "niah_single_2", "niah_multiquery", "vt", "cwe",  # restore with full mixture
     "oolong_counting", "oolong_user", "oolong_temporal",  # OOLONG-only RL phase
 ]
 
