@@ -572,10 +572,11 @@ class OolongOracle(ModelBackend):
     # token range is the one thing the policy CAN compute from its subtask without
     # reading. A node whose range is wider than LEAF_TOKENS splits; otherwise it
     # reads + classifies. MID_TOKENS bounds how wide a mid range gets so the tree
-    # stays depth-2 (root -> mids -> leaves). These MUST match the threshold quoted
-    # in the OOLONG decomposition directive (tasks/oolong/generators.py).
-    LEAF_TOKENS = 3000
-    MID_TOKENS = 9000
+    # stays depth-2 (root -> mids -> leaves). LEAF_TOKENS is kept small so a leaf's
+    # read + classify-enumeration fits even a tight budget (a dense ~2000-tok chunk
+    # is ~45 short examples; the terse counting lines keep the output well under 1k).
+    LEAF_TOKENS = 2000
+    MID_TOKENS = 8000
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens):
         self.doc = problem.document_tokens
@@ -586,6 +587,33 @@ class OolongOracle(ModelBackend):
         self.family = self.meta.get("family", "counting")
         self.tok = tokenizer
         self.budget = budget
+        # QUESTION-ADAPTIVE: only count the labels the question actually asks about
+        # (e.g. an A-vs-B comparison needs just A and B, not all 6). targets=None
+        # means "all labels" (most/least-common, date questions). This teaches the
+        # transferable instinct "extract what's asked" AND keeps the leaf output
+        # tiny (the 6-label enumeration was what overflowed).
+        self.targets = self._parse_targets(problem.question)
+
+    @staticmethod
+    def _parse_targets(q: str):
+        # A-vs-B comparison -> the two compared labels
+        m = re.search(r"is label '([^']+)' more common, less common, or the same "
+                      r"frequency as label '([^']+)'", q)
+        if m:
+            return frozenset({m.group(1), m.group(2)})
+        # absolute count -> the single label
+        m = re.search(r"classified as label '([^']+)'", q)
+        if m:
+            return frozenset({m.group(1)})
+        # temporal before/after -> the single label
+        m = re.search(r"was label '([^']+)' more common, less common", q)
+        if m:
+            return frozenset({m.group(1)})
+        # user "(most|more) instances with the label X" (unquoted, maybe multi-word)
+        m = re.search(r"instances with the label (.+?)\s*[?:]", q)
+        if m:
+            return frozenset({m.group(1).strip()})
+        return None  # most/least-common, date questions -> need every label
 
     def count_tokens(self, messages):
         total = sum(
@@ -604,10 +632,15 @@ class OolongOracle(ModelBackend):
             return f"{date}|{label}"
         return label
 
+    def _relevant(self, span):
+        """Does this example's label matter for the question? (targets None -> all)."""
+        return self.targets is None or span[2] in self.targets
+
     def _counts(self, spans):
         ctr = Counter()
         for s in spans:
-            ctr[self._key(s)] += 1
+            if self._relevant(s):
+                ctr[self._key(s)] += 1
         return ctr
 
     # -- range subdivision (by example boundaries) ------------------------------
@@ -616,8 +649,10 @@ class OolongOracle(ModelBackend):
         return [s for s in self.spans if a <= s[0] < b]
 
     def _greedy_ranges(self, a, b, width):
-        """Partition [a,b] into example-aligned sub-ranges each <= `width` tokens
-        (one example may exceed it; then that range is just that example)."""
+        """Partition [a,b] into example-aligned chunks, each <= `width` tokens
+        (a single example bigger than width is its own chunk). Every chunk staying
+        <= width is REQUIRED for correctness: a chunk over LEAF_TOKENS routes as a
+        mid that can't spawn at max depth and silently drops its examples."""
         spans = self._spans_in(a, b)
         out, cur = [], []
         for s in spans:
@@ -627,6 +662,11 @@ class OolongOracle(ModelBackend):
             cur.append(s)
         if cur:
             out.append((cur[0][0], cur[-1][1]))
+        # Fold a tiny trailing chunk into the previous one IF it still fits in width
+        # (avoids degenerate 1-example leaves; never produces an over-width chunk).
+        if len(out) >= 2 and (out[-1][1] - out[-2][0]) <= width:
+            out[-2] = (out[-2][0], out[-1][1])
+            out.pop()
         return out
 
     def _leaf_ranges(self, a, b):
@@ -658,29 +698,39 @@ class OolongOracle(ModelBackend):
 
     # -- descriptive subtask (the child only sees THIS, not the root question) --
 
-    def _report_hint(self):
-        if self.family == "user":
-            return ("report your tally as 'userID|label:count' pairs joined by ' || ' "
-                    "(e.g. 17568|positive:2 || 40231|negative:1)")
-        if self.family == "temporal":
-            return ("report your tally as 'date|label:count' pairs joined by ' || ' "
-                    "(e.g. Dec 27, 2024|positive:2 || Dec 27, 2024|negative:1)")
-        return ("report your tally as 'label:count' pairs joined by ' || ' "
-                "(e.g. positive:7 || negative:5)")
+    def _key_fmt(self):
+        return {"user": "userID|label:count", "temporal": "date|label:count"}.get(
+            self.family, "label:count"
+        )
 
     def _subtask(self, a, b):
+        if self.targets is None:
+            scope = "classify its Instance into one of the labels described in the task"
+            countwhat = "tally every label"
+        else:
+            tnames = ", ".join(f"'{t}'" for t in sorted(self.targets))
+            scope = f"decide whether its Instance should be classified as one of {tnames}"
+            countwhat = f"count ONLY {tnames} (ignore the other labels)"
         return (
-            f"Read the document range covering tokens {a}..{b}. Go through each example "
-            f"in that range one at a time: read its User and Date (both written verbatim "
-            f"in the line) and classify its Instance into one of the labels described in "
-            f"the task. Then {self._report_hint()}. If the range is large, first split it "
-            f"into smaller sub-ranges, delegate each to a subagent, and sum their tallies."
+            f"Read the document range covering tokens {a}..{b}. Go through each example one "
+            f"at a time: read its User and Date (verbatim in the line) and {scope}; {countwhat}. "
+            f"Then report your tally as '{self._key_fmt()}' pairs joined by ' || '. If the range "
+            f"is large, first split it into smaller sub-ranges, delegate each, and sum the tallies."
         )
 
     def _snippet(self, span):
         raw = self.tok.decode(self.doc[span[0]:span[1]])
         inst = raw.split("Instance:", 1)[-1].strip()
-        return inst[:48].replace("\n", " ")
+        return inst[:30].replace("\n", " ")
+
+    def _ex_line(self, s):
+        """One enumerated example, with only the dimensions the family needs —
+        counting omits User/Date (irrelevant), keeping the line (and budget) small."""
+        if self.family == "user":
+            return f'- User {s[3]}: "{self._snippet(s)}…" -> {s[2]}'
+        if self.family == "temporal":
+            return f'- {s[4]}: "{self._snippet(s)}…" -> {s[2]}'
+        return f'- "{self._snippet(s)}…" -> {s[2]}'
 
     # -- the policy -------------------------------------------------------------
 
@@ -705,12 +755,19 @@ class OolongOracle(ModelBackend):
                      f"classify directly. Reading it.",
                 tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": a, "end": b})],
             )
-        lines = [
-            f'- User {s[3]}, {s[4]}: "{self._snippet(s)}…" -> {s[2]}'
-            for s in spans_in
-        ]
         report = self._fmt(self._counts(spans_in))
-        body = "Classifying each example in my range:\n" + "\n".join(lines)
+        # Show work, but only ENUMERATE the question-relevant examples — scanning all,
+        # listing the matches. (targets=None lists every example; that branch only
+        # fires for most/least-common, where every label genuinely matters.)
+        relevant = [s for s in spans_in if self._relevant(s)]
+        lines = [self._ex_line(s) for s in relevant]
+        listing = "\n".join(lines) if lines else "  (no matching examples in this range)"
+        if self.targets is None:
+            body = f"Classifying each of my {len(spans_in)} examples:\n{listing}"
+        else:
+            tnames = ", ".join(sorted(self.targets))
+            body = (f"Scanned {len(spans_in)} examples; the question only needs labels: "
+                    f"{tnames}. Matching examples:\n{listing}")
         return AssistantTurn(
             text=f"{body}\n\nTally for this range: {report}\n\\boxed{{{report}}}",
             tool_calls=[],
