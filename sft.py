@@ -47,13 +47,13 @@ from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministi
 # Config
 # ---------------------------------------------------------------------------
 
-# OOLONG-ONLY warm-start. We isolate the hard aggregation tasks: with RULER out
-# of the SFT pool there is no "read-a-wide-6000-chunk" precedent to contaminate
-# the policy, so the OOLONG token-width traces teach ONE consistent rule (spawn
-# wide ranges; read only narrow <=LEAF_TOKENS leaves). If decomposition transfers
-# here, RULER becomes a separate, later concern. Decoupled from train.TASK_MIXTURE
-# on purpose (that's the RL mixture).
-SFT_TASKS = ["oolong_counting", "oolong_user", "oolong_temporal"]
+# COUNTING-ONLY warm-start. The SFT primer's only job is to break the model's
+# anti-delegation prior (split -> spawn -> combine). Counting is the clean vehicle:
+# with the question-adaptive oracle its leaves/roots are lean and the answer is
+# really DERIVED from the tree-reduce (no gold-leak). User-most/temporal carry
+# inherent bookkeeping (all-user tallies) or non-sequitur gold-fallback traces
+# (date-keyed temporal), so they're poor teaching data — left to RL to generalize.
+SFT_TASKS = ["oolong_counting"]
 N_PER_TASK = int(os.environ.get("N_PER_TASK", "30"))  # generous coverage (~3/dataset x 10)
 N_PER_TASK_OVERRIDE: dict[str, int] = {}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges

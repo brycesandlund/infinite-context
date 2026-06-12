@@ -688,11 +688,21 @@ class OolongOracle(ModelBackend):
             cur.append(s)
         if cur:
             out.append((cur[0][0], cur[-1][1]))
-        # Fold a tiny trailing chunk into the previous one IF it still fits in width
-        # (avoids degenerate 1-example leaves; never produces an over-width chunk).
-        if len(out) >= 2 and (out[-1][1] - out[-2][0]) <= width:
-            out[-2] = (out[-2][0], out[-1][1])
-            out.pop()
+        # If the trailing chunk is tiny, REBALANCE the last two: merge them and
+        # re-split by example count into two even halves. Only applied when BOTH
+        # halves still fit in `width` (else keep the original, correct split) — so
+        # this never produces an over-width chunk, just removes degenerate 1-example
+        # leaves. Falls back to a plain merge when the two fit together.
+        if len(out) >= 2 and (out[-1][1] - out[-1][0]) * 3 < (out[-2][1] - out[-2][0]):
+            if (out[-1][1] - out[-2][0]) <= width:          # they fit as one chunk
+                out[-2] = (out[-2][0], out[-1][1]); out.pop()
+            else:
+                combo = [s for s in spans if out[-2][0] <= s[0] < out[-1][1]]
+                h = len(combo) // 2
+                c1 = (combo[0][0], combo[h - 1][1])
+                c2 = (combo[h][0], combo[-1][1])
+                if (c1[1] - c1[0]) <= width and (c2[1] - c2[0]) <= width:
+                    out[-2], out[-1] = c1, c2
         return out
 
     def _leaf_ranges(self, a, b):
@@ -741,9 +751,14 @@ class OolongOracle(ModelBackend):
         if self.user_targets is not None:
             unames = ", ".join(sorted(self.user_targets))
             userscope = f" Only consider examples from users {unames}; skip all other users."
+        # Only ask to read the line fields the family actually needs (counting needs
+        # neither User nor Date — asking for them teaches a pointless step).
+        read_dims = {"user": "read its User and ", "temporal": "read its Date and "}.get(
+            self.family, ""
+        )
         return (
             f"Read the document range covering tokens {a}..{b}. Go through each example one "
-            f"at a time: read its User and Date (verbatim in the line) and {scope}; {countwhat}."
+            f"at a time: {read_dims}{scope}; {countwhat}."
             f"{userscope} Then report your tally as '{self._key_fmt()}' pairs joined by ' || '. "
             f"If the range is large, first split it into smaller sub-ranges, delegate each, and sum."
         )
