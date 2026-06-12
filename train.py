@@ -132,6 +132,10 @@ EVAL_TASKS: list[str] | None = [
     "oolong_counting", "oolong_user", "oolong_temporal",  # OOLONG-only RL phase
 ]
 
+# Every training rollout (full tree) is appended here, rendered by the SAME
+# eval/render.py printer as eval + SFT traces. "" disables.
+ROLLOUT_DUMP = os.environ.get("ROLLOUT_DUMP", "/tmp/rl_rollouts.txt")
+
 # Debug: do DEBUG_N_ROLLOUTS rollouts, print every tree + datum shapes, exit.
 DEBUG_ONE_ROLLOUT = False
 DEBUG_N_ROLLOUTS = 4
@@ -703,6 +707,28 @@ async def main() -> None:
             step=step,
         )
 
+        # Persist EVERY training rollout (full tree, same renderer as eval/run.py
+        # + sft.py) so the RL process is post-hoc inspectable — e.g. to see what
+        # the policy actually did in the steps where behavior shifted. Set
+        # ROLLOUT_DUMP="" to disable.
+        if ROLLOUT_DUMP:
+            from debug import rollout_to_agent_node
+            from eval.render import rollout_header, tree_to_text
+
+            with open(ROLLOUT_DUMP, "a") as f:
+                for ri, (r, adv, rew) in enumerate(zip(parent_results, advantages, rewards)):
+                    md = r.problem.metadata or {}
+                    f.write(f"\n@@@ STEP {step} rollout {ri} reward={rew:.3f} "
+                            f"advantage={adv:+.3f}\n")
+                    f.write(rollout_header(
+                        r.task, md.get("seed", "?"), md.get("dataset"),
+                        md.get("task_type"), r.problem.question, r.gold_answers,
+                        r.root.answer, "-",
+                        grade_answer(r.root.answer, r.gold_answers,
+                                     resolve_grading_mode(r.problem)),
+                    ))
+                    f.write(tree_to_text(rollout_to_agent_node(r.root, tokenizer, renderer)))
+
         if DEBUG_PRINT_TREE_EACH_STEP:
             from debug import print_rollout_tree
 
@@ -781,7 +807,12 @@ async def main() -> None:
                 f"ruler_score={ruler_score:.3f}  train_score={train_score:.3f}"
             )
             print("#" * 72)
-            print_rollout_tree_verbose(result.root, tokenizer)
+            # Render through the SAME tree printer as eval/run.py + sft.py, so a
+            # rollout reads identically no matter which pipeline produced it.
+            from debug import rollout_to_agent_node
+            from eval.render import tree_to_text
+
+            print(tree_to_text(rollout_to_agent_node(result.root, tokenizer, renderer)))
         print()
         for t in sorted(eval_ruler_by_task):
             rs = eval_ruler_by_task[t]

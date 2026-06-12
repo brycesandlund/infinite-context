@@ -8,6 +8,8 @@ they never construct policy state themselves.
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
@@ -17,6 +19,7 @@ from tinker_cookbook.rl.data_processing import trajectory_to_data
 from tinker_cookbook.rl.types import Trajectory
 
 if TYPE_CHECKING:
+    from eval.agent import AgentNode
     from tasks import Problem
     from train import ParentRollout, RolloutNode
 
@@ -59,6 +62,89 @@ def _full_transcript_text(traj: Trajectory, tokenizer) -> str:
     ob_tokens = _flatten_ob_tokens(traj.transitions[-1].ob)
     ac_tokens = list(traj.transitions[-1].ac.tokens)
     return tokenizer.decode(ob_tokens + ac_tokens)
+
+
+# ---------------------------------------------------------------------------
+# RolloutNode (token trajectories) -> AgentNode (neutral messages), so RL
+# rollouts render through the SAME eval/render.py code as eval + SFT traces.
+# ---------------------------------------------------------------------------
+
+_BLOCK_RE = re.compile(r"<\|im_start\|>(\w+)\n(.*?)(?:<\|im_end\|>|$)", re.S)
+_TOOL_RESP_RE = re.compile(r"<tool_response>\n?(.*?)\n?</tool_response>", re.S)
+
+
+def _neutral_tool_calls(cb_tool_calls):
+    from eval.backends import ToolCall as NeutralToolCall
+
+    out = []
+    for tc in cb_tool_calls or []:
+        try:
+            args = json.loads(tc.function.arguments or "{}")
+        except (json.JSONDecodeError, TypeError):
+            args = {"raw": tc.function.arguments}
+        out.append(NeutralToolCall(id=tc.id or "", name=tc.function.name, arguments=args))
+    return out
+
+
+def rollout_to_agent_node(node: "RolloutNode", tokenizer, renderer) -> "AgentNode":
+    """Convert an RL rollout tree into the neutral AgentNode shape used by the
+    eval driver. Assistant turns are recovered with the renderer's own
+    parse_response (exact tool-call parsing); tool results are recovered from the
+    token DELTA between consecutive observations (a conversation only grows by
+    [prev action][tool results][next generation prompt])."""
+    from eval.agent import AgentNode
+
+    traj = node.trajectory
+    messages: list[dict] = []
+
+    # System + first user message from the first observation.
+    first_ob = _flatten_ob_tokens(traj.transitions[0].ob) if traj.transitions else []
+    for role, content in _BLOCK_RE.findall(tokenizer.decode(first_ob)):
+        if role in ("system", "user"):
+            messages.append({"role": role, "content": content.strip()})
+
+    prev_tokens = list(first_ob)
+    for i, tr in enumerate(traj.transitions):
+        ac_tokens = list(tr.ac.tokens)
+        try:
+            parsed, _ = renderer.parse_response(ac_tokens)
+        except Exception:
+            parsed = {"content": tokenizer.decode(ac_tokens)}
+        from tinker_cookbook.renderers import get_text_content
+
+        tool_calls = _neutral_tool_calls(parsed.get("tool_calls"))
+        messages.append({
+            "role": "assistant",
+            "content": get_text_content(parsed) or "",
+            "tool_calls": tool_calls,
+        })
+        prev_tokens += ac_tokens
+        if i + 1 < len(traj.transitions):
+            next_ob = _flatten_ob_tokens(traj.transitions[i + 1].ob)
+            delta = tokenizer.decode(next_ob[len(prev_tokens):])
+            # Pair tool responses positionally with this turn's tool calls.
+            for j, resp in enumerate(_TOOL_RESP_RE.findall(delta)):
+                name = tool_calls[j].name if j < len(tool_calls) else "tool"
+                messages.append({"role": "tool", "name": name, "content": resp})
+            prev_tokens = list(next_ob)
+
+    tm = getattr(traj, "metrics", None) or {}
+    if node.answer is not None:
+        termination = "answered"
+    elif tm.get("context_overflow") or tm.get("max_tokens_reached"):
+        termination = "overflow"
+    else:
+        termination = "stopped_no_answer"
+
+    return AgentNode(
+        depth=node.depth,
+        subtask=node.subtask,
+        answer=node.answer,
+        n_turns=len(traj.transitions),
+        termination=termination,
+        messages=messages,
+        children=[rollout_to_agent_node(c, tokenizer, renderer) for c in node.children],
+    )
 
 
 def print_rollout_tree_verbose(
