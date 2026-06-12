@@ -266,8 +266,20 @@ async def main() -> None:
 
     nodes = await asyncio.gather(*[_one(p) for (_, _, p) in work])
 
+    def _grounded(node: AgentNode) -> bool:
+        """Did any agent in the tree actually read the document? An answer produced
+        without a single read_chunk can only be a guess (binary/comparison questions
+        pay ~0.5 EV for free), so we report score split on this."""
+        return any(
+            tc.name == "read_chunk"
+            for n in flatten(node)
+            for m in n.messages
+            for tc in (m.get("tool_calls") or [])
+        )
+
     # Score + persist EVERY rollout (structured JSONL + readable full trees).
     scores_by_task: dict[str, list[float]] = defaultdict(list)
+    grounded_by_task: dict[str, list[float]] = defaultdict(list)  # score if grounded else 0
     by_dataset: dict[tuple[str, str], list[float]] = defaultdict(list)
     by_qtype: dict[tuple[str, str], list[float]] = defaultdict(list)
     health: dict[str, list] = defaultdict(list)  # task -> list of (no_answer, tree_size)
@@ -279,7 +291,9 @@ async def main() -> None:
     print("=" * 72)
     for (task, seed, problem), node in zip(work, nodes):
         score = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
+        grounded = _grounded(node)
         scores_by_task[task].append(score)
+        grounded_by_task[task].append(score if grounded else 0.0)
         ds = problem.metadata.get("dataset")
         qt = problem.metadata.get("task_type")
         if ds is not None:
@@ -291,7 +305,7 @@ async def main() -> None:
         jsonl.write(json.dumps({
             "task": task, "seed": seed, "dataset": ds, "qtype": qt,
             "question": problem.question, "gold": problem.gold_answers,
-            "answer": node.answer, "score": score,
+            "answer": node.answer, "score": score, "grounded": grounded,
             "n_agents": n_nodes, "root_termination": node.termination,
             "tree": _node_to_dict(node),
         }) + "\n")
@@ -301,6 +315,7 @@ async def main() -> None:
         print(
             f"# task={task} seed={seed} dataset={ds} gold={problem.gold_answers} "
             f"nodes={n_nodes} answer={node.answer!r} term={node.termination} score={score:.3f}"
+            + ("" if grounded else " UNGROUNDED(no reads)")
         )
         if VERBOSE:
             _print_tree(node)
@@ -311,9 +326,10 @@ async def main() -> None:
     print("-" * 72)
     for t in sorted(scores_by_task):
         s = scores_by_task[t]
+        g = grounded_by_task[t]
         no_ans = sum(1 for na, _ in health[t] if na)
         mean_tree = sum(sz for _, sz in health[t]) / len(health[t])
-        print(f"{t}: {sum(s)/len(s):.3f}  ({len(s)} rollouts | "
+        print(f"{t}: {sum(s)/len(s):.3f}  (grounded {sum(g)/len(g):.3f} | {len(s)} rollouts | "
               f"no_answer={no_ans}/{len(s)} | mean_tree={mean_tree:.1f})")
         for (tt, ds), ss in sorted(by_dataset.items()):
             if tt == t:
@@ -322,7 +338,9 @@ async def main() -> None:
             if tt == t:
                 print(f"    qtype   {qt:18s} {sum(ss)/len(ss):.3f}  (n={len(ss)})")
     alls = [s for ss in scores_by_task.values() for s in ss]
-    print(f"\nOVERALL: {sum(alls)/len(alls):.3f}  ({len(alls)} rollouts)")
+    allg = [s for ss in grounded_by_task.values() for s in ss]
+    print(f"\nOVERALL: {sum(alls)/len(alls):.3f}  (grounded {sum(allg)/len(allg):.3f} | "
+          f"{len(alls)} rollouts)")
     print(f"All {len(alls)} rollouts saved -> {OUT}.jsonl + {OUT}.txt")
 
 
