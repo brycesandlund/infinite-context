@@ -61,8 +61,11 @@ from tasks import (
 # ---------------------------------------------------------------------------
 
 
-MODEL_NAME = "Qwen/Qwen3.5-9B"
-RENDERER_NAME = "qwen3_5"      # thinking enabled
+MODEL_NAME = "Qwen/Qwen3.6-35B-A3B"
+# disable_thinking: generation prefills an EMPTY <think> block — byte-identical to
+# the prefix SFT datums condition on (oracle traces have no thinking), so train and
+# sample distributions match. Free thinking would also eat the tight 8k budget.
+RENDERER_NAME = "qwen3_5_disable_thinking"
 LORA_RANK = 32
 LEARNING_RATE = 4e-5
 
@@ -77,7 +80,7 @@ MAX_TURNS = 8               # per-agent multi-turn cap
 # caps max_tokens = AGENT_CONTEXT - prompt.length, and the env terminates when
 # the trajectory would exceed AGENT_CONTEXT. The model can think as much as it
 # wants per turn, limited only by remaining budget.
-AGENT_CONTEXT = 10_000
+AGENT_CONTEXT = 8_000
 
 # Task knobs.
 #
@@ -102,8 +105,8 @@ TASK_MIXTURE: dict[str, float] = {
     # (each family ~12%), substantial signal without swamping the RULER tasks.
     "oolong_counting": 2.0, "oolong_user": 2.0, "oolong_temporal": 2.0,
 }
-DOC_SIZE_TOKENS = 15_000    # haystack length per problem
-MAX_CHUNK_TOKENS = 8_000    # cap on a single read_chunk return. Sized close to AGENT_CONTEXT so a single read can fill most of an agent's window — forces a clean "read one range, then answer or delegate" cycle rather than nibbling.
+DOC_SIZE_TOKENS = 10_000    # haystack length per problem (> AGENT_CONTEXT, so read-it-all can't fit)
+MAX_CHUNK_TOKENS = 6_000    # cap on a single read_chunk return; < DOC_SIZE so no single read covers the doc, and < AGENT_CONTEXT so a max read still leaves headroom to act on it.
 
 DATA_SEED = 0               # base seed for problem generation; per-problem seed = DATA_SEED + step*BATCH_SIZE + idx
 
