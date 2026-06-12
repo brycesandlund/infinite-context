@@ -64,7 +64,9 @@ MODEL_NAME = "Qwen/Qwen3.6-35B-A3B"
 # sample distributions match. Free thinking would also eat the tight 8k budget.
 RENDERER_NAME = "qwen3_5_disable_thinking"
 LORA_RANK = 32
-LEARNING_RATE = 4e-5
+# 1.5e-5: run 1 went from healthy delegation to full collapse in ~3 steps at 4e-5 —
+# the policy was moving too far per update for GRPO's noisy small-group advantages.
+LEARNING_RATE = 1.5e-5
 
 N_STEPS = 25               # full RL run from the SFT warm-start (overflow-reward collapse fixed)
 BATCH_SIZE = 4             # problems per training step
@@ -339,11 +341,17 @@ class LongContextReward:
     gold_answers: list[str]
     mode: GradingMode = "exact"
     format_coef: float = 0.1
-    # Tree-shared ReadChunkTool. Training reward is GATED on the tree having read the
-    # document at least once: on binary/comparison questions a blind \boxed{} guess
-    # pays ~0.5 EV for free, an exploit GRPO would find and amplify. An answer the
-    # agent could not possibly know earns nothing. (Eval grading stays paper-faithful
-    # and ungated; eval/run.py reports raw and grounded scores separately.)
+    # Reward design (run-1 lessons baked in):
+    #   grounded + boxed   -> score          (0..1; an honest wrong answer earns 0)
+    #   EVERY failure mode -> -format_coef   (overflow, no box, ungrounded guess)
+    # Failures are deliberately FLAT: run 1 died because an ungrounded guess (then
+    # 0.0) beat an honest overflow (-0.1), making guessing the in-group safe play.
+    # Flat failures mean an all-fail group has ZERO reward variance -> contributes
+    # no gradient at all (clean skip), instead of teaching a preferred failure
+    # style; the only gradient that ever flows is "grounded success beats failure".
+    # Grounded = the rollout TREE read the document at least once (read_tool is the
+    # tree-shared ReadChunkTool). Eval grading stays paper-faithful and ungated;
+    # eval/run.py reports raw and grounded scores separately.
     read_tool: ReadChunkTool | None = None
 
     async def __call__(self, history: list[Message]) -> tuple[float, dict[str, float]]:
@@ -355,7 +363,10 @@ class LongContextReward:
         correct_format = float(extracted is not None)
         score = grade_answer(extracted, self.gold_answers, self.mode)
         grounded = float(self.read_tool is None or self.read_tool.n_reads > 0)
-        reward = self.format_coef * (correct_format - 1) + score * grounded
+        if grounded and extracted is not None:
+            reward = score
+        else:
+            reward = -self.format_coef
         return reward, {"format": correct_format, "score": score, "grounded": grounded}
 
 
@@ -370,6 +381,7 @@ class ParentRollout:
 
     root: RolloutNode
     problem: Problem
+    n_reads: int = 0  # read_chunk calls across the WHOLE tree (0 = ungrounded)
 
     @property
     def gold_answers(self) -> list[str]:
@@ -452,7 +464,7 @@ async def _rollout_one_parent(
         answer=parent_answer,
         children=parent_subagent.child_nodes,
     )
-    return ParentRollout(root=root, problem=problem)
+    return ParentRollout(root=root, problem=problem, n_reads=read_chunk_tool.n_reads)
 
 
 def _trajectory_total_reward(traj: Trajectory) -> float:
@@ -635,9 +647,11 @@ async def main() -> None:
             f"d{d}={trajectories_per_depth.get(d, 0)}"
             for d in sorted(trajectories_per_depth)
         )
+        n_grounded = sum(1 for r in parent_results if r.n_reads > 0)
         print(
             f"Step {step:2d} | mean_reward: {mean_reward:.3f} | "
             f"mean_score: {mean_score:.3f} | "
+            f"grounded: {n_grounded}/{len(parent_results)} | "
             f"by_task: {per_task_summary} | "
             f"trajectories: {depth_counts} | "
             f"datums: {len(all_datums)} | "
@@ -664,6 +678,7 @@ async def main() -> None:
                 / len(advantages),
                 "train/datums": len(all_datums),
                 "train/trained": int(bool(all_datums and nonzero_adv)),
+                "rollout/grounded_rate": n_grounded / len(parent_results),
                 "rollout/root_no_answer_rate": root_no_answer,
                 "rollout/mean_tree_size": mean_tree_size,
                 "rollout/mean_root_turns": mean_root_turns,

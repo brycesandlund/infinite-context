@@ -20,8 +20,22 @@ from __future__ import annotations
 import os
 import random
 import sys
+import warnings
+
+import datasets as _hf_datasets
 
 from tasks.base import Problem
+
+# The vendored synth pipeline runs many datasets .filter()/.sort()/.shuffle()
+# calls per problem — each spews a tqdm progress bar ("Filter: ...%", "Flattening
+# the indices: ...") into training/eval logs. Silence them globally; we generate
+# hundreds of problems per run.
+_hf_datasets.disable_progress_bars()
+# Likewise the vendored example_constructor's bare softmax() triggers a per-problem
+# torch deprecation warning; not ours to fix (vendored verbatim), so filter it.
+warnings.filterwarnings(
+    "ignore", message="Implicit dimension choice for softmax", category=UserWarning
+)
 
 # Make the vendored modules importable (they cross-import by bare module name).
 _VENDORED = os.path.join(os.path.dirname(__file__), "vendored_synth")
