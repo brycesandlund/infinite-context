@@ -102,7 +102,11 @@ TASK_MIXTURE: dict[str, float] = {
     # "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
     # "niah_multivalue": 1.0, "niah_multiquery": 1.0,
     # "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
-    "oolong_counting": 1.0, "oolong_user": 1.0, "oolong_temporal": 1.0,
+    "oolong_counting": 1.0, "oolong_user": 1.0,
+    # temporal deferred: at ~0.005 success its groups are all-failure -> zero
+    # variance -> zero gradient under flat failure rewards (pure compute cost).
+    # Re-add once counting/user delegation is stable and transfer lifts it off 0.
+    # "oolong_temporal": 1.0,
 }
 DOC_SIZE_TOKENS = 10_000    # haystack length per problem (> AGENT_CONTEXT, so read-it-all can't fit)
 MAX_CHUNK_TOKENS = 6_000    # cap on a single read_chunk return; < DOC_SIZE so no single read covers the doc, and < AGENT_CONTEXT so a max read still leaves headroom to act on it.
@@ -269,11 +273,13 @@ class SubagentTool:
             # instead of letting the completer raise "No room for generation". Not a
             # generation cap — TinkerTokenCompleter dynamically caps max_tokens.
             max_generation_tokens=1,
-            # Neutral (0.0), NOT the default -0.1: a negative overflow reward makes
-            # "read thoroughly and risk overflow" score WORSE than "box a fast wrong
-            # guess (0.0)", which collapses the policy into not reading. Keep all
-            # failure modes at 0 so the only positive signal is a correct answer.
-            context_overflow_reward=0.0,
+            # -0.1 == every other failure mode (see LongContextReward): the overflow
+            # path BYPASSES reward_fn, so this constant must match the flat failure
+            # reward or overflow becomes the in-group safe play. (Run 2 bug: at 0.0,
+            # a degenerate loop that ran into the context cap out-scored an honest
+            # clean stop at -0.1, so GRPO reinforced the loop.) Child rewards don't
+            # drive advantages (children inherit the parent's), but keep it aligned.
+            context_overflow_reward=-0.1,
         )
         policy = TinkerTokenCompleter(
             sampling_client=self.sampling_client,
@@ -357,7 +363,9 @@ class LongContextReward:
     async def __call__(self, history: list[Message]) -> tuple[float, dict[str, float]]:
         final = next((m for m in reversed(history) if m.get("role") == "assistant"), None)
         if final is None:
-            return 0.0, {"format": 0.0, "score": 0.0, "grounded": 0.0}
+            # No assistant output at all is a failure like any other — 0.0 here
+            # would make "produce nothing" out-score honest failed attempts (-0.1).
+            return -self.format_coef, {"format": 0.0, "score": 0.0, "grounded": 0.0}
         content = get_text_content(final) or ""
         extracted = _extract_boxed(content)
         correct_format = float(extracted is not None)
@@ -445,7 +453,9 @@ async def _rollout_one_parent(
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
         max_generation_tokens=1,  # see SubagentTool.spawn_subagent for rationale
-        context_overflow_reward=0.0,  # neutral failure — see child env note above
+        context_overflow_reward=-0.1,  # MUST equal the flat failure reward — this
+        # path bypasses LongContextReward entirely, so any other value creates a
+        # privileged failure mode (run-2 bug: 0.0 here made overflow the safe play).
     )
     policy = TinkerTokenCompleter(
         sampling_client=sampling_client,
