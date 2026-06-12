@@ -78,7 +78,7 @@ OUT = os.environ.get("OUT", "/tmp/eval_rollouts")
 AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", train.AGENT_CONTEXT))
 MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", train.MAX_CHUNK_TOKENS))
 MAX_DEPTH = train.MAX_DEPTH
-MAX_TURNS = train.MAX_TURNS
+MAX_TURNS = int(os.environ.get("MAX_TURNS", train.MAX_TURNS))  # set high to ~uncap
 DOC_SIZE_TOKENS = int(os.environ.get("DOC_SIZE_TOKENS", train.DOC_SIZE_TOKENS))
 # Tinker base model + renderer are env-overridable so we can probe ANY Tinker-hosted
 # model (e.g. MODEL_NAME=moonshotai/Kimi-K2.6 RENDERER_NAME=kimi_k26) through the same

@@ -48,6 +48,7 @@ class AssistantTurn:
     text: str
     tool_calls: list[ToolCall] = field(default_factory=list)
     raw: object = None  # provider-native object, for debugging
+    truncated: bool = False  # generation hit the token cap (no clean stop) == overflow
 
 
 # ---------------------------------------------------------------------------
@@ -118,14 +119,18 @@ class TinkerBackend(ModelBackend):
                 stop=self._stop,
             ),
         )
-        parsed, _termination = self.renderer.parse_response(resp.sequences[0].tokens)
+        parsed, termination = self.renderer.parse_response(resp.sequences[0].tokens)
         # content may be a str or a multimodal list; get_text_content normalizes to str.
         from tinker_cookbook.renderers import get_text_content
 
+        # No clean stop sequence => the generation was cut off at the token cap
+        # (ran out of room). Treated as overflow by the agent loop.
+        truncated = not getattr(termination, "is_clean", True)
         return AssistantTurn(
             text=get_text_content(parsed) or "",
             tool_calls=_cookbook_tool_calls_to_neutral(parsed.get("tool_calls")),
             raw=parsed,
+            truncated=truncated,
         )
 
 
@@ -254,6 +259,8 @@ class APIBackend(ModelBackend):
             max_tokens=out_cap,
         )
         msg = resp.choices[0].message
+        # finish_reason == "length" => generation hit the cap (overflow).
+        truncated = getattr(resp.choices[0], "finish_reason", None) == "length"
         tool_calls: list[ToolCall] = []
         for tc in (getattr(msg, "tool_calls", None) or []):
             try:
@@ -263,7 +270,7 @@ class APIBackend(ModelBackend):
             tool_calls.append(
                 ToolCall(id=tc.id or f"call_{uuid.uuid4().hex[:8]}", name=tc.function.name, arguments=args)
             )
-        return AssistantTurn(text=msg.content or "", tool_calls=tool_calls, raw=msg)
+        return AssistantTurn(text=msg.content or "", tool_calls=tool_calls, raw=msg, truncated=truncated)
 
 
 # ---------------------------------------------------------------------------

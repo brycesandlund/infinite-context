@@ -87,7 +87,14 @@ async def run_agent(
 
         if not turn.tool_calls:
             answer = harness.extract_boxed(turn.text)
-            termination = "answered" if answer is not None else "stopped_no_answer"
+            if answer is not None:
+                termination = "answered"
+            elif turn.truncated:
+                # generation hit the token cap mid-stream (e.g. enumerating too
+                # many examples) -> ran out of room == overflow, not a clean stop.
+                termination = "overflow"
+            else:
+                termination = "stopped_no_answer"
             break
 
         # Dispatch all tool calls in the turn (subagent spawns run concurrently).
