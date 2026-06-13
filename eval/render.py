@@ -29,10 +29,17 @@ def print_tree(node: "AgentNode", indent: int = 0, full: bool = False) -> None:
 
     prefix = "  " * indent
     bar = "=" * max(8, 76 - len(prefix))
+    # RL-credit annotations appear in the header only when populated (the dump),
+    # so eval / SFT trees render unchanged.
+    credit = ""
+    if node.advantage is not None:
+        credit += f" adv={node.advantage:+.3f}"
+    if node.judge_score is not None:
+        credit += f" judge={node.judge_score:.2f}"
     print(f"{prefix}{bar}")
     print(
         f"{prefix}[depth={node.depth}] turns={node.n_turns} "
-        f"termination={node.termination} answer={node.answer!r}"
+        f"termination={node.termination} answer={node.answer!r}{credit}"
     )
     if node.subtask:
         print(f"{prefix}SUBTASK: {node.subtask}")

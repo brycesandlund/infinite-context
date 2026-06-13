@@ -32,6 +32,10 @@ class AgentNode:
     termination: str             # answered | stopped_no_answer | overflow | max_turns
     messages: list[dict]
     children: list["AgentNode"] = field(default_factory=list)
+    # Optional RL-credit annotations, shown by print_tree when set (None elsewhere,
+    # e.g. eval / SFT traces, so the header is unchanged there).
+    advantage: float | None = None      # the training advantage this trajectory received
+    judge_score: float | None = None    # the judge's score for this node (None for the gold-graded root)
 
 
 def flatten(node: AgentNode) -> list[AgentNode]:

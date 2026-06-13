@@ -826,10 +826,16 @@ async def main() -> None:
         if ROLLOUT_DUMP:
             from eval.render import rollout_header, rollout_to_agent_node, tree_to_text
 
+            from eval.agent import flatten as flatten_agent
+
             with open(ROLLOUT_DUMP, "a") as f:
                 for ri, (r, adv, rew) in enumerate(zip(parent_results, advantages, rewards)):
                     md = r.problem.metadata or {}
                     node = rollout_to_agent_node(r.root, tokenizer, renderer)
+                    # Annotate each node with the credit it actually received, so
+                    # print_tree shows per-trajectory adv + judge score inline.
+                    for an, a_v, j_v in zip(flatten_agent(node), node_advs[ri], node_judge[ri]):
+                        an.advantage, an.judge_score = a_v, j_v
                     f.write(f"\n@@@ STEP {step} rollout {ri} reward={rew:.3f} "
                             f"advantage={adv:+.3f}\n")
                     f.write(rollout_header(
@@ -839,16 +845,6 @@ async def main() -> None:
                         grade_answer(r.root.answer, r.gold_answers,
                                      resolve_grading_mode(r.problem)),
                     ))
-                    # Per-node accountability: what each node was graded and the
-                    # advantage it actually received (root = gold; subagents = judge).
-                    rns = r.all_nodes()
-                    acc = ["PER-NODE CREDIT (depth | judge | blended_adv | answer):"]
-                    for ni, rn in enumerate(rns):
-                        js = node_judge[ri][ni]
-                        js_str = f"judge={js:.2f}" if js is not None else "judge=  -  (gold)"
-                        ans = (rn.answer or "∅").replace("\n", " ")[:50]
-                        acc.append(f"  d{rn.depth} | {js_str} | adv={node_advs[ri][ni]:+.3f} | {ans!r}")
-                    f.write("\n".join(acc) + "\n")
                     f.write(tree_to_text(node))
 
         if DEBUG_PRINT_TREE_EACH_STEP:
