@@ -65,13 +65,29 @@ MODEL_NAME = "Qwen/Qwen3.6-35B-A3B"
 # sample distributions match. Free thinking would also eat the tight 8k budget.
 RENDERER_NAME = "qwen3_5_disable_thinking"
 LORA_RANK = 32
-# 1.5e-5: run 1 went from healthy delegation to full collapse in ~3 steps at 4e-5 —
-# the policy was moving too far per update for GRPO's noisy small-group advantages.
-LEARNING_RATE = 1.5e-5
+# Env-overridable (LR=...) for sweeps. Run 9 settled this: at 4e-5 the policy
+# collapses in ~3 steps (reward 0.62->0.00, grounded 16->9) EVEN with the leak-free
+# reward — so the collapse is LR/gradient-noise-driven, not (only) the reward. At the
+# current 4x4 batch the usable band is narrow: 1.5e-5 is stable-but-flat, 4e-5 blows
+# up. The real lever is reducing gradient noise (bigger batch/group), not LR alone.
+LEARNING_RATE = float(os.environ.get("LR", "1.5e-5"))
 
-N_STEPS = 25               # full RL run from the SFT warm-start (overflow-reward collapse fixed)
-BATCH_SIZE = 4             # problems per training step
-GROUP_SIZE = 4              # parent rollouts per problem
+# Env-overridable for sweeps. Bigger BATCH*GROUP = lower-variance GRPO advantages,
+# which is the real lever for stable learning (see run-9 LR-collapse note above).
+N_STEPS = int(os.environ.get("N_STEPS", "25"))
+BATCH_SIZE = int(os.environ.get("BATCH", "4"))    # problems per training step
+GROUP_SIZE = int(os.environ.get("GROUP", "4"))    # parent rollouts per problem
+FIXED_BATCH = os.environ.get("FIXED_BATCH", "0") == "1"  # reuse same batch every step (overfit test)
+
+# Policy-gradient loss. "ppo" CLIPS the importance ratio (trust region) — without it
+# the overfit test improved then drifted back ("rise-then-fall"), the signature of no
+# trust region. "importance_sampling" is the unclipped REINFORCE-style estimator.
+LOSS_FN = os.environ.get("LOSS", "ppo")
+# Per-DEPTH advantage weight: the root picks the decomposition AND emits the gold-graded
+# answer, but is a minority of datums (leaves dominate by count) — and with judge off,
+# leaf advantages are just inherited tree-luck (noise). Up-weight root / down-weight
+# leaves via DEPTH_WEIGHT="root,mid,leaf". Default uniform so the PPO test isn't confounded.
+DEPTH_WEIGHT = {d: float(w) for d, w in enumerate(os.environ.get("DEPTH_WEIGHT", "1,1,1").split(","))}
 
 # LLM-as-a-judge DENSE credit assignment for SUBAGENTS. The root keeps its exact
 # gold reward (compute_reward); each non-root node is graded by the judge on its OWN
@@ -693,8 +709,10 @@ async def main() -> None:
 
         # One problem per slot in the batch (task sampled from TASK_MIXTURE);
         # GROUP_SIZE rollouts each, all sharing that problem so the GRPO group-mean
-        # baseline compares like-vs-like.
-        problems = [gen_problem(DATA_SEED + step * BATCH_SIZE + pi) for pi in range(BATCH_SIZE)]
+        # baseline compares like-vs-like. FIXED_BATCH=1 reuses the SAME batch every
+        # step (learnability sanity check: can RL overfit a tiny fixed set at all?).
+        seed_base = DATA_SEED + (0 if FIXED_BATCH else step * BATCH_SIZE)
+        problems = [gen_problem(seed_base + pi) for pi in range(BATCH_SIZE)]
 
         rollout_coros = []
         problem_idx_for_rollout: list[int] = []
@@ -744,7 +762,8 @@ async def main() -> None:
             for ni, node in enumerate(parent_result.all_nodes()):
                 if not node.trajectory.transitions:
                     continue
-                all_datums.extend(trajectory_to_data(node.trajectory, node_advs[ri][ni]))
+                adv = node_advs[ri][ni] * DEPTH_WEIGHT.get(node.depth, 1.0)
+                all_datums.extend(trajectory_to_data(node.trajectory, adv))
                 trajectories_per_depth[node.depth] = trajectories_per_depth.get(node.depth, 0) + 1
 
         # Train if ANY per-node advantage is nonzero — with the judge on, a group
@@ -752,7 +771,7 @@ async def main() -> None:
         nonzero_adv = any(abs(a) > 1e-9 for advs in node_advs for a in advs)
         if all_datums and nonzero_adv:
             fwd_bwd_future = await training_client.forward_backward_async(
-                [_strip_mask(d) for d in all_datums], loss_fn="importance_sampling"
+                [_strip_mask(d) for d in all_datums], loss_fn=LOSS_FN
             )
             optim_future = await training_client.optim_step_async(adam_params)
             await fwd_bwd_future.result_async()
