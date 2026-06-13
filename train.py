@@ -431,23 +431,28 @@ async def judged_node_advantages(parent_results, root_advs, judge, tokenizer, re
     baseline = sum(scores) / len(scores) if scores else 0.0
     jscore = {ref: v.score for ref, v in zip(refs, verdicts)}
 
+    # advs aligned with all_nodes(); judges aligned too (None for the gold-graded root)
+    # so the rollout dump can show per-node accountability for every judge reward.
     advs_per_parent: list[list[float]] = []
+    judge_per_parent: list[list[float | None]] = []
     for ri, rns in enumerate(rollout_nodes):
-        advs = []
+        advs, js = [], []
         for ni, rn in enumerate(rns):
             if rn.depth == 0:
-                advs.append(root_advs[ri])
+                advs.append(root_advs[ri]); js.append(None)
             else:
-                j_adv = jscore.get((ri, ni), baseline) - baseline
-                advs.append(JUDGE_BETA * j_adv + (1.0 - JUDGE_BETA) * root_advs[ri])
+                s = jscore.get((ri, ni), baseline)
+                advs.append(JUDGE_BETA * (s - baseline) + (1.0 - JUDGE_BETA) * root_advs[ri])
+                js.append(s)
         advs_per_parent.append(advs)
+        judge_per_parent.append(js)
 
     stats = {
         "judge_mean": baseline,
         "judge_parsed": sum(1 for v in verdicts if v.parsed),
         "judge_n": len(verdicts),
     }
-    return advs_per_parent, stats
+    return advs_per_parent, judge_per_parent, stats
 
 
 # ---------------------------------------------------------------------------
@@ -713,12 +718,13 @@ async def main() -> None:
         # advantage blended with the tree outcome; otherwise every node inherits the
         # root advantage (prior behavior).
         if JUDGE_SUBAGENTS and judge is not None:
-            node_advs, judge_stats = await judged_node_advantages(
+            node_advs, node_judge, judge_stats = await judged_node_advantages(
                 parent_results, advantages, judge, tokenizer, renderer
             )
         else:
             node_advs = [[advantages[ri]] * len(pr.all_nodes())
                          for ri, pr in enumerate(parent_results)]
+            node_judge = [[None] * len(pr.all_nodes()) for pr in parent_results]
             judge_stats = {"judge_mean": 0.0, "judge_parsed": 0, "judge_n": 0}
 
         all_datums: list[tinker.Datum] = []
@@ -833,6 +839,16 @@ async def main() -> None:
                         grade_answer(r.root.answer, r.gold_answers,
                                      resolve_grading_mode(r.problem)),
                     ))
+                    # Per-node accountability: what each node was graded and the
+                    # advantage it actually received (root = gold; subagents = judge).
+                    rns = r.all_nodes()
+                    acc = ["PER-NODE CREDIT (depth | judge | blended_adv | answer):"]
+                    for ni, rn in enumerate(rns):
+                        js = node_judge[ri][ni]
+                        js_str = f"judge={js:.2f}" if js is not None else "judge=  -  (gold)"
+                        ans = (rn.answer or "∅").replace("\n", " ")[:50]
+                        acc.append(f"  d{rn.depth} | {js_str} | adv={node_advs[ri][ni]:+.3f} | {ans!r}")
+                    f.write("\n".join(acc) + "\n")
                     f.write(tree_to_text(node))
 
         if DEBUG_PRINT_TREE_EACH_STEP:
