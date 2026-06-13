@@ -116,6 +116,11 @@ DATA_SEED = 0               # base seed for problem generation; per-problem seed
 # Checkpointing. After training, save under this name (overwrite-safe). Set to None to skip saving.
 # To resume: paste a tinker:// path into LOAD_CHECKPOINT_PATH below.
 SAVE_CHECKPOINT_NAME: str | None = "final"
+# Also save every SAVE_EVERY steps (0 = only at the end), so a multi-hour run that
+# dies mid-way isn't a total loss — the last periodic save is eval-able and
+# resumable. Periodic saves use name "step{N}" so they don't clobber each other or
+# the final "final"; the latest path is always mirrored to LAST_CHECKPOINT_FILE.
+SAVE_EVERY = 5
 # CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt) to warm-start RL from SFT.
 LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # tinker:// path; None = base model
 RESUME_OPTIMIZER = False    # restore Adam momentum too. False when starting a fresh fine-tune from an SFT/base ckpt (the SFT optimizer state is for cross_entropy, not RL).
@@ -578,6 +583,17 @@ async def main() -> None:
         )
         return
 
+    async def save_checkpoint(name: str) -> None:
+        """Save training state under `name` and mirror the path to LAST_CHECKPOINT_FILE
+        (so eval/resume can `cat` the latest). overwrite=True keeps Tinker storage from
+        accumulating one blob per save when a name is reused."""
+        print(f"Saving checkpoint '{name}'...")
+        save_future = await training_client.save_state_async(name, overwrite=True)
+        save_resp = await save_future.result_async()
+        LAST_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        LAST_CHECKPOINT_FILE.write_text(save_resp.path)
+        print(f"  saved: {save_resp.path}  (path -> {LAST_CHECKPOINT_FILE})")
+
     for step in range(N_STEPS):
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
 
@@ -726,19 +742,17 @@ async def main() -> None:
                 print(f"--- rollout {ri} (advantage={advantages[ri]:+.3f}) ---")
                 print_tree(rollout_to_agent_node(parent_result.root, tokenizer, renderer))
 
+        # Periodic checkpoint (insurance against a mid-run kill). Skip the last
+        # step — the final save below covers it. Named per-step so a crashed run
+        # leaves an eval-able artifact at the last completed multiple of SAVE_EVERY.
+        if SAVE_EVERY and (step + 1) % SAVE_EVERY == 0 and step + 1 < N_STEPS:
+            await save_checkpoint(f"step{step + 1}")
+
     # ------------------------------------------------------------------ #
-    # Save checkpoint                                                    #
+    # Final checkpoint                                                   #
     # ------------------------------------------------------------------ #
     if SAVE_CHECKPOINT_NAME:
-        print(f"Saving checkpoint '{SAVE_CHECKPOINT_NAME}'...")
-        save_future = await training_client.save_state_async(
-            SAVE_CHECKPOINT_NAME, overwrite=True
-        )
-        save_resp = await save_future.result_async()
-        print(f"  saved: {save_resp.path}")
-        LAST_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        LAST_CHECKPOINT_FILE.write_text(save_resp.path)
-        print(f"  (path written to {LAST_CHECKPOINT_FILE})")
+        await save_checkpoint(SAVE_CHECKPOINT_NAME)
 
     # Post-training eval lives in eval/run.py (the dedicated multi-backend eval
     # harness — grounded metric, per-dataset/qtype breakdowns, OUT.{jsonl,txt}):
