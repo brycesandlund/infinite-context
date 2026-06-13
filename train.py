@@ -542,13 +542,15 @@ async def main() -> None:
         # of which task we chose (otherwise the same `seed` would deterministically
         # produce the same haystack across different tasks).
         gen_seed = rng.randrange(2**32)
-        return make_problem(
+        problem = make_problem(
             task=task,
             corpus_tokens=corpus_tokens,
             tokenizer=tokenizer,
             doc_size_tokens=DOC_SIZE_TOKENS,
             seed=gen_seed,
         )
+        problem.metadata["seed"] = seed  # the OUTER seed: reproduce via gen_problem(seed)
+        return problem
 
     # Optional: load a previously saved checkpoint before doing anything else.
     if LOAD_CHECKPOINT_PATH:
@@ -705,16 +707,17 @@ async def main() -> None:
             with open(ROLLOUT_DUMP, "a") as f:
                 for ri, (r, adv, rew) in enumerate(zip(parent_results, advantages, rewards)):
                     md = r.problem.metadata or {}
+                    node = rollout_to_agent_node(r.root, tokenizer, renderer)
                     f.write(f"\n@@@ STEP {step} rollout {ri} reward={rew:.3f} "
                             f"advantage={adv:+.3f}\n")
                     f.write(rollout_header(
                         r.task, md.get("seed", "?"), md.get("dataset"),
                         md.get("task_type"), r.problem.question, r.gold_answers,
-                        r.root.answer, "-",
+                        r.root.answer, node.termination,
                         grade_answer(r.root.answer, r.gold_answers,
                                      resolve_grading_mode(r.problem)),
                     ))
-                    f.write(tree_to_text(rollout_to_agent_node(r.root, tokenizer, renderer)))
+                    f.write(tree_to_text(node))
 
         if DEBUG_PRINT_TREE_EACH_STEP:
             from eval.render import print_tree, rollout_to_agent_node
