@@ -85,6 +85,9 @@ JUDGE_SUBAGENTS = os.environ.get("JUDGE", "1") == "1"
 JUDGE_BETA = float(os.environ.get("JUDGE_BETA", "0.5"))   # 0 = pure outcome, 1 = pure own-quality
 JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "openai/gpt-5.4-nano")
 JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child reports) shown to the judge
+# Reasoning models burn hidden reasoning tokens against this budget; too small a cap
+# truncates the verdict to empty (no SCORE -> parse fail). 16k gives ample headroom.
+JUDGE_MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", "16000"))
 MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
 MAX_TURNS = 8               # per-agent multi-turn cap
 
@@ -427,12 +430,16 @@ async def judged_node_advantages(parent_results, root_advs, judge, tokenizer, re
             refs.append((ri, ni))
 
     verdicts = await judge.score_batch(items) if items else []
-    scores = [v.score for v in verdicts]
-    baseline = sum(scores) / len(scores) if scores else 0.0
-    jscore = {ref: v.score for ref, v in zip(refs, verdicts)}
+    # A judge failure (empty/truncated/no SCORE -> parsed=False) yields None, which
+    # gets ADVANTAGE ZERO below (no gradient) — never a 0.0 reward that would punish
+    # the subagent for the judge's infra hiccup. Failed nodes are also excluded from
+    # the baseline so they don't skew it.
+    jscore = {ref: (v.score if v.parsed else None) for ref, v in zip(refs, verdicts)}
+    valid = [s for s in jscore.values() if s is not None]
+    baseline = sum(valid) / len(valid) if valid else 0.0
 
-    # advs aligned with all_nodes(); judges aligned too (None for the gold-graded root)
-    # so the rollout dump can show per-node accountability for every judge reward.
+    # advs aligned with all_nodes(); judges aligned too (None for the gold-graded root
+    # AND for judge failures) so the rollout dump shows per-node accountability.
     advs_per_parent: list[list[float]] = []
     judge_per_parent: list[list[float | None]] = []
     for ri, rns in enumerate(rollout_nodes):
@@ -441,15 +448,18 @@ async def judged_node_advantages(parent_results, root_advs, judge, tokenizer, re
             if rn.depth == 0:
                 advs.append(root_advs[ri]); js.append(None)
             else:
-                s = jscore.get((ri, ni), baseline)
-                advs.append(JUDGE_BETA * (s - baseline) + (1.0 - JUDGE_BETA) * root_advs[ri])
-                js.append(s)
+                s = jscore.get((ri, ni))
+                if s is None:                       # judge failed -> zero gradient
+                    advs.append(0.0); js.append(None)
+                else:
+                    advs.append(JUDGE_BETA * (s - baseline) + (1.0 - JUDGE_BETA) * root_advs[ri])
+                    js.append(s)
         advs_per_parent.append(advs)
         judge_per_parent.append(js)
 
     stats = {
         "judge_mean": baseline,
-        "judge_parsed": sum(1 for v in verdicts if v.parsed),
+        "judge_parsed": len(valid),
         "judge_n": len(verdicts),
     }
     return advs_per_parent, judge_per_parent, stats
@@ -580,8 +590,9 @@ async def main() -> None:
     if JUDGE_SUBAGENTS:
         if JUDGE_MODEL.startswith("openai/") and not os.environ.get("OPENAI_API_KEY"):
             raise SystemExit("JUDGE=1 needs OPENAI_API_KEY in the env (or set JUDGE=0).")
-        judge = make_judge(JUDGE_MODEL)
-        print(f"Judge: {JUDGE_MODEL} | beta={JUDGE_BETA} (subagent dense credit assignment ON)")
+        judge = make_judge(JUDGE_MODEL, max_tokens=JUDGE_MAX_TOKENS)
+        print(f"Judge: {JUDGE_MODEL} | beta={JUDGE_BETA} | max_tokens={JUDGE_MAX_TOKENS} "
+              f"(subagent dense credit assignment ON; judge-fail -> advantage 0)")
 
     print(f"Loaded model {MODEL_NAME}, renderer {RENDERER_NAME}, max_depth {MAX_DEPTH}")
     metrics.init(

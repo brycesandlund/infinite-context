@@ -92,6 +92,10 @@ class Judge:
 
 def make_judge(model: str | None = None, temperature: float = 0.0, max_tokens: int = 512) -> Judge:
     """Build a judge. Defaults to GPT-5.4 nano (override via JUDGE_MODEL env or arg).
-    temperature=0 for grading stability (dropped automatically for models that fix it)."""
+    temperature=0 for grading stability (dropped automatically for models that fix it).
+    max_tokens also raises the backend's output ceiling — reasoning models (gpt-5.x)
+    spend hidden reasoning tokens against this budget, and too small a cap truncates
+    the response to empty (no SCORE line)."""
     model = model or os.environ.get("JUDGE_MODEL", "openai/gpt-5.4-nano")
-    return Judge(backend=APIBackend(model, temperature=temperature), max_tokens=max_tokens)
+    backend = APIBackend(model, temperature=temperature, max_output_cap=max_tokens)
+    return Judge(backend=backend, max_tokens=max_tokens)
