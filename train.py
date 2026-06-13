@@ -42,6 +42,7 @@ from tinker_cookbook.tool_use import (
 
 import harness
 import metrics  # optional W&B logging (no-op unless WANDB=1)
+from eval.judge import make_judge  # LLM-as-a-judge for subagent credit assignment
 from tasks import (
     GradingMode,
     Problem,
@@ -71,6 +72,19 @@ LEARNING_RATE = 1.5e-5
 N_STEPS = 25               # full RL run from the SFT warm-start (overflow-reward collapse fixed)
 BATCH_SIZE = 4             # problems per training step
 GROUP_SIZE = 4              # parent rollouts per problem
+
+# LLM-as-a-judge DENSE credit assignment for SUBAGENTS. The root keeps its exact
+# gold reward (compute_reward); each non-root node is graded by the judge on its OWN
+# subtask (verifying its answer against what it actually read), and its training
+# advantage blends own-quality with the tree outcome:
+#   subagent_adv = JUDGE_BETA*(judge_score - batch_mean_judge) + (1-JUDGE_BETA)*root_adv
+# This fixes the shared-advantage problem: a subagent that did its job inside a
+# failing tree no longer eats the tree's full negative advantage. JUDGE=0 disables
+# it (every node falls back to the root advantage, i.e. prior behavior).
+JUDGE_SUBAGENTS = os.environ.get("JUDGE", "1") == "1"
+JUDGE_BETA = float(os.environ.get("JUDGE_BETA", "0.5"))   # 0 = pure outcome, 1 = pure own-quality
+JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "openai/gpt-5.4-nano")
+JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child reports) shown to the judge
 MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
 MAX_TURNS = 8               # per-agent multi-turn cap
 
@@ -379,6 +393,63 @@ def compute_reward(parent: "ParentRollout") -> float:
     return score if score >= MIN_CREDIT else FAILURE_REWARD
 
 
+async def judged_node_advantages(parent_results, root_advs, judge, tokenizer, renderer):
+    """Per-node training advantages for a batch, with the judge scoring subagents.
+
+    Returns (advs_per_parent, stats) where advs_per_parent[ri] is a list aligned
+    with parent_results[ri].all_nodes() (DFS order):
+      - root node (depth 0): the root's gold GRPO advantage (unchanged)
+      - subagent node:        JUDGE_BETA*(judge_score - batch_mean) + (1-JUDGE_BETA)*root_adv
+    The judge grades each subagent on its OWN subtask, verifying against the tool
+    results in its own trajectory (the chunk it read and/or its children's reports).
+    """
+    from eval.agent import flatten as flatten_agent
+    from eval.render import rollout_to_agent_node
+
+    rollout_nodes = [pr.all_nodes() for pr in parent_results]
+    agent_nodes = [
+        flatten_agent(rollout_to_agent_node(pr.root, tokenizer, renderer)) for pr in parent_results
+    ]
+
+    # Collect every non-root node to grade, remembering where it came from.
+    items: list[dict] = []
+    refs: list[tuple[int, int]] = []
+    for ri, (rns, ans) in enumerate(zip(rollout_nodes, agent_nodes)):
+        for ni, (rn, an) in enumerate(zip(rns, ans)):
+            if rn.depth == 0:
+                continue
+            source = "\n".join(m["content"] for m in an.messages if m.get("role") == "tool")
+            items.append({
+                "task": an.subtask or rn.subtask or "(no subtask)",
+                "answer": rn.answer or "(no answer given)",
+                "source": source[:JUDGE_SOURCE_CHARS] or None,
+            })
+            refs.append((ri, ni))
+
+    verdicts = await judge.score_batch(items) if items else []
+    scores = [v.score for v in verdicts]
+    baseline = sum(scores) / len(scores) if scores else 0.0
+    jscore = {ref: v.score for ref, v in zip(refs, verdicts)}
+
+    advs_per_parent: list[list[float]] = []
+    for ri, rns in enumerate(rollout_nodes):
+        advs = []
+        for ni, rn in enumerate(rns):
+            if rn.depth == 0:
+                advs.append(root_advs[ri])
+            else:
+                j_adv = jscore.get((ri, ni), baseline) - baseline
+                advs.append(JUDGE_BETA * j_adv + (1.0 - JUDGE_BETA) * root_advs[ri])
+        advs_per_parent.append(advs)
+
+    stats = {
+        "judge_mean": baseline,
+        "judge_parsed": sum(1 for v in verdicts if v.parsed),
+        "judge_n": len(verdicts),
+    }
+    return advs_per_parent, stats
+
+
 # ---------------------------------------------------------------------------
 # Per-problem rollout
 # ---------------------------------------------------------------------------
@@ -499,6 +570,13 @@ async def main() -> None:
     tokenizer = tokenizer_utils.get_tokenizer(MODEL_NAME)
     renderer = get_renderer(RENDERER_NAME, tokenizer)
     adam_params = tinker.AdamParams(learning_rate=LEARNING_RATE, beta1=0.9, beta2=0.95)
+
+    judge = None
+    if JUDGE_SUBAGENTS:
+        if JUDGE_MODEL.startswith("openai/") and not os.environ.get("OPENAI_API_KEY"):
+            raise SystemExit("JUDGE=1 needs OPENAI_API_KEY in the env (or set JUDGE=0).")
+        judge = make_judge(JUDGE_MODEL)
+        print(f"Judge: {JUDGE_MODEL} | beta={JUDGE_BETA} (subagent dense credit assignment ON)")
 
     print(f"Loaded model {MODEL_NAME}, renderer {RENDERER_NAME}, max_depth {MAX_DEPTH}")
     metrics.init(
@@ -623,6 +701,7 @@ async def main() -> None:
             per_problem_rewards[pi].append(rewards[ri])
             per_problem_indices[pi].append(ri)
 
+        # Root GRPO advantage (gold reward vs same-problem group mean).
         advantages: list[float] = [0.0] * len(parent_results)
         for pi in range(len(problems)):
             group_rewards = per_problem_rewards[pi]
@@ -630,17 +709,30 @@ async def main() -> None:
             for ri in per_problem_indices[pi]:
                 advantages[ri] = rewards[ri] - group_mean
 
+        # Per-node advantages. With the judge on, subagents get their own graded
+        # advantage blended with the tree outcome; otherwise every node inherits the
+        # root advantage (prior behavior).
+        if JUDGE_SUBAGENTS and judge is not None:
+            node_advs, judge_stats = await judged_node_advantages(
+                parent_results, advantages, judge, tokenizer, renderer
+            )
+        else:
+            node_advs = [[advantages[ri]] * len(pr.all_nodes())
+                         for ri, pr in enumerate(parent_results)]
+            judge_stats = {"judge_mean": 0.0, "judge_parsed": 0, "judge_n": 0}
+
         all_datums: list[tinker.Datum] = []
         trajectories_per_depth: dict[int, int] = {}
         for ri, parent_result in enumerate(parent_results):
-            adv = advantages[ri]
-            for node in parent_result.all_nodes():
+            for ni, node in enumerate(parent_result.all_nodes()):
                 if not node.trajectory.transitions:
                     continue
-                all_datums.extend(trajectory_to_data(node.trajectory, adv))
+                all_datums.extend(trajectory_to_data(node.trajectory, node_advs[ri][ni]))
                 trajectories_per_depth[node.depth] = trajectories_per_depth.get(node.depth, 0) + 1
 
-        nonzero_adv = any(abs(a) > 1e-9 for a in advantages)
+        # Train if ANY per-node advantage is nonzero — with the judge on, a group
+        # whose roots all tie (root_adv=0) can still have subagent signal.
+        nonzero_adv = any(abs(a) > 1e-9 for advs in node_advs for a in advs)
         if all_datums and nonzero_adv:
             fwd_bwd_future = await training_client.forward_backward_async(
                 [_strip_mask(d) for d in all_datums], loss_fn="importance_sampling"
@@ -673,10 +765,15 @@ async def main() -> None:
             for d in sorted(trajectories_per_depth)
         )
         n_grounded = sum(1 for r in parent_results if r.n_reads > 0)
+        judge_str = (
+            f"judge: {judge_stats['judge_mean']:.2f}({judge_stats['judge_parsed']}/{judge_stats['judge_n']}) | "
+            if judge_stats["judge_n"] else ""
+        )
         print(
             f"Step {step:2d} | mean_reward: {mean_reward:.3f} | "
             f"mean_score: {mean_score:.3f} | "
             f"grounded: {n_grounded}/{len(parent_results)} | "
+            f"{judge_str}"
             f"by_task: {per_task_summary} | "
             f"trajectories: {depth_counts} | "
             f"datums: {len(all_datums)} | "
@@ -708,6 +805,9 @@ async def main() -> None:
                 "rollout/root_no_answer_rate": root_no_answer,
                 "rollout/mean_tree_size": mean_tree_size,
                 "rollout/mean_root_turns": mean_root_turns,
+                **({"judge/mean_score": judge_stats["judge_mean"],
+                    "judge/parse_rate": judge_stats["judge_parsed"] / judge_stats["judge_n"]}
+                   if judge_stats["judge_n"] else {}),
                 **{f"traj/d{d}": n for d, n in trajectories_per_depth.items()},
             },
             step=step,

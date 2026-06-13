@@ -10,8 +10,15 @@
 #
 # Usage:  ./train.sh [logfile]          (defaults to /tmp/rl_run.log)
 #   TINKER_API_KEY / WANDB_API_KEY must already be in the environment.
+#   OPENAI_API_KEY too when JUDGE=1 (the default — gpt-5.4-nano grades subagents);
+#   set JUDGE=0 to disable the judge and run on the root gold reward alone.
 #   CKPT defaults to the latest SFT checkpoint; override by exporting CKPT yourself.
 set -euo pipefail
+
+if [ "${JUDGE:-1}" != "0" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+  echo "JUDGE is on but OPENAI_API_KEY is unset. Export it, or run with JUDGE=0." >&2
+  exit 1
+fi
 
 LOG="${1:-/tmp/rl_run.log}"
 : "${CKPT:=$(cat "$HOME/.cache/infinite-context/last_sft_checkpoint.txt")}"
