@@ -17,17 +17,12 @@ from typing import TYPE_CHECKING
 import tinker
 from tinker_cookbook.renderers.base import Renderer
 from tinker_cookbook.rl.data_processing import trajectory_to_data
-from tinker_cookbook.rl.types import Trajectory
 
 from eval.render import rollout_to_agent_node, tree_to_text
 
 if TYPE_CHECKING:
     from tasks import Problem
     from train import ParentRollout
-
-
-def _trajectory_total_reward(traj: Trajectory) -> float:
-    return sum(t.reward for t in traj.transitions)
 
 
 def _summarize_datum(datum: tinker.Datum) -> dict[str, int]:
@@ -66,7 +61,9 @@ async def debug_run_rollouts_niah(
         max_depth = max(node.depth for node in nodes)
         if max_depth > 0:
             n_with_children += 1
-        parent_reward = _trajectory_total_reward(result.root.trajectory)
+        from train import compute_reward  # post-hoc single-source training reward
+
+        parent_reward = compute_reward(result)
         print()
         print("-" * 72)
         needle_positions = problem.metadata.get("needle_positions", [])

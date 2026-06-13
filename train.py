@@ -28,7 +28,7 @@ from typing import Annotated
 import tinker
 from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.completers import TinkerTokenCompleter
-from tinker_cookbook.renderers import get_renderer, get_text_content
+from tinker_cookbook.renderers import get_renderer
 from tinker_cookbook.renderers.base import Message, Renderer
 from tinker_cookbook.rl.data_processing import trajectory_to_data
 from tinker_cookbook.rl.rollouts import do_single_rollout
@@ -273,13 +273,8 @@ class SubagentTool:
             # instead of letting the completer raise "No room for generation". Not a
             # generation cap — TinkerTokenCompleter dynamically caps max_tokens.
             max_generation_tokens=1,
-            # -0.1 == every other failure mode (see LongContextReward): the overflow
-            # path BYPASSES reward_fn, so this constant must match the flat failure
-            # reward or overflow becomes the in-group safe play. (Run 2 bug: at 0.0,
-            # a degenerate loop that ran into the context cap out-scored an honest
-            # clean stop at -0.1, so GRPO reinforced the loop.) Child rewards don't
-            # drive advantages (children inherit the parent's), but keep it aligned.
-            context_overflow_reward=-0.1,
+            # Trajectory rewards are inert (training reward = compute_reward,
+            # post-hoc); no overflow/parse constants to keep aligned.
         )
         policy = TinkerTokenCompleter(
             sampling_client=self.sampling_client,
@@ -330,52 +325,53 @@ assert SubagentTool.spawn_subagent.description == harness.SPAWN_SUBAGENT_DESCRIP
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class LongContextReward:
-    """Format bonus + score on the parent's final \\boxed{} answer.
+# Training reward is computed POST-HOC from the completed ParentRollout (see
+# compute_reward below) — never from trajectory-embedded transition rewards.
+#
+# Why: the env assigns per-transition rewards through FOUR different channels
+# depending on how the episode ends (reward_fn at a clean episode end; the
+# context_overflow_reward constant on generation-length stop AND on next-prompt
+# overflow; the failed_parse_reward constant on a renderer parse failure — see
+# tinker_cookbook/rl/message_env.py:EnvFromMessageEnv.step). Keeping a reward
+# POLICY consistent across four scattered assignment sites is how runs 1-3 each
+# died to a different privileged failure mode. Post-hoc computation makes the
+# env's reward plumbing inert: every termination path (overflow, parse error,
+# stall, max_turns) simply yields answer=None and lands in the failure tier by
+# construction. One function owns the policy.
 
-    `mode` is one of:
-    - "exact":   single value, normalized equality;            score ∈ {0, 1}
-    - "set":     any-order list of values in \\boxed{};        score ∈ {0, 1}
-    - "numeric": float-valued answer, 0.75**|y-y_hat| partial credit; score ∈ [0, 1]
+FAILURE_REWARD = -0.1   # the single flat failure tier (see compute_reward)
+MIN_CREDIT = 0.05       # numeric 0.75**|err| never reaches exactly 0; without a
+                        # floor a FABRICATED number nicks epsilon credit and
+                        # floats above failures. 0.05 <=> |err| <= ~10.
 
-    Reward = format_coef * (format - 1) + score. The format term is a small
-    negative shaping bonus for failing to emit \\boxed{}; the score is the
-    grader's float output.
+
+def compute_reward(parent: "ParentRollout") -> float:
+    """Single source of truth for the training reward. Exactly TWO tiers:
+
+      meaningful credit:  boxed answer + tree read the doc + score >= MIN_CREDIT
+                          -> score (in [MIN_CREDIT, 1])
+      everything else:    -> FAILURE_REWARD (flat)
+
+    "Everything else" deliberately includes every failure mode — overflow, stall,
+    no box, parse error, ungrounded guess, and a grounded-but-WRONG answer (run-3
+    lesson: when subagents all failed, the root FABRICATED an answer; at 0.0 it
+    out-ranked honest -0.1 failures and GRPO taught "make something up"). A wrong
+    answer must be worth no more than no answer.
+
+    Failure FLATNESS is the load-bearing property: an all-fail group has zero
+    reward variance -> contributes no gradient (clean skip) instead of teaching a
+    preferred failure style. (GRPO advantages are invariant to uniform shifts, so
+    the -0.1 level itself is cosmetic; flatness is what matters.)
+
+    Eval grading stays paper-faithful and ungated; eval/run.py reports raw and
+    grounded scores separately.
     """
-
-    gold_answers: list[str]
-    mode: GradingMode = "exact"
-    format_coef: float = 0.1
-    # Reward design (run-1 lessons baked in):
-    #   grounded + boxed   -> score          (0..1; an honest wrong answer earns 0)
-    #   EVERY failure mode -> -format_coef   (overflow, no box, ungrounded guess)
-    # Failures are deliberately FLAT: run 1 died because an ungrounded guess (then
-    # 0.0) beat an honest overflow (-0.1), making guessing the in-group safe play.
-    # Flat failures mean an all-fail group has ZERO reward variance -> contributes
-    # no gradient at all (clean skip), instead of teaching a preferred failure
-    # style; the only gradient that ever flows is "grounded success beats failure".
-    # Grounded = the rollout TREE read the document at least once (read_tool is the
-    # tree-shared ReadChunkTool). Eval grading stays paper-faithful and ungated;
-    # eval/run.py reports raw and grounded scores separately.
-    read_tool: ReadChunkTool | None = None
-
-    async def __call__(self, history: list[Message]) -> tuple[float, dict[str, float]]:
-        final = next((m for m in reversed(history) if m.get("role") == "assistant"), None)
-        if final is None:
-            # No assistant output at all is a failure like any other — 0.0 here
-            # would make "produce nothing" out-score honest failed attempts (-0.1).
-            return -self.format_coef, {"format": 0.0, "score": 0.0, "grounded": 0.0}
-        content = get_text_content(final) or ""
-        extracted = _extract_boxed(content)
-        correct_format = float(extracted is not None)
-        score = grade_answer(extracted, self.gold_answers, self.mode)
-        grounded = float(self.read_tool is None or self.read_tool.n_reads > 0)
-        if grounded and extracted is not None:
-            reward = score
-        else:
-            reward = -self.format_coef
-        return reward, {"format": correct_format, "score": score, "grounded": grounded}
+    if parent.root.answer is None or parent.n_reads == 0:
+        return FAILURE_REWARD
+    score = grade_answer(
+        parent.root.answer, parent.gold_answers, resolve_grading_mode(parent.problem)
+    )
+    return score if score >= MIN_CREDIT else FAILURE_REWARD
 
 
 # ---------------------------------------------------------------------------
@@ -445,17 +441,14 @@ async def _rollout_one_parent(
         renderer=renderer,
         tools=tool_list,
         initial_messages=initial_messages,
-        reward_fn=LongContextReward(
-            gold_answers=problem.gold_answers,
-            mode=resolve_grading_mode(problem),
-            read_tool=read_chunk_tool,
-        ),
+        # Trajectory-embedded rewards are INERT: the training reward is computed
+        # post-hoc by compute_reward(ParentRollout) from (answer, n_reads, problem),
+        # so every env termination channel (overflow constants, parse-failure
+        # constant, reward_fn) is out of the gradient path by construction.
+        reward_fn=_trivial_reward,
         max_turns=MAX_TURNS,
         max_trajectory_tokens=AGENT_CONTEXT,
         max_generation_tokens=1,  # see SubagentTool.spawn_subagent for rationale
-        context_overflow_reward=-0.1,  # MUST equal the flat failure reward — this
-        # path bypasses LongContextReward entirely, so any other value creates a
-        # privileged failure mode (run-2 bug: 0.0 here made overflow the safe play).
     )
     policy = TinkerTokenCompleter(
         sampling_client=sampling_client,
@@ -477,8 +470,6 @@ async def _rollout_one_parent(
     return ParentRollout(root=root, problem=problem, n_reads=read_chunk_tool.n_reads)
 
 
-def _trajectory_total_reward(traj: Trajectory) -> float:
-    return sum(t.reward for t in traj.transitions)
 
 
 def _strip_mask(datum: tinker.Datum) -> tinker.Datum:
@@ -603,9 +594,11 @@ async def main() -> None:
                 problem_idx_for_rollout.append(pi)
         parent_results: list[ParentRollout] = await asyncio.gather(*rollout_coros)
 
-        rewards: list[float] = [
-            _trajectory_total_reward(r.root.trajectory) for r in parent_results
-        ]
+        # SINGLE SOURCE OF TRUTH: reward computed post-hoc from the completed
+        # rollout, never read out of trajectory transitions (the env writes those
+        # through four different channels depending on termination path — see
+        # compute_reward's docstring for the history of leaks that caused).
+        rewards: list[float] = [compute_reward(r) for r in parent_results]
         per_problem_rewards: list[list[float]] = [[] for _ in problems]
         per_problem_indices: list[list[int]] = [[] for _ in problems]
         for ri, pi in enumerate(problem_idx_for_rollout):
