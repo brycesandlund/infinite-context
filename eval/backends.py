@@ -68,6 +68,13 @@ class ModelBackend(ABC):
     async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
         """Produce one assistant turn given the conversation so far."""
 
+    async def complete(self, messages: list[dict], max_tokens: int = 512) -> str:
+        """Plain text completion — used by the LLM judge (eval/judge.py). Shared by
+        every backend: run sample() and return its text. The judge prompt offers
+        nothing to act on, so sample()'s tools stay unused (tool_choice is 'auto')."""
+        turn = await self.sample(messages, max_tokens)
+        return turn.text
+
 
 # ---------------------------------------------------------------------------
 # Tinker backend (Qwen) — renders identically to training
@@ -208,6 +215,12 @@ class APIBackend(ModelBackend):
         self.temperature = temperature
         self.max_output_cap = max_output_cap
         self._tools = harness.openai_tool_specs()
+        # Let reasoning models (gpt-5.x, used as policy OR judge backend) silently
+        # drop/translate unsupported args (e.g. a fixed temperature, max_tokens ->
+        # max_completion_tokens) instead of erroring.
+        import litellm
+
+        litellm.drop_params = True
 
     def _to_openai(self, messages: list[dict]) -> list[dict]:
         out: list[dict] = []
