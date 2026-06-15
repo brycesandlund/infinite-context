@@ -385,6 +385,7 @@ assert SubagentTool.spawn_subagent.description == harness.SPAWN_SUBAGENT_DESCRIP
 
 FAILURE_REWARD = -0.1   # the single flat failure tier (see compute_reward)
 REWARD_DEBUG = os.environ.get("REWARD_DEBUG", "")   # "format" = trivially-learnable probe
+DIAG_LP = os.environ.get("DIAG_LP", "0") == "1"     # print sample-vs-train logprob mismatch
 MIN_CREDIT = 0.05       # numeric 0.75**|err| never reaches exactly 0; without a
                         # floor a FABRICATED number nicks epsilon credit and
                         # floats above failures. 0.05 <=> |err| <= ~10.
@@ -829,12 +830,32 @@ async def main() -> None:
         # whose roots all tie (root_adv=0) can still have subagent signal.
         nonzero_adv = any(abs(a) > 1e-9 for advs in node_advs for a in advs)
         if all_datums and nonzero_adv:
+            stripped = [_strip_mask(d) for d in all_datums]
             fwd_bwd_future = await training_client.forward_backward_async(
-                [_strip_mask(d) for d in all_datums], loss_fn=LOSS_FN
+                stripped, loss_fn=LOSS_FN
             )
             optim_future = await training_client.optim_step_async(adam_params)
-            await fwd_bwd_future.result_async()
+            fb = await fwd_bwd_future.result_async()
             await optim_future.result_async()
+            if DIAG_LP:
+                # On-policy sanity: forward_backward recomputes logprobs at the SAME
+                # weights the sampling client was snapshotted from, so they must match
+                # the sampled logprobs token-for-token. A nonzero gap == sampling/training
+                # tokenization or render mismatch (thinking-block handling, etc.).
+                import torch
+                diffs = []
+                for d, out in zip(stripped, fb.loss_fn_outputs):
+                    slp = d.loss_fn_inputs["logprobs"].to_torch()
+                    tlp = out["logprobs"].to_torch()
+                    adv = d.loss_fn_inputs["advantages"].to_torch()
+                    m = adv.abs() > 1e-9
+                    if m.any():
+                        diffs.append((tlp[m] - slp[m]).abs().mean().item())
+                if diffs:
+                    import statistics
+                    print(f"  [DIAG] sample-vs-train logprob |diff| nats: "
+                          f"mean={statistics.mean(diffs):.4f} max={max(diffs):.4f} "
+                          f"(≈0 = aligned; large = tokenization/render MISMATCH)")
 
         # Per-task aggregation of REWARD (the gated quantity the policy is actually
         # trained on — grounded success = score, any failure = -0.1), so by_task
