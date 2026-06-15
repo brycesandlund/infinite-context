@@ -56,6 +56,7 @@ class Judge:
     backend: ModelBackend
     max_tokens: int = 512
     default: float = 0.0   # score used when no SCORE line parses (treat as failure)
+    max_concurrency: int = 8   # cap in-flight API calls to avoid rate-limit -> empty completions
 
     def _prompt(self, task: str, answer: str, source: str | None, rubric: str | None) -> list[dict]:
         parts = [f"TASK:\n{task.strip()}", f"ANSWER:\n{(answer or '').strip() or '(no answer given)'}"]
@@ -86,8 +87,16 @@ class Judge:
         return JudgeVerdict(score=self.default, reasoning=text.strip(), parsed=False)
 
     async def score_batch(self, items: list[dict]) -> list[JudgeVerdict]:
-        """Concurrently score many {task, answer, source?, rubric?} dicts."""
-        return await asyncio.gather(*(self.score(**it) for it in items))
+        """Score many {task, answer, source?, rubric?} dicts concurrently, but capped
+        at `max_concurrency` in-flight calls — firing 100+ at once gets the API to
+        rate-limit and return empty completions (the run-8 47%-parse-failure cause)."""
+        sem = asyncio.Semaphore(self.max_concurrency)
+
+        async def _one(it):
+            async with sem:
+                return await self.score(**it)
+
+        return await asyncio.gather(*(_one(it) for it in items))
 
 
 def make_judge(model: str | None = None, temperature: float = 0.0, max_tokens: int = 512) -> Judge:

@@ -15,8 +15,8 @@
 #   CKPT defaults to the latest SFT checkpoint; override by exporting CKPT yourself.
 set -euo pipefail
 
-if [ "${JUDGE:-1}" != "0" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
-  echo "JUDGE is on but OPENAI_API_KEY is unset. Export it, or run with JUDGE=0." >&2
+if [ "${DENSE:-1}" != "0" ] && [ "${CREDIT:-gold}" = "judge" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+  echo "CREDIT=judge needs OPENAI_API_KEY. Export it, or use CREDIT=gold (default)." >&2
   exit 1
 fi
 

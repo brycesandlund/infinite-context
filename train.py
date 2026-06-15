@@ -21,6 +21,8 @@ from __future__ import annotations
 import asyncio
 import os
 import random
+import re
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Annotated
@@ -89,22 +91,25 @@ LOSS_FN = os.environ.get("LOSS", "ppo")
 # leaves via DEPTH_WEIGHT="root,mid,leaf". Default uniform so the PPO test isn't confounded.
 DEPTH_WEIGHT = {d: float(w) for d, w in enumerate(os.environ.get("DEPTH_WEIGHT", "1,1,1").split(","))}
 
-# LLM-as-a-judge DENSE credit assignment for SUBAGENTS. The root keeps its exact
-# gold reward (compute_reward); each non-root node is graded by the judge on its OWN
-# subtask (verifying its answer against what it actually read), and its training
+# DENSE per-SUBAGENT credit assignment. The root keeps its exact gold reward
+# (compute_reward); each non-root node is scored on its OWN subtask, and its training
 # advantage blends own-quality with the tree outcome:
-#   subagent_adv = JUDGE_BETA*(judge_score - batch_mean_judge) + (1-JUDGE_BETA)*root_adv
-# This fixes the shared-advantage problem: a subagent that did its job inside a
-# failing tree no longer eats the tree's full negative advantage. JUDGE=0 disables
-# it (every node falls back to the root advantage, i.e. prior behavior).
-JUDGE_SUBAGENTS = os.environ.get("JUDGE", "1") == "1"
-JUDGE_BETA = float(os.environ.get("JUDGE_BETA", "0.5"))   # 0 = pure outcome, 1 = pure own-quality
+#   subagent_adv = CREDIT_BETA*(node_score - batch_mean) + (1-CREDIT_BETA)*root_adv
+# This fixes the shared-advantage problem (a subagent that did its job inside a failing
+# tree no longer eats the tree's full negative advantage) AND — the run-9/10/overfit
+# finding — gives a LEARNABLE per-leaf signal where the outcome reward was aleatoric.
+# DENSE=0 disables it (every node inherits the root advantage, i.e. prior behavior).
+DENSE_CREDIT = os.environ.get("DENSE", "1") == "1"
+# Scorer: "gold" = exact sub-tally vs example_spans (synthetic, free, no API); "judge"
+# = the LLM judge (for the no-gold regime; nano can't count, so gold is default).
+CREDIT_MODE = os.environ.get("CREDIT", "gold")
+CREDIT_BETA = float(os.environ.get("BETA", "0.5"))   # 0 = pure outcome, 1 = pure own-quality
 JUDGE_MODEL = os.environ.get("JUDGE_MODEL", "openai/gpt-5.4-nano")
 JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child reports) shown to the judge
 # Reasoning models burn hidden reasoning tokens against this budget; too small a cap
 # truncates the verdict to empty (no SCORE -> parse fail). 16k gives ample headroom.
 JUDGE_MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", "16000"))
-MAX_DEPTH = 2               # 0 = root only; 2 = root may spawn children that may spawn grandchildren
+MAX_DEPTH = int(os.environ.get("MAX_DEPTH", "2"))   # 0 = root only; 2 = root -> children -> grandchildren
 MAX_TURNS = 8               # per-agent multi-turn cap
 
 # A single knob: the per-agent context budget. Both the trajectory cap and the
@@ -112,7 +117,7 @@ MAX_TURNS = 8               # per-agent multi-turn cap
 # caps max_tokens = AGENT_CONTEXT - prompt.length, and the env terminates when
 # the trajectory would exceed AGENT_CONTEXT. The model can think as much as it
 # wants per turn, limited only by remaining budget.
-AGENT_CONTEXT = 8_000
+AGENT_CONTEXT = int(os.environ.get("CTX", "8000"))
 
 # Task knobs.
 #
@@ -135,14 +140,15 @@ TASK_MIXTURE: dict[str, float] = {
     # "niah_multikey_1": 1.0, "niah_multikey_2": 1.0, "niah_multikey_3": 1.0,
     # "niah_multivalue": 1.0, "niah_multiquery": 1.0,
     # "vt": 1.0, "cwe": 1.0, "fwe": 1.0,
-    "oolong_counting": 1.0, "oolong_user": 1.0,
-    # temporal deferred: at ~0.005 success its groups are all-failure -> zero
-    # variance -> zero gradient under flat failure rewards (pure compute cost).
-    # Re-add once counting/user delegation is stable and transfer lifts it off 0.
+    # COUNTING-ONLY for the gold-dense-reward test: the gold sub-tally grader only
+    # supports the counting family (label tally per range). Re-add user/temporal once
+    # the dense-credit mechanism is validated on counting (or extend the gold grader).
+    "oolong_counting": 1.0,
+    # "oolong_user": 1.0,
     # "oolong_temporal": 1.0,
 }
-DOC_SIZE_TOKENS = 10_000    # haystack length per problem (> AGENT_CONTEXT, so read-it-all can't fit)
-MAX_CHUNK_TOKENS = 6_000    # cap on a single read_chunk return; < DOC_SIZE so no single read covers the doc, and < AGENT_CONTEXT so a max read still leaves headroom to act on it.
+DOC_SIZE_TOKENS = int(os.environ.get("DOC", "10000"))   # haystack length per problem
+MAX_CHUNK_TOKENS = int(os.environ.get("CHUNK", "6000"))  # cap on a single read_chunk return
 
 DATA_SEED = 0               # base seed for problem generation; per-problem seed = DATA_SEED + step*BATCH_SIZE + idx
 
@@ -378,6 +384,7 @@ assert SubagentTool.spawn_subagent.description == harness.SPAWN_SUBAGENT_DESCRIP
 # construction. One function owns the policy.
 
 FAILURE_REWARD = -0.1   # the single flat failure tier (see compute_reward)
+REWARD_DEBUG = os.environ.get("REWARD_DEBUG", "")   # "format" = trivially-learnable probe
 MIN_CREDIT = 0.05       # numeric 0.75**|err| never reaches exactly 0; without a
                         # floor a FABRICATED number nicks epsilon credit and
                         # floats above failures. 0.05 <=> |err| <= ~10.
@@ -404,6 +411,11 @@ def compute_reward(parent: "ParentRollout") -> float:
     Eval grading stays paper-faithful and ungated; eval/run.py reports raw and
     grounded scores separately.
     """
+    # DEBUG learnability probe: reward ONLY "did you box an answer" (ignore
+    # correctness/grounding). Trivially improvable — if RL can't drive the
+    # answered-rate up under this, the loop is broken, not the task.
+    if REWARD_DEBUG == "format":
+        return 1.0 if parent.root.answer is not None else -0.1
     if parent.root.answer is None or parent.n_reads == 0:
         return FAILURE_REWARD
     score = grade_answer(
@@ -412,73 +424,119 @@ def compute_reward(parent: "ParentRollout") -> float:
     return score if score >= MIN_CREDIT else FAILURE_REWARD
 
 
-async def judged_node_advantages(parent_results, root_advs, judge, tokenizer, renderer):
-    """Per-node training advantages for a batch, with the judge scoring subagents.
+_SUBTASK_RANGE = re.compile(r"tokens (\d+)\.\.(\d+)")
 
-    Returns (advs_per_parent, stats) where advs_per_parent[ri] is a list aligned
-    with parent_results[ri].all_nodes() (DFS order):
-      - root node (depth 0): the root's gold GRPO advantage (unchanged)
-      - subagent node:        JUDGE_BETA*(judge_score - batch_mean) + (1-JUDGE_BETA)*root_adv
-    The judge grades each subagent on its OWN subtask, verifying against the tool
-    results in its own trajectory (the chunk it read and/or its children's reports).
+
+def _parse_reported_counts(answer: str, labels: list[str]) -> dict[str, int]:
+    """Pull a {label: count} mapping out of a subagent's free-text answer — handles
+    'label: N' pairs and Python-list-of-labels (counted), case-insensitive."""
+    ans = answer or ""
+    low = ans.lower()
+    out: dict[str, int] = {}
+    for L in labels:
+        m = re.search(re.escape(L.lower()) + r"\s*[:=\-]\s*(\d+)", low)
+        if m:
+            out[L] = int(m.group(1))
+    if not out:  # maybe it listed labels instead of tallying them
+        toks = Counter(t.lower() for t in re.findall(r"[A-Za-z][\w &/]*", ans))
+        for L in labels:
+            if toks.get(L.lower()):
+                out[L] = toks[L.lower()]
+    return out
+
+
+def gold_subagent_score(node, problem) -> float | None:
+    """Dense per-subagent reward from ground truth: how accurately did this node's
+    reported tally match the TRUE label counts of the examples in its token range
+    (0.75**|err| per target label, averaged)? This makes the CONTROLLABLE sub-skill
+    (classify/count this chunk) directly learnable, instead of the aleatoric
+    whole-tree outcome. Returns None when not gold-gradable (no parseable range,
+    non-counting family, nothing parseable) -> caller gives the node advantage 0."""
+    md = problem.metadata or {}
+    spans = md.get("example_spans")
+    if not spans or md.get("family") != "counting":
+        return None
+    m = _SUBTASK_RANGE.search(node.subtask or "")
+    if not m:
+        return None
+    a, b = int(m.group(1)), int(m.group(2))
+    gold = Counter(s[2] for s in spans if a <= s[0] < b)        # examples STARTING in range
+    labels = list(md.get("true_counts", {}).keys())
+    sub = (node.subtask or "").lower()
+    targets = [L for L in labels if L.lower() in sub] or labels  # labels the subtask names, else all
+    reported = _parse_reported_counts(node.answer or "", labels)
+    if not reported and len(targets) == 1:                       # bare integer for a single-label count
+        mm = re.search(r"-?\d+", node.answer or "")
+        if mm:
+            reported = {targets[0]: int(mm.group())}
+    if not reported:
+        return None
+    per = [0.75 ** abs(reported[L] - gold.get(L, 0)) if L in reported else 0.0 for L in targets]
+    return sum(per) / len(per) if per else None
+
+
+async def dense_node_advantages(parent_results, root_advs, judge, tokenizer, renderer):
+    """Per-node training advantages for a batch, with each subagent scored on its OWN
+    subtask (CREDIT_MODE: 'gold' exact sub-tally, or 'judge' LLM). advs_per_parent[ri]
+    is aligned with parent_results[ri].all_nodes() (DFS):
+      - root (depth 0):  the root's gold GRPO advantage (unchanged)
+      - subagent:        CREDIT_BETA*(score - batch_mean) + (1-CREDIT_BETA)*root_adv
+      - ungradable node: advantage 0 (no gradient; never a punishing reward)
     """
-    from eval.agent import flatten as flatten_agent
-    from eval.render import rollout_to_agent_node
-
     rollout_nodes = [pr.all_nodes() for pr in parent_results]
-    agent_nodes = [
-        flatten_agent(rollout_to_agent_node(pr.root, tokenizer, renderer)) for pr in parent_results
-    ]
+    refs = [(ri, ni) for ri, rns in enumerate(rollout_nodes)
+            for ni, rn in enumerate(rns) if rn.depth > 0]
 
-    # Collect every non-root node to grade, remembering where it came from.
-    items: list[dict] = []
-    refs: list[tuple[int, int]] = []
-    for ri, (rns, ans) in enumerate(zip(rollout_nodes, agent_nodes)):
-        for ni, (rn, an) in enumerate(zip(rns, ans)):
-            if rn.depth == 0:
-                continue
+    if CREDIT_MODE == "gold":
+        scoremap = {
+            (ri, ni): gold_subagent_score(rollout_nodes[ri][ni], parent_results[ri].problem)
+            for (ri, ni) in refs
+        }
+    else:  # LLM judge: grade against the tool results in each node's own trajectory
+        from eval.agent import flatten as flatten_agent
+        from eval.render import rollout_to_agent_node
+        agent_nodes = [
+            flatten_agent(rollout_to_agent_node(pr.root, tokenizer, renderer)) for pr in parent_results
+        ]
+        items = []
+        for (ri, ni) in refs:
+            an, rn = agent_nodes[ri][ni], rollout_nodes[ri][ni]
             source = "\n".join(m["content"] for m in an.messages if m.get("role") == "tool")
-            items.append({
-                "task": an.subtask or rn.subtask or "(no subtask)",
-                "answer": rn.answer or "(no answer given)",
-                "source": source[:JUDGE_SOURCE_CHARS] or None,
-            })
-            refs.append((ri, ni))
+            items.append({"task": an.subtask or rn.subtask or "(no subtask)",
+                          "answer": rn.answer or "(no answer given)",
+                          "source": source[:JUDGE_SOURCE_CHARS] or None})
+        verdicts = await judge.score_batch(items) if items else []
+        scoremap = {ref: (v.score if v.parsed else None) for ref, v in zip(refs, verdicts)}
 
-    verdicts = await judge.score_batch(items) if items else []
-    # A judge failure (empty/truncated/no SCORE -> parsed=False) yields None, which
-    # gets ADVANTAGE ZERO below (no gradient) — never a 0.0 reward that would punish
-    # the subagent for the judge's infra hiccup. Failed nodes are also excluded from
-    # the baseline so they don't skew it.
-    jscore = {ref: (v.score if v.parsed else None) for ref, v in zip(refs, verdicts)}
-    valid = [s for s in jscore.values() if s is not None]
+    # Ungradable -> None -> advantage 0 (excluded from gradient AND from the baseline).
+    valid = [s for s in scoremap.values() if s is not None]
     baseline = sum(valid) / len(valid) if valid else 0.0
 
-    # advs aligned with all_nodes(); judges aligned too (None for the gold-graded root
-    # AND for judge failures) so the rollout dump shows per-node accountability.
+    # advs aligned with all_nodes(); scores aligned too (None for the gold-graded root
+    # AND for ungradable nodes) so the rollout dump shows per-node accountability.
     advs_per_parent: list[list[float]] = []
-    judge_per_parent: list[list[float | None]] = []
+    score_per_parent: list[list[float | None]] = []
     for ri, rns in enumerate(rollout_nodes):
         advs, js = [], []
         for ni, rn in enumerate(rns):
             if rn.depth == 0:
                 advs.append(root_advs[ri]); js.append(None)
             else:
-                s = jscore.get((ri, ni))
-                if s is None:                       # judge failed -> zero gradient
+                s = scoremap.get((ri, ni))
+                if s is None:                       # ungradable -> zero gradient
                     advs.append(0.0); js.append(None)
                 else:
-                    advs.append(JUDGE_BETA * (s - baseline) + (1.0 - JUDGE_BETA) * root_advs[ri])
+                    advs.append(CREDIT_BETA * (s - baseline) + (1.0 - CREDIT_BETA) * root_advs[ri])
                     js.append(s)
         advs_per_parent.append(advs)
-        judge_per_parent.append(js)
+        score_per_parent.append(js)
 
     stats = {
         "judge_mean": baseline,
         "judge_parsed": len(valid),
-        "judge_n": len(verdicts),
+        "judge_n": len(refs),
     }
-    return advs_per_parent, judge_per_parent, stats
+    return advs_per_parent, score_per_parent, stats
 
 
 # ---------------------------------------------------------------------------
@@ -603,12 +661,13 @@ async def main() -> None:
     adam_params = tinker.AdamParams(learning_rate=LEARNING_RATE, beta1=0.9, beta2=0.95)
 
     judge = None
-    if JUDGE_SUBAGENTS:
-        if JUDGE_MODEL.startswith("openai/") and not os.environ.get("OPENAI_API_KEY"):
-            raise SystemExit("JUDGE=1 needs OPENAI_API_KEY in the env (or set JUDGE=0).")
-        judge = make_judge(JUDGE_MODEL, max_tokens=JUDGE_MAX_TOKENS)
-        print(f"Judge: {JUDGE_MODEL} | beta={JUDGE_BETA} | max_tokens={JUDGE_MAX_TOKENS} "
-              f"(subagent dense credit assignment ON; judge-fail -> advantage 0)")
+    if DENSE_CREDIT:
+        if CREDIT_MODE == "judge":
+            if JUDGE_MODEL.startswith("openai/") and not os.environ.get("OPENAI_API_KEY"):
+                raise SystemExit("CREDIT=judge needs OPENAI_API_KEY (or use CREDIT=gold).")
+            judge = make_judge(JUDGE_MODEL, max_tokens=JUDGE_MAX_TOKENS)
+        print(f"Dense subagent credit: mode={CREDIT_MODE} beta={CREDIT_BETA}"
+              f"{' model='+JUDGE_MODEL if judge else ''} | ungradable -> advantage 0")
 
     print(f"Loaded model {MODEL_NAME}, renderer {RENDERER_NAME}, max_depth {MAX_DEPTH}")
     metrics.init(
@@ -746,8 +805,8 @@ async def main() -> None:
         # Per-node advantages. With the judge on, subagents get their own graded
         # advantage blended with the tree outcome; otherwise every node inherits the
         # root advantage (prior behavior).
-        if JUDGE_SUBAGENTS and judge is not None:
-            node_advs, node_judge, judge_stats = await judged_node_advantages(
+        if DENSE_CREDIT:
+            node_advs, node_judge, judge_stats = await dense_node_advantages(
                 parent_results, advantages, judge, tokenizer, renderer
             )
         else:
@@ -802,7 +861,8 @@ async def main() -> None:
         )
         n_grounded = sum(1 for r in parent_results if r.n_reads > 0)
         judge_str = (
-            f"judge: {judge_stats['judge_mean']:.2f}({judge_stats['judge_parsed']}/{judge_stats['judge_n']}) | "
+            f"credit[{CREDIT_MODE}]: {judge_stats['judge_mean']:.2f}"
+            f"({judge_stats['judge_parsed']}/{judge_stats['judge_n']} graded) | "
             if judge_stats["judge_n"] else ""
         )
         print(
@@ -841,8 +901,8 @@ async def main() -> None:
                 "rollout/root_no_answer_rate": root_no_answer,
                 "rollout/mean_tree_size": mean_tree_size,
                 "rollout/mean_root_turns": mean_root_turns,
-                **({"judge/mean_score": judge_stats["judge_mean"],
-                    "judge/parse_rate": judge_stats["judge_parsed"] / judge_stats["judge_n"]}
+                **({"credit/mean_score": judge_stats["judge_mean"],
+                    "credit/graded_rate": judge_stats["judge_parsed"] / judge_stats["judge_n"]}
                    if judge_stats["judge_n"] else {}),
                 **{f"traj/d{d}": n for d, n in trajectories_per_depth.items()},
             },
