@@ -622,6 +622,21 @@ class OolongOracle(ModelBackend):
         self.tmode = None
         if self.family == "temporal":
             self._setup_temporal(problem.question)
+        # User questions split into label-AGNOSTIC frequency ("which user is
+        # represented most/second-most often" -> just count users) and label-based
+        # ("...with the label X", subset counting). The frequency mode needs no
+        # Instance classification at all, so the leaf counts by user only.
+        self.umode = None
+        self.uaxis = None
+        if self.family == "user":
+            self.umode = ("user_freq" if "which user is represented" in problem.question
+                          else "user_label")
+            # The ANSWER axis decides the (1-D) key: "which user ..." -> tally by user
+            # (the label, if any, is a constant filter, not a key dimension); otherwise
+            # it's a label question scoped to a user subset -> tally by label (subset
+            # filtered at the leaf). Never key by userID|label — one dim is always
+            # redundant.
+            self.uaxis = "user" if "which user" in problem.question else "label"
 
     # months <-> number, and the formatted_date parser ("Aug 18, 2024")
     _MONTHS = {m: i for i, m in enumerate(
@@ -744,13 +759,25 @@ class OolongOracle(ModelBackend):
 
     # -- family key -------------------------------------------------------------
 
+    def _entity_only(self):
+        """Subtypes that count BY a single entity (date or user), ignoring the
+        Instance label entirely. Returns (field_name, span_index) or None.
+        Shared by temporal date-frequency and user-frequency — both just tally how
+        many examples fall under each distinct date / user."""
+        if self.family == "temporal" and self.tmode in ("date_ntimes", "date_most", "date_2nd"):
+            return ("Date", 4)
+        if self.family == "user" and self.umode == "user_freq":
+            return ("User", 3)
+        return None
+
     def _key(self, span):
         label, user, date = span[2], span[3], span[4]
+        ent = self._entity_only()
+        if ent:
+            return span[ent[1]]                              # count by date / user only
         if self.family == "user":
-            return f"{user}|{label}"
+            return user if self.uaxis == "user" else label  # key by the answer axis
         if self.family == "temporal":
-            if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
-                return date                                  # date-frequency: label irrelevant
             if self.tmode in ("month_more", "month_top", "month_first"):
                 d = self._pdate(date)
                 return f"{d.year:04d}-{d.month:02d}|{label}"  # per-month label tally
@@ -825,8 +852,11 @@ class OolongOracle(ModelBackend):
     # -- descriptive subtask (the child only sees THIS, not the root question) --
 
     def _key_fmt(self):
+        ent = self._entity_only()
+        if ent:
+            return "date:count" if ent[0] == "Date" else "userID:count"
         if self.family == "user":
-            return "userID|label:count"
+            return "userID:count" if self.uaxis == "user" else "label:count"
         if self.family == "temporal":
             return {
                 "window": "label:count",
@@ -834,9 +864,6 @@ class OolongOracle(ModelBackend):
                 "month_top": "YYYY-MM|label:count",
                 "month_first": "YYYY-MM|label:count",
                 "before_after": "side|label:count",
-                "date_ntimes": "date:count",
-                "date_most": "date:count",
-                "date_2nd": "date:count",
             }.get(self.tmode, "label:count")
         return "label:count"
 
@@ -845,12 +872,15 @@ class OolongOracle(ModelBackend):
         the same whether the recipient reads directly or fans out. Only asks to read
         the line fields the subtype needs; the trailer carries family-specific extra
         scope (user subset / temporal date filter / per-month grouping)."""
-        # date-frequency subtypes don't classify the Instance at all — just its Date
-        if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
+        # entity-frequency subtypes don't classify the Instance at all — just read
+        # the one entity (Date or User) and tally how many examples fall under each
+        ent = self._entity_only()
+        if ent:
+            f = ent[0]
             return (
-                "note its Date (ignore the Instance text — only the date matters here)",
-                "tally how many examples fall on each distinct Date",
-                "", "read its Date and ",
+                f"note its {f} (ignore the Instance text — only the {f.lower()} matters here)",
+                f"tally how many examples fall under each distinct {f}",
+                "", f"read its {f} and ",
             )
         if self.targets is None:
             scope = "classify its Instance into one of the labels described in the task"
@@ -897,9 +927,11 @@ class OolongOracle(ModelBackend):
             f"- If {b}-{a} is larger than {self.LEAF_TOKENS}: split at the midpoint — spawn one "
             f"subagent for {a}..{m} and one for {m}..{b}, then SUM their tallies.\n"
             f"- Otherwise read tokens {a}..{b}; its last line may be a cut-off example, so also "
-            f"read tokens {b}..{ob} to finish it. Then for every example whose line STARTS within "
-            f"{a}..{b} (skip a partial first line that began before {a}; the final example, "
-            f"completed by the second read, still counts): {read_dims}{scope}; {countwhat}.{userscope}"
+            f"read tokens {b}..{ob} to finish it — and if that example's line STILL runs past "
+            f"{ob} (long entries can), keep reading until its line ends. Then for every example "
+            f"whose line STARTS within {a}..{b} (skip a partial first line that began before {a}; "
+            f"the final example, completed by the extra read, still counts): "
+            f"{read_dims}{scope}; {countwhat}.{userscope}"
         )
 
     def _snippet(self, span):
@@ -910,11 +942,12 @@ class OolongOracle(ModelBackend):
     def _ex_line(self, s):
         """One enumerated example, with only the dimensions the family needs —
         counting omits User/Date (irrelevant), keeping the line (and budget) small."""
+        ent = self._entity_only()
+        if ent:                                              # entity-only: no label/snippet
+            return f'- User {s[3]}' if ent[0] == "User" else f'- {s[4]}'
         if self.family == "user":
             return f'- User {s[3]}: "{self._snippet(s)}…" -> {s[2]}'
         if self.family == "temporal":
-            if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
-                return f'- {s[4]}'                            # date only — no classification
             if self.tmode == "window" and not self._in_window(s):
                 return f'- {s[4]}: "{self._snippet(s)}…" -> {s[2]} (outside window — skip)'
             return f'- {s[4]}: "{self._snippet(s)}…" -> {s[2]}'
@@ -940,22 +973,29 @@ class OolongOracle(ModelBackend):
         line starts in [a,b) (not just the matches) and count the requested labels."""
         if not has_tool:
             ob = min(b + self.LEAF_OVERLAP, self.doc_len)
-            return AssistantTurn(
-                text=f"Range {a}..{b} is small enough to count directly. Reading it, then the "
-                     f"next {ob - b} tokens so the final example (which may run past {b}) is complete.",
-                tool_calls=[
-                    ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
-                    ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
-                ],
-            )
+            calls = [
+                ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
+                ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
+            ]
+            text = (f"Range {a}..{b} is small enough to count directly. Reading it, then the "
+                    f"next {ob - b} tokens so the final example (which may run past {b}) is complete.")
+            # GENERAL SKILL: extend the read if the final example's line STILL runs past
+            # b+overlap (long entries — e.g. full reviews — exceed any fixed overlap).
+            last_end = max((s[1] for s in self._spans_in(a, b)), default=b)
+            if last_end > ob:
+                end2 = min(last_end, self.doc_len)
+                calls.append(ToolCall(_new_id(), "read_chunk", {"start": ob, "end": end2}))
+                text += (f" That final example's line still isn't finished at {ob}, so I keep "
+                         f"reading to {end2} until its line ends.")
+            return AssistantTurn(text=text, tool_calls=calls)
         spans_in = self._spans_in(a, b)
         report = self._fmt(self._counts(spans_in))
         # EXHAUSTIVE: list EVERY owned example with its label (accountability per example
         # — "list only matches" silently undercounts), then count the requested labels.
         lines = [self._ex_line(s) for s in spans_in]
         listing = "\n".join(lines) if lines else "  (no complete example starts in this range)"
-        verb = ("Recording the Date of every example"
-                if self.tmode in ("date_ntimes", "date_most", "date_2nd")
+        ent = self._entity_only()
+        verb = (f"Recording the {ent[0]} of every example" if ent
                 else "Classifying every example")
         body = (f"{verb} whose line starts in {a}..{b} ({len(spans_in)} of "
                 f"them; skipping any partial first line that began earlier):\n{listing}")
@@ -1088,61 +1128,26 @@ class OolongOracle(ModelBackend):
         return None
 
     def _derive_user(self, q, counts):
-        """User-family answers from per-'user|label' tallies."""
-        # Subset is "... user IDs 25049." or "... user IDs [25049, 30511]." — a
-        # bare id or a list. Grab the clause after "IDs" up to the sentence end
-        # and pull every numeric id out of it (tolerant of brackets/commas).
-        subset = None
-        ms = re.search(r"\bIDs ([\d,\s\[\]']+?)[.?]", q)
-        if ms:
-            ids = set(re.findall(r"\d+", ms.group(1)))
-            if ids:
-                subset = ids
+        """User-family answers from a 1-D tally (keyed by the answer axis; any user
+        subset / label filter was already applied at the leaf via _relevant).
 
-        def users_for_label(label):
-            out = Counter()
-            for k, c in counts.items():
-                u, _, lbl = k.partition("|")
-                if lbl == label and (subset is None or u in subset):
-                    out[u] += c
-            return out
-
-        def label_counts():
-            out = Counter()
-            for k, c in counts.items():
-                u, _, lbl = k.partition("|")
-                if subset is None or u in subset:
-                    out[lbl] += c
-            return out
-
-        # label-AGNOSTIC user frequency: "which user is represented (the second) most often?"
-        if "which user is represented" in q:
-            ut = Counter()
-            for k, c in counts.items():
-                u, _, _ = k.partition("|")
-                if subset is None or u in subset:
-                    ut[u] += c
-            ranked = [u for u, _ in ut.most_common()]
-            if not ranked:
-                return None
-            if "second most" in q:
-                return ranked[1] if len(ranked) > 1 else None
-            return ranked[0]
-        # "which user has more instances with the label X: User A or User B?"
-        m = re.search(r"with the label (.+?): User (\S+) or User (\S+)\?", q)
+        uaxis='label': a label question scoped to a user subset -> counts is a plain
+        label tally; most-/least-common / count / A-vs-B all reduce to counting.
+        uaxis='user': "which user ..." -> counts is keyed by userID."""
+        if self.uaxis == "label":
+            return self._derive_counting(q, counts)
+        if not counts:
+            return None
+        if "second most" in q:
+            ranked = [u for u, _ in Counter(counts).most_common()]
+            return ranked[1] if len(ranked) > 1 else None
+        # "...: User A or User B?" -> whichever of the two has more (of label X)
+        m = re.search(r": User (\S+) or User (\S+)\?", q)
         if m:
-            label, a, b = m.group(1).strip(), m.group(2).strip(), m.group(3).strip()
-            uc = users_for_label(label)
-            return a if uc.get(a, 0) >= uc.get(b, 0) else b
-        # "...which user has the most instances with the label X?"
-        m = re.search(r"which user has the most instances with the label (.+?)\?", q)
-        if m:
-            uc = users_for_label(m.group(1).strip())
-            return max(uc, key=uc.get) if uc else None
-        # Otherwise it's a LABEL question evaluated over the (optionally user-subset)
-        # scope — count / most-/least-common / A-vs-B comparison all collapse to a
-        # plain label tally that _derive_counting resolves.
-        return self._derive_counting(q, label_counts())
+            a, b = m.group(1), m.group(2)
+            return a if counts.get(a, 0) >= counts.get(b, 0) else b
+        # represented most often / most instances with label X -> the top user
+        return max(counts, key=counts.get)
 
 
 def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):
