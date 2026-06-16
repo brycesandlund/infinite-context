@@ -152,17 +152,13 @@ def _node_to_datums(node, renderer, tool_specs) -> list[tinker.Datum]:
         )
         if float(weights.sum()) == 0.0:  # nothing trainable (shouldn't happen)
             continue
-        datum = datum_from_model_input_weights(
+        # One datum per assistant turn, uniformly. (The old 2x spawn-turn duplication
+        # was for the sqrt-tree where spawns were rare; in the binary tree spawns are
+        # ~half of all turns, so duplicating them over-weights the split decision
+        # relative to the leaf classification we actually need to teach.)
+        datums.append(datum_from_model_input_weights(
             model_input, weights, max_length=AGENT_CONTEXT, reduction="mean"
-        )
-        datums.append(datum)
-        # Rebalance: spawn turns (the delegation decision — the behavior we exist to
-        # teach) are ~19% of datums while '...\boxed{}' report turns are ~50%, so the
-        # box-emission surface dominates the loss and the model learns to glue plan
-        # prose onto a premature \boxed{} (the narrate-then-guess artifact). Duplicate
-        # spawn-turn datums so delegation carries comparable total weight.
-        if any(tc.function.name == "spawn_subagent" for tc in (m.get("tool_calls") or [])):
-            datums.append(datum)
+        ))
     return datums
 
 
