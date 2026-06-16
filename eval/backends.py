@@ -26,8 +26,9 @@ import os
 import re
 import uuid
 from abc import ABC, abstractmethod
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
+from datetime import datetime
 
 import harness
 
@@ -614,6 +615,90 @@ class OolongOracle(ModelBackend):
         self.user_targets = (
             self._parse_user_targets(problem.question) if self.family == "user" else None
         )
+        # Temporal is heterogeneous: each subtype needs a different decomposition
+        # (date-window subset -> leaf-filtered label count; month-aggregation ->
+        # per-month label tally; date-histogram -> per-date count). _setup_temporal
+        # parses the subtype so _key / _relevant / _derive specialize accordingly.
+        self.tmode = None
+        if self.family == "temporal":
+            self._setup_temporal(problem.question)
+
+    # months <-> number, and the formatted_date parser ("Aug 18, 2024")
+    _MONTHS = {m: i for i, m in enumerate(
+        ["January", "February", "March", "April", "May", "June", "July",
+         "August", "September", "October", "November", "December"], start=1)}
+
+    @staticmethod
+    def _pdate(s: str):
+        return datetime.strptime(s.strip(), "%b %d, %Y").date()
+
+    @staticmethod
+    def _pcut(s: str):
+        """Parse the before/after cutoff, which renders as a dateobj ('2023-04-27',
+        possibly with a trailing time component)."""
+        m = re.search(r"(\d{4})-(\d{2})-(\d{2})", s)
+        return datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+
+    def _setup_temporal(self, q: str):
+        """Classify the temporal subtype and pin its parameters. Sets self.tmode and
+        (per mode) self.t_win / self.t_cmp / self.t_top / self.t_n, and OVERRIDES
+        self.targets to the labels that subtype actually needs."""
+        self.t_win = self.t_cmp = self.t_top = self.t_n = None
+        # date-range window subset ("... occur between Apr 14, 2023 and Dec 27, 2023, inclusive ...")
+        m = re.search(r"occur between (\w+ \d+, \d+) and (\w+ \d+, \d+), inclusive", q)
+        if m:
+            self.tmode = "window"
+            self.t_win = ("range", self._pdate(m.group(1)), self._pdate(m.group(2)))
+            return
+        # month window subset ("... occur in December of any year ...")
+        m = re.search(r"occur in (\w+) of any year", q)
+        if m:
+            self.tmode = "window"
+            self.t_win = ("month", self._MONTHS[m.group(1)])
+            return
+        # "For how many months does the label 'X' occur more frequently than the label 'Y'?"
+        m = re.search(r"how many months does the label '([^']+)' occur more frequently "
+                      r"than the label '([^']+)'", q)
+        if m:
+            self.tmode = "month_more"
+            self.t_cmp = (m.group(1), m.group(2))
+            self.targets = frozenset(self.t_cmp)
+            return
+        # "For how many months is the label 'X' the single most frequently occuring label?"
+        m = re.search(r"how many months is the label '([^']+)' the single most", q)
+        if m:
+            self.tmode = "month_top"
+            self.t_top = m.group(1)
+            self.targets = None  # need every label per month to find the argmax
+            return
+        # "In which month did the label 'X first occur more often than the label 'Y'?" (sic: open quote)
+        m = re.search(r"In which month did the label '(.+?) first occur more often "
+                      r"than the label '([^']+)'", q)
+        if m:
+            self.tmode = "month_first"
+            self.t_cmp = (m.group(1).strip(), m.group(2))
+            self.targets = frozenset(self.t_cmp)
+            return
+        # "was label 'X' more common, less common, or the same frequency before T, ... after T"
+        m = re.search(r"was label '([^']+)' more common, less common, or the same "
+                      r"frequency before (.+?), as compared to after", q)
+        if m:
+            self.tmode = "before_after"
+            self.t_label = m.group(1)
+            self.t_cut = self._pcut(m.group(2))
+            self.targets = None  # need every label per side for the fraction denominator
+            return
+        # "how many dates are represented exactly N times"
+        m = re.search(r"how many dates are represented exactly (\d+) times", q)
+        if m:
+            self.tmode = "date_ntimes"
+            self.t_n = int(m.group(1))
+            self.targets = None  # label-agnostic: we tally date frequencies
+            return
+        # "which date is represented (the second) most often" (rare; gold format ambiguous)
+        if re.search(r"which date is represented .*most often", q):
+            self.tmode = "date_2nd" if "second" in q else "date_most"
+            self.targets = None
 
     @staticmethod
     def _parse_user_targets(q: str):
@@ -664,16 +749,40 @@ class OolongOracle(ModelBackend):
         if self.family == "user":
             return f"{user}|{label}"
         if self.family == "temporal":
-            return f"{date}|{label}"
+            if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
+                return date                                  # date-frequency: label irrelevant
+            if self.tmode in ("month_more", "month_top", "month_first"):
+                d = self._pdate(date)
+                return f"{d.year:04d}-{d.month:02d}|{label}"  # per-month label tally
+            if self.tmode == "before_after":
+                side = "before" if self._pdate(date) < self.t_cut else "after"
+                return f"{side}|{label}"                      # per-side label tally
+            return label                                     # window: leaf already date-filtered
         return label
 
+    def _in_window(self, span):
+        """temporal 'window' subtype: is this example's Date inside the asked window?
+        (True for every other family/subtype — no date filter applies.)"""
+        if self.family != "temporal" or self.tmode != "window":
+            return True
+        d = self._pdate(span[4])
+        if self.t_win[0] == "month":
+            return d.month == self.t_win[1]
+        return self.t_win[1] <= d <= self.t_win[2]
+
     def _relevant(self, span):
-        """Does this example matter for the question? Filters on BOTH the label
-        axis (targets) and, for the user family, the user axis (user_targets).
-        None on an axis means "all" on that axis."""
+        """Does this example matter for the question? Filters on the label axis
+        (targets), the user axis (user_targets), and — for temporal window
+        questions — the date axis. None on an axis means "all" on that axis."""
         if self.targets is not None and span[2] not in self.targets:
             return False
         if self.user_targets is not None and str(span[3]) not in self.user_targets:
+            return False
+        if not self._in_window(span):
+            return False
+        # before/after excludes examples falling EXACTLY on the cutoff date (vendored
+        # walks the boundary index past all ties before splitting before/after).
+        if self.tmode == "before_after" and self._pdate(span[4]) == self.t_cut:
             return False
         return True
 
@@ -716,14 +825,33 @@ class OolongOracle(ModelBackend):
     # -- descriptive subtask (the child only sees THIS, not the root question) --
 
     def _key_fmt(self):
-        return {"user": "userID|label:count", "temporal": "date|label:count"}.get(
-            self.family, "label:count"
-        )
+        if self.family == "user":
+            return "userID|label:count"
+        if self.family == "temporal":
+            return {
+                "window": "label:count",
+                "month_more": "YYYY-MM|label:count",
+                "month_top": "YYYY-MM|label:count",
+                "month_first": "YYYY-MM|label:count",
+                "before_after": "side|label:count",
+                "date_ntimes": "date:count",
+                "date_most": "date:count",
+                "date_2nd": "date:count",
+            }.get(self.tmode, "label:count")
+        return "label:count"
 
     def _task_core(self):
-        """The shared 'what to classify/count' clause (label + user scope), the same
-        whether the recipient will read directly or fan out. Only asks to read the
-        line fields the family needs (counting needs neither User nor Date)."""
+        """The (scope, countwhat, trailer, read_dims) clauses describing the leaf op,
+        the same whether the recipient reads directly or fans out. Only asks to read
+        the line fields the subtype needs; the trailer carries family-specific extra
+        scope (user subset / temporal date filter / per-month grouping)."""
+        # date-frequency subtypes don't classify the Instance at all — just its Date
+        if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
+            return (
+                "note its Date (ignore the Instance text — only the date matters here)",
+                "tally how many examples fall on each distinct Date",
+                "", "read its Date and ",
+            )
         if self.targets is None:
             scope = "classify its Instance into one of the labels described in the task"
             countwhat = "tally every label"
@@ -731,14 +859,30 @@ class OolongOracle(ModelBackend):
             tnames = ", ".join(f"'{t}'" for t in sorted(self.targets))
             scope = f"decide whether its Instance should be classified as one of {tnames}"
             countwhat = f"count ONLY {tnames} (ignore the other labels)"
-        userscope = ""
+        trailer = ""
         if self.user_targets is not None:
             unames = ", ".join(sorted(self.user_targets))
-            userscope = f" Only consider examples from users {unames}; skip all other users."
+            trailer = f" Only consider examples from users {unames}; skip all other users."
+        elif self.family == "temporal" and self.tmode == "window":
+            if self.t_win[0] == "month":
+                mname = [k for k, v in self._MONTHS.items() if v == self.t_win[1]][0]
+                trailer = (f" Only count examples whose Date falls in {mname} (of any year); "
+                           f"skip all examples from other months.")
+            else:
+                d1 = self.t_win[1].strftime("%b %d, %Y"); d2 = self.t_win[2].strftime("%b %d, %Y")
+                trailer = (f" Only count examples whose Date is between {d1} and {d2} "
+                           f"inclusive; skip all examples outside that range.")
+        elif self.family == "temporal" and self.tmode in ("month_more", "month_top", "month_first"):
+            trailer = (" Group your tally by calendar month: key each count as "
+                       "'YYYY-MM|label' (e.g. '2024-03|positive').")
+        elif self.family == "temporal" and self.tmode == "before_after":
+            cut = self.t_cut.strftime("%b %d, %Y")
+            trailer = (f" Split by whether the Date is before or after {cut}: key each count as "
+                       f"'before|label' or 'after|label' (skip examples dated exactly {cut}).")
         read_dims = {"user": "read its User and ", "temporal": "read its Date and "}.get(
             self.family, ""
         )
-        return scope, countwhat, userscope, read_dims
+        return scope, countwhat, trailer, read_dims
 
     def _subtask(self, a, b):
         """ONE uniform recursive instruction for any node over tokens [a,b). The first
@@ -769,6 +913,10 @@ class OolongOracle(ModelBackend):
         if self.family == "user":
             return f'- User {s[3]}: "{self._snippet(s)}…" -> {s[2]}'
         if self.family == "temporal":
+            if self.tmode in ("date_ntimes", "date_most", "date_2nd"):
+                return f'- {s[4]}'                            # date only — no classification
+            if self.tmode == "window" and not self._in_window(s):
+                return f'- {s[4]}: "{self._snippet(s)}…" -> {s[2]} (outside window — skip)'
             return f'- {s[4]}: "{self._snippet(s)}…" -> {s[2]}'
         return f'- "{self._snippet(s)}…" -> {s[2]}'
 
@@ -806,7 +954,10 @@ class OolongOracle(ModelBackend):
         # — "list only matches" silently undercounts), then count the requested labels.
         lines = [self._ex_line(s) for s in spans_in]
         listing = "\n".join(lines) if lines else "  (no complete example starts in this range)"
-        body = (f"Classifying every example whose line starts in {a}..{b} ({len(spans_in)} of "
+        verb = ("Recording the Date of every example"
+                if self.tmode in ("date_ntimes", "date_most", "date_2nd")
+                else "Classifying every example")
+        body = (f"{verb} whose line starts in {a}..{b} ({len(spans_in)} of "
                 f"them; skipping any partial first line that began earlier):\n{listing}")
         return AssistantTurn(
             text=f"{body}\n\nTally for this range: {report}\n\\boxed{{{report}}}",
@@ -865,7 +1016,59 @@ class OolongOracle(ModelBackend):
             return self._derive_counting(q, total)
         if self.family == "user":
             return self._derive_user(q, total)
-        return None  # temporal: stage-2 (gold fallback)
+        if self.family == "temporal":
+            return self._derive_temporal(q, total)
+        return None
+
+    def _derive_temporal(self, q, total):
+        """Genuinely derive the temporal answer from the tree-reduced tally (no gold
+        leak). The tally's key shape matches the subtype (set in _key)."""
+        if self.tmode == "window":
+            # total is a plain label:count over the in-window examples -> reuse counting
+            return self._derive_counting(q, total)
+        if self.tmode == "before_after":
+            # total keyed 'side|label'; vendored compares FRACTIONS (count / side total)
+            bef, aft = Counter(), Counter()
+            for k, c in total.items():
+                side, _, lbl = k.partition("|")
+                (bef if side == "before" else aft)[lbl] += c
+            tb, ta = sum(bef.values()), sum(aft.values())
+            fb = bef.get(self.t_label, 0) / tb if tb else 0.0
+            fa = aft.get(self.t_label, 0) / ta if ta else 0.0
+            return "more common" if fb > fa else "less common" if fb < fa else "the same frequency"
+        if self.tmode == "date_ntimes":
+            # total is date:count -> the literal count of distinct dates occurring
+            # exactly N times (upstream's [:50] cap was dropped in the generator as a
+            # benchmark bug; the gold is now the interpretable literal answer).
+            return str(sum(1 for c in total.values() if c == self.t_n))
+        if self.tmode in ("date_most", "date_2nd"):
+            return None  # rare; gold-format ambiguous -> fall back to gold for the pick
+        # month-aggregation: total is keyed 'YYYY-MM|label'. Rebuild per-month counts.
+        per = defaultdict(Counter)
+        for k, c in total.items():
+            mo, _, lbl = k.partition("|")
+            per[mo][lbl] += c
+        if self.tmode == "month_more":
+            x, y = self.t_cmp
+            return str(sum(1 for ctr in per.values() if ctr.get(x, 0) > ctr.get(y, 0)))
+        if self.tmode == "month_top":
+            x = self.t_top
+            n = 0
+            for ctr in per.values():
+                comp = ctr.get(x, 0)
+                # X counts iff it is the STRICT, unique max among labels present that month
+                if comp > 0 and all(c < comp for l, c in ctr.items() if l != x):
+                    n += 1
+            return str(n)
+        if self.tmode == "month_first":
+            x, y = self.t_cmp
+            for mo in sorted(per):  # chronological (YYYY-MM sorts correctly)
+                if per[mo][x] > per[mo][y]:
+                    yr, mn = mo.split("-")
+                    mname = [k for k, v in self._MONTHS.items() if v == int(mn)][0]
+                    return f"{mname} {yr}"
+            return None
+        return None
 
     @staticmethod
     def _derive_counting(q, label_counts):
@@ -912,6 +1115,19 @@ class OolongOracle(ModelBackend):
                     out[lbl] += c
             return out
 
+        # label-AGNOSTIC user frequency: "which user is represented (the second) most often?"
+        if "which user is represented" in q:
+            ut = Counter()
+            for k, c in counts.items():
+                u, _, _ = k.partition("|")
+                if subset is None or u in subset:
+                    ut[u] += c
+            ranked = [u for u, _ in ut.most_common()]
+            if not ranked:
+                return None
+            if "second most" in q:
+                return ranked[1] if len(ranked) > 1 else None
+            return ranked[0]
         # "which user has more instances with the label X: User A or User B?"
         m = re.search(r"with the label (.+?): User (\S+) or User (\S+)\?", q)
         if m:
@@ -923,10 +1139,10 @@ class OolongOracle(ModelBackend):
         if m:
             uc = users_for_label(m.group(1).strip())
             return max(uc, key=uc.get) if uc else None
-        # user-subset COUNTING question (quoted label, CountingTasks-style)
-        if "classified as label '" in q or "is the most common" in q or "is the least common" in q:
-            return self._derive_counting(q, label_counts())
-        return None
+        # Otherwise it's a LABEL question evaluated over the (optionally user-subset)
+        # scope — count / most-/least-common / A-vs-B comparison all collapse to a
+        # plain label tally that _derive_counting resolves.
+        return self._derive_counting(q, label_counts())
 
 
 def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):

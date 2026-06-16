@@ -47,13 +47,18 @@ from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministi
 # Config
 # ---------------------------------------------------------------------------
 
-# COUNTING-ONLY warm-start. The SFT primer's only job is to break the model's
-# anti-delegation prior (split -> spawn -> combine). Counting is the clean vehicle:
-# with the question-adaptive oracle its leaves/roots are lean and the answer is
-# really DERIVED from the tree-reduce (no gold-leak). User-most/temporal carry
-# inherent bookkeeping (all-user tallies) or non-sequitur gold-fallback traces
-# (date-keyed temporal), so they're poor teaching data — left to RL to generalize.
-SFT_TASKS = ["oolong_counting"]
+# MULTI-FAMILY warm-start. The SFT primer teaches ONE binary scaffold (split ->
+# spawn -> combine) across DIVERSE leaf-ops so the model learns to infer the leaf
+# operation from the task instead of overfitting one. Counting-only SFT generalized
+# the *scaffold* to user/temporal (it recursed/split correctly) but ran the counting
+# leaf-op everywhere -> spurious answers. The fix is leaf-op diversity: all three
+# OOLONG families now DERIVE correctly under the binary oracle (counting: sum-by-
+# label; user: per-user argmax; temporal: date-filtered before/after compare; each
+# 10/10 exact), so all three are genuine teaching data. User/temporal roots carry
+# more bookkeeping (per-user / per-date keys) but the aggregation is mechanical.
+SFT_TASKS = os.environ.get(
+    "SFT_TASKS", "oolong_counting,oolong_user,oolong_temporal"
+).split(",")
 # 150 traces (~15/dataset): MoE LoRA gets gradient only from tokens routed to each
 # expert, so the sparse 35B-A3B needs materially more data than a dense model to
 # absorb the same behavior; also widens prefix coverage against exposure bias.
@@ -98,13 +103,24 @@ MAX_TURNS = train.MAX_TURNS
 # ---------------------------------------------------------------------------
 
 
+# Temporal subtypes still excluded from SFT: date_most/date_2nd ("which date is
+# represented most often") render gold as a dateobj we can't reliably format-match,
+# so the oracle would gold-leak. (date_ntimes was previously here too, but we fixed
+# its root cause — the upstream [:50] cap — in the generator, so it now derives the
+# literal answer and is trainable.) We skip these and draw the next index instead.
+_SKIP_TMODES = {"date_most", "date_2nd"}
+
+
 async def _gen_traces(corpus_tokens, tokenizer):
     coros, meta = [], []
     for task in SFT_TASKS:
-        for i in range(N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)):
+        want = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
+        collected, i = 0, 0
+        while collected < want:
             # Shared deterministic spec (same (base, task, idx) -> same problem as
             # eval), so we can train and probe on identical questions.
             seed, dataset = oolong_spec(task, i, DATA_SEED)
+            i += 1
             problem = make_oolong_problem(
                 task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=dataset
             )
@@ -112,6 +128,9 @@ async def _gen_traces(corpus_tokens, tokenizer):
                 problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
             )
+            if getattr(oracle, "tmode", None) in _SKIP_TMODES:
+                continue  # un-trainable gold — skip, try the next index
+            collected += 1
             coros.append(
                 run_agent(
                     oracle,

@@ -108,9 +108,17 @@ class TemporalTasks:
     def __init__(self, true_counts, in_context):
         self.tasks = []
 
+        # DEVIATION from upstream abertsch72/oolong: upstream caps this at the 50
+        # most-frequent dates ([:50]). That cap is vestigial for every use below
+        # except REPRESENTED_N_TIMES, which *iterates* the list — there the cap
+        # silently undercounts (e.g. 60 distinct dates, 59 appearing once -> upstream
+        # gold 49 instead of 59; confirmed in the released oolongbench/oolong-synth
+        # data). Nothing in the prompt implies a top-50 restriction, so we drop it to
+        # make the gold the literal, interpretable answer. All other uses here only
+        # index [0]..[3], which the cap never affected -> no other behavior changes.
         most_common_dates = sorted(
             Counter(in_context["dateobj"]).items(), key=lambda x: x[1], reverse=True
-        )[:50]
+        )
 
         if len(most_common_dates) == 1: # can only really ask one temporal question 
             self.tasks.append(
