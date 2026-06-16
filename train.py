@@ -109,7 +109,7 @@ JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child repo
 # Reasoning models burn hidden reasoning tokens against this budget; too small a cap
 # truncates the verdict to empty (no SCORE -> parse fail). 16k gives ample headroom.
 JUDGE_MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", "16000"))
-MAX_DEPTH = int(os.environ.get("MAX_DEPTH", "2"))   # 0 = root only; 2 = root -> children -> grandchildren
+MAX_DEPTH = int(os.environ.get("MAX_DEPTH", "10"))  # binary recursion needs ~log2(doc/leaf); 10 = headroom
 MAX_TURNS = 8               # per-agent multi-turn cap
 
 # A single knob: the per-agent context budget. Both the trajectory cap and the

@@ -22,6 +22,7 @@ its own structured tool schema; the driver only carries the prose system prompt
 from __future__ import annotations
 
 import json
+import os
 import re
 import uuid
 from abc import ABC, abstractmethod
@@ -581,15 +582,16 @@ class OolongOracle(ModelBackend):
     """
 
     name = "oolong_oracle"
-    # Split-vs-read is decided by TOKEN-RANGE WIDTH (not example count), because a
-    # token range is the one thing the policy CAN compute from its subtask without
-    # reading. A leaf is a fixed LEAF_TOKENS window read in one read_chunk; anything
-    # wider splits. The tree is sqrt-balanced (root -> ~sqrt(L) mids -> ~sqrt(L)
-    # leaves; see _mid_ranges), so it stays depth-2 across a wide range of doc sizes.
-    # LEAF_TOKENS is kept small so a leaf's read + classify-enumeration fits even a
-    # tight budget (a dense 2000-tok window is ~45 short examples; terse counting
-    # lines keep the output well under 1k).
-    LEAF_TOKENS = 2000
+    # BINARY recursion: one uniform rule at every node — if range > LEAF_TOKENS, split
+    # at the midpoint and spawn 2; else it's a leaf. Depth = ceil(log2(doc/LEAF)), which
+    # generalizes to any doc length with the SAME policy (the split point (a+b)//2 is
+    # the only thing a node needs to compute). LEAF_TOKENS is small so a leaf counts few
+    # examples — the regime where per-leaf counting is reliable (accuracy degrades with
+    # chunk size). A leaf reads [a,b] then [b, b+LEAF_OVERLAP]: the seam between the two
+    # reads is exactly b, and the second read completes the final example (which may run
+    # past b). Counting is by where each example's line STARTS, so each is counted once.
+    LEAF_TOKENS = int(os.environ.get("LEAF_TOKENS", "500"))
+    LEAF_OVERLAP = int(os.environ.get("LEAF_OVERLAP", "200"))
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens):
         self.doc = problem.document_tokens
@@ -682,37 +684,13 @@ class OolongOracle(ModelBackend):
                 ctr[self._key(s)] += 1
         return ctr
 
-    # -- range subdivision (by example boundaries) ------------------------------
+    # -- range subdivision (binary) ---------------------------------------------
 
     def _spans_in(self, a, b):
+        """Examples whose line STARTS in [a,b). An example straddling a started
+        earlier (owned by the left sibling) so it's excluded; one straddling b
+        started here so it's included (the leaf's overlap read completes its text)."""
         return [s for s in self.spans if a <= s[0] < b]
-
-    def _leaf_ranges(self, a, b):
-        """Fixed LEAF_TOKENS-wide windows tiling [a,b) (the last may be shorter).
-        NOT example-aligned — the leaf pattern is exactly one read_chunk(s, s+2000).
-        Examples straddling a window boundary are counted in the window where they
-        START (see _spans_in), so every example is counted exactly once."""
-        out, s = [], a
-        while s < b:
-            out.append((s, min(s + self.LEAF_TOKENS, b)))
-            s += self.LEAF_TOKENS
-        return out
-
-    def _mid_ranges(self):
-        """sqrt-balanced split. The doc is L = ceil(doc/2000) fixed leaf windows;
-        group them into M = round(sqrt(L)) mids of ~sqrt(L) leaves each. The tree is
-        then root -> ~sqrt(L) mids -> ~sqrt(L) leaves (depth 2) across a wide range
-        of doc sizes. Boundaries sit on the global 2000-token grid, so leaves tile
-        [0, doc_len) exactly and no example's start is double-covered."""
-        L = max(1, -(-self.doc_len // self.LEAF_TOKENS))
-        M = max(1, round(L ** 0.5))
-        per = -(-L // M)                                  # leaves per mid (ceil)
-        out = []
-        for i in range(0, L, per):
-            lo = i * self.LEAF_TOKENS
-            hi = min((i + per) * self.LEAF_TOKENS, self.doc_len)
-            out.append((lo, hi))
-        return out
 
     # -- tally formatting / summing --------------------------------------------
 
@@ -762,32 +740,23 @@ class OolongOracle(ModelBackend):
         )
         return scope, countwhat, userscope, read_dims
 
-    def _leaf_subtask(self, a, b):
-        """Read-and-classify leaf: one read_chunk over a <=2000-token window."""
+    def _subtask(self, a, b):
+        """ONE uniform recursive instruction for any node over tokens [a,b). The first
+        'tokens a..b' is the node's own range (what the oracle routes on). The split-or-
+        read decision is stated explicitly so the rule is self-similar at every depth."""
         scope, countwhat, userscope, read_dims = self._task_core()
+        m = (a + b) // 2
+        ob = min(b + self.LEAF_OVERLAP, self.doc_len)
         return (
-            f"Read tokens {a}..{b} with a single read_chunk call. Go through each example in "
-            f"that window one at a time: {read_dims}{scope}; {countwhat}.{userscope} If the "
-            f"window begins or ends mid-example, count an example only in the window where it "
-            f"STARTS. Report your tally as '{self._key_fmt()}' pairs joined by ' || '."
+            f"Count the requested labels in tokens {a}..{b}, reporting '{self._key_fmt()}' "
+            f"pairs joined by ' || '.\n"
+            f"- If {b}-{a} is larger than {self.LEAF_TOKENS}: split at the midpoint — spawn one "
+            f"subagent for {a}..{m} and one for {m}..{b}, then SUM their tallies.\n"
+            f"- Otherwise read tokens {a}..{b}; its last line may be a cut-off example, so also "
+            f"read tokens {b}..{ob} to finish it. Then for every example whose line STARTS within "
+            f"{a}..{b} (skip a partial first line that began before {a}; the final example, "
+            f"completed by the second read, still counts): {read_dims}{scope}; {countwhat}.{userscope}"
         )
-
-    def _mid_subtask(self, a, b):
-        """Split-and-delegate mid: EXPLICIT fan-out instructions (no 'if large' — the
-        root already knows this range is large, so it tells the mid exactly what to do)."""
-        scope, countwhat, userscope, read_dims = self._task_core()
-        return (
-            f"Your assigned range is tokens {a}..{b}. Do not read it yourself — split it into "
-            f"consecutive {self.LEAF_TOKENS}-token windows and spawn one subagent per window, "
-            f"each of which reads its window and reports a '{self._key_fmt()}' tally (for every "
-            f"example, {read_dims}{scope}; {countwhat}{userscope}). Then SUM the subagents' "
-            f"tallies and report the combined tally."
-        )
-
-    def _subtask_for(self, a, b):
-        """Pick the role by range width so the instruction matches what the child does:
-        a <=2000-token range becomes a read-leaf, anything wider a split-mid."""
-        return self._leaf_subtask(a, b) if (b - a) <= self.LEAF_TOKENS else self._mid_subtask(a, b)
 
     def _snippet(self, span):
         raw = self.tok.decode(self.doc[span[0]:span[1]])
@@ -809,81 +778,80 @@ class OolongOracle(ModelBackend):
         user = next((m["content"] for m in messages if m["role"] == "user"), "")
         user = user if isinstance(user, str) else ""
         has_tool = any(m["role"] == "tool" for m in messages)
-        rng = _RANGE_RE.search(user)
+        rng = _RANGE_RE.search(user)  # first 'tokens a..b' = this node's own range
 
-        if rng:  # internal node: leaf-or-split decided by token-range WIDTH
+        if rng:
             a, b = int(rng.group(1)), int(rng.group(2))
             if (b - a) <= self.LEAF_TOKENS:
-                return self._leaf(a, b, self._spans_in(a, b), has_tool)
-            return self._mid(a, b, has_tool, messages)
-
+                return self._leaf(a, b, has_tool)
+            return self._internal(a, b, has_tool, messages)
         return self._root(user, has_tool, messages)  # root: original question
 
-    def _leaf(self, a, b, spans_in, has_tool):
+    def _leaf(self, a, b, has_tool):
+        """Read [a,b] AND [a, b+overlap], then EXHAUSTIVELY classify every example whose
+        line starts in [a,b) (not just the matches) and count the requested labels."""
         if not has_tool:
+            ob = min(b + self.LEAF_OVERLAP, self.doc_len)
             return AssistantTurn(
-                text=f"My range {a}..{b} holds {len(spans_in)} examples — small enough to "
-                     f"classify directly. Reading it.",
-                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": a, "end": b})],
+                text=f"Range {a}..{b} is small enough to count directly. Reading it, then the "
+                     f"next {ob - b} tokens so the final example (which may run past {b}) is complete.",
+                tool_calls=[
+                    ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
+                    ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
+                ],
             )
+        spans_in = self._spans_in(a, b)
         report = self._fmt(self._counts(spans_in))
-        # Show work, but only ENUMERATE the question-relevant examples — scanning all,
-        # listing the matches. (targets=None lists every example; that branch only
-        # fires for most/least-common, where every label genuinely matters.)
-        relevant = [s for s in spans_in if self._relevant(s)]
-        lines = [self._ex_line(s) for s in relevant]
-        listing = "\n".join(lines) if lines else "  (no matching examples in this range)"
-        if self.targets is None:
-            body = f"Classifying each of my {len(spans_in)} examples:\n{listing}"
-        else:
-            tnames = ", ".join(sorted(self.targets))
-            body = (f"Scanned {len(spans_in)} examples; the question only needs labels: "
-                    f"{tnames}. Matching examples:\n{listing}")
+        # EXHAUSTIVE: list EVERY owned example with its label (accountability per example
+        # — "list only matches" silently undercounts), then count the requested labels.
+        lines = [self._ex_line(s) for s in spans_in]
+        listing = "\n".join(lines) if lines else "  (no complete example starts in this range)"
+        body = (f"Classifying every example whose line starts in {a}..{b} ({len(spans_in)} of "
+                f"them; skipping any partial first line that began earlier):\n{listing}")
         return AssistantTurn(
             text=f"{body}\n\nTally for this range: {report}\n\\boxed{{{report}}}",
             tool_calls=[],
         )
 
-    def _mid(self, a, b, has_tool, messages):
+    def _internal(self, a, b, has_tool, messages):
+        """Binary: split at the midpoint, spawn 2, sum."""
         if not has_tool:
-            ranges = self._leaf_ranges(a, b)
+            m = (a + b) // 2
             calls = [
-                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask_for(la, lb)})
-                for (la, lb) in ranges
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(a, m)}),
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(m, b)}),
             ]
             return AssistantTurn(
-                text=f"My range {a}..{b} is wider than one chunk; splitting it into "
-                     f"{len(ranges)} {self.LEAF_TOKENS}-token windows and delegating each.",
+                text=f"Range {a}..{b} is wider than {self.LEAF_TOKENS} tokens; splitting at "
+                     f"midpoint {m} and delegating {a}..{m} and {m}..{b}.",
                 tool_calls=calls,
             )
         total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
         return AssistantTurn(
-            text=f"Summing my subagents' tallies -> {self._fmt(total)}.\n\\boxed{{{self._fmt(total)}}}",
+            text=f"Summing my two subagents' tallies -> {self._fmt(total)}.\n\\boxed{{{self._fmt(total)}}}",
             tool_calls=[],
         )
 
     def _root(self, question, has_tool, messages):
         if not has_tool:
-            mids = self._mid_ranges()
+            m = self.doc_len // 2
             calls = [
-                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask_for(a, b)})
-                for (a, b) in mids
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(0, m)}),
+                ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(m, self.doc_len)}),
             ]
             return AssistantTurn(
-                text=f"The document is {self.doc_len} tokens — too large to read directly. "
-                     f"Splitting it into {len(mids)} sections, each of which subdivides into "
-                     f"{self.LEAF_TOKENS}-token windows, then combining the section tallies.",
+                text=f"The document is {self.doc_len} tokens — too large to read. Splitting at "
+                     f"midpoint {m} and delegating the two halves, then combining.",
                 tool_calls=calls,
             )
         total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
         ans = self._derive(question, total)
         if ans is None:
-            # Gold fallback: emit ONE acceptable answer (the grader accepts any
-            # gold by membership) — never join multiple, which a tie-case gold
-            # list would otherwise turn into a single unrecognized string.
+            # Gold fallback: emit ONE acceptable answer (grader accepts any gold by
+            # membership) — never join multiple.
             ans = self.gold[0] if self.gold else ""
         return AssistantTurn(
-            text=f"Combining section subtotals: {self._fmt(total)}.\n\\boxed{{{ans}}}",
+            text=f"Combining the two halves: {self._fmt(total)}.\n\\boxed{{{ans}}}",
             tool_calls=[],
         )
 
