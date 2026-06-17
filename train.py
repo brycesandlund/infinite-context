@@ -110,7 +110,10 @@ JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child repo
 # truncates the verdict to empty (no SCORE -> parse fail). 16k gives ample headroom.
 JUDGE_MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", "16000"))
 MAX_DEPTH = int(os.environ.get("MAX_DEPTH", "10"))  # binary recursion needs ~log2(doc/leaf); 10 = headroom
-MAX_TURNS = 8               # per-agent multi-turn cap
+MAX_TURNS = 12              # per-agent multi-turn cap. Headroom for leaf "extend the
+                            # finish-read in +overlap steps until the final example's
+                            # line ends" — a long entry (~1k tokens) can need ~6 such
+                            # steps on top of the initial read + the classify turn.
 
 # A single knob: the per-agent context budget. Both the trajectory cap and the
 # per-turn generation cap derive from this — TinkerTokenCompleter dynamically

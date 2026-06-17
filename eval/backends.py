@@ -969,16 +969,18 @@ class OolongOracle(ModelBackend):
         return self._root(user, has_tool, messages)  # root: original question
 
     def _leaf(self, a, b, messages):
-        """Read [a,b] + [b,b+overlap]; if the final example's line is STILL cut off
-        after that, extend with one more read — but as a SEPARATE turn, only after we
-        have actually SEEN the line run past the overlap (no foreknowledge). Then
-        EXHAUSTIVELY enumerate every example whose line starts in [a,b) and count."""
+        """Read [a,b] + [b,b+overlap]; if the final example's line is STILL cut off,
+        read the NEXT +overlap block and repeat — each as a separate turn, deciding to
+        continue only from what we've actually read (no foreknowledge of where the line
+        ends). Once the line is complete, EXHAUSTIVELY enumerate every example whose
+        line starts in [a,b) and count."""
+        ov = self.LEAF_OVERLAP
         n_read = sum(1 for m in messages if m["role"] == "tool")
-        ob = min(b + self.LEAF_OVERLAP, self.doc_len)
         spans_in = self._spans_in(a, b)
         last_end = min(max((s[1] for s in spans_in), default=b), self.doc_len)
 
-        if n_read == 0:                       # turn 1: the range + the standard finish-read
+        if n_read == 0:                       # turn 1: the range + the first finish-read block
+            ob = min(b + ov, self.doc_len)
             return AssistantTurn(
                 text=f"Range {a}..{b} is small enough to count directly. Reading it, then the "
                      f"next {ob - b} tokens to finish the final example (its line may run past {b}).",
@@ -987,13 +989,17 @@ class OolongOracle(ModelBackend):
                     ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
                 ],
             )
-        if n_read == 2 and last_end > ob:     # turn 2: we SAW the final line is still cut off
+        # How far past b we've read so far: the first read is [a,b]; every read after it
+        # is a contiguous +overlap block, so coverage extends to b + (n_read-1)*overlap.
+        covered = min(b + (n_read - 1) * ov, self.doc_len)
+        if covered < last_end:                # we SAW the final line is still open -> read on
+            nxt = min(covered + ov, self.doc_len)
             return AssistantTurn(
-                text=f"The final example's line is still cut off at {ob} (no end-of-line yet), so "
-                     f"I read on to {last_end} until it ends.",
-                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": ob, "end": last_end})],
+                text=f"The final example's line is still cut off at {covered} (no end-of-line "
+                     f"yet), so I read the next {nxt - covered} tokens ({covered}..{nxt}).",
+                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": covered, "end": nxt})],
             )
-        # all needed reads are in hand -> enumerate + count
+        # the final line is now complete -> enumerate + count
         report = self._fmt(self._counts(spans_in))
         # EXHAUSTIVE: list EVERY owned example with its label (accountability per example
         # — "list only matches" silently undercounts), then count the requested labels.
