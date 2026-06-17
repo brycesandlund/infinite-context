@@ -113,9 +113,20 @@ def make_oolong_problem(
         data_obj, num_labels, num_in_context, temperature, seed
     )
 
+    # Pin task selection: the vendored *Tasks classes draw the cutoff date, month,
+    # date range, label-pair order, user subset, etc. from the GLOBAL random module,
+    # whose state after construct_context (HF dataset ops in between) is process-
+    # dependent. Reseed so a given (seed, dataset) always yields the SAME question —
+    # essential for reproducible SFT traces and train/eval problem alignment.
+    random.seed(seed)
     tasks = _build_tasks(family, true_counts, final_data)
     if not tasks:  # degenerate context for this family — fall back to counting
         tasks = CountingTasks(true_counts).tasks
+    # Normalize task ORDER before choosing: the vendored builders iterate over
+    # `set(labels)`, whose order is randomized per process (PYTHONHASHSEED), so the
+    # list order — and thus rng.choice — would otherwise vary run-to-run. Sorting by
+    # (question, answer) makes the pick reproducible for a given seed.
+    tasks = sorted(tasks, key=lambda t: (t.question, str(t.answer)))
     task = rng.choice(tasks)
 
     # Build the document (unlabeled instance lines), recording per-example spans
