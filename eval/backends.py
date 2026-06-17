@@ -1047,33 +1047,37 @@ class OolongOracle(ModelBackend):
                 tool_calls=calls,
             )
         total = self._sum_reports([m["content"] for m in messages if m["role"] == "tool"])
-        ans = self._derive(question, total)
+        ans, work = self._derive(question, total)
         if ans is None:
             # Gold fallback: emit ONE acceptable answer (grader accepts any gold by
             # membership) — never join multiple.
-            ans = self.gold[0] if self.gold else ""
-        return AssistantTurn(
-            text=f"Combining the two halves: {self._fmt(total)}.\n\\boxed{{{ans}}}",
-            tool_calls=[],
-        )
+            ans, work = (self.gold[0] if self.gold else ""), ""
+        # `work` shows the step FROM the combined tally TO the answer (per-month
+        # breakdown, fraction compare, argmax) so the root never just "conjures" a
+        # number — its reasoning is auditable and learnable.
+        body = f"Combining the two halves: {self._fmt(total)}."
+        if work:
+            body += "\n" + work
+        return AssistantTurn(text=f"{body}\n\\boxed{{{ans}}}", tool_calls=[])
 
     # -- answer derivation from the tree-reduced tally --------------------------
 
     def _derive(self, q, total):
-        """Derive the answer from the tally; None -> fall back to gold."""
+        """Derive (answer, work) from the tally; work is the shown reasoning between the
+        tally and the boxed answer. (None, "") -> fall back to gold."""
         if not total:
-            return None
+            return None, ""
         if self.family == "counting":
             return self._derive_counting(q, total)
         if self.family == "user":
             return self._derive_user(q, total)
         if self.family == "temporal":
             return self._derive_temporal(q, total)
-        return None
+        return None, ""
 
     def _derive_temporal(self, q, total):
-        """Genuinely derive the temporal answer from the tree-reduced tally (no gold
-        leak). The tally's key shape matches the subtype (set in _key)."""
+        """Genuinely derive (answer, work) from the tree-reduced tally (no gold leak).
+        The tally's key shape matches the subtype (set in _key)."""
         if self.tmode == "window":
             # total is a plain label:count over the in-window examples -> reuse counting
             return self._derive_counting(q, total)
@@ -1084,16 +1088,22 @@ class OolongOracle(ModelBackend):
                 side, _, lbl = k.partition("|")
                 (bef if side == "before" else aft)[lbl] += c
             tb, ta = sum(bef.values()), sum(aft.values())
-            fb = bef.get(self.t_label, 0) / tb if tb else 0.0
-            fa = aft.get(self.t_label, 0) / ta if ta else 0.0
-            return "more common" if fb > fa else "less common" if fb < fa else "the same frequency"
+            nb, na = bef.get(self.t_label, 0), aft.get(self.t_label, 0)
+            fb = nb / tb if tb else 0.0
+            fa = na / ta if ta else 0.0
+            ans = "more common" if fb > fa else "less common" if fb < fa else "the same frequency"
+            cut = self.t_cut.strftime("%b %d, %Y")
+            work = (f"Frequency of '{self.t_label}' before {cut}: {nb}/{tb}={fb:.3f}; "
+                    f"after: {na}/{ta}={fa:.3f} -> {ans}.")
+            return ans, work
         if self.tmode == "date_ntimes":
             # total is date:count -> the literal count of distinct dates occurring
             # exactly N times (upstream's [:50] cap was dropped in the generator as a
             # benchmark bug; the gold is now the interpretable literal answer).
-            return str(sum(1 for c in total.values() if c == self.t_n))
+            n = sum(1 for c in total.values() if c == self.t_n)
+            return str(n), f"Distinct dates occurring exactly {self.t_n} time(s): {n}."
         if self.tmode in ("date_most", "date_2nd"):
-            return None  # rare; gold-format ambiguous -> fall back to gold for the pick
+            return None, ""  # rare; gold-format ambiguous -> fall back to gold for the pick
         # month-aggregation: total is keyed 'YYYY-MM|label'. Rebuild per-month counts.
         per = defaultdict(Counter)
         for k, c in total.items():
@@ -1101,46 +1111,60 @@ class OolongOracle(ModelBackend):
             per[mo][lbl] += c
         if self.tmode == "month_more":
             x, y = self.t_cmp
-            return str(sum(1 for ctr in per.values() if ctr.get(x, 0) > ctr.get(y, 0)))
+            wins = [mo for mo in sorted(per) if per[mo].get(x, 0) > per[mo].get(y, 0)]
+            lines = [f"  {mo}: {x}={per[mo].get(x,0)}, {y}={per[mo].get(y,0)}"
+                     + ("  <- " + x if per[mo].get(x, 0) > per[mo].get(y, 0) else "")
+                     for mo in sorted(per)]
+            work = (f"Per month, {x} vs {y}:\n" + "\n".join(lines)
+                    + f"\nMonths where {x} > {y}: {len(wins)}.")
+            return str(len(wins)), work
         if self.tmode == "month_top":
             x = self.t_top
-            n = 0
-            for ctr in per.values():
-                comp = ctr.get(x, 0)
-                # X counts iff it is the STRICT, unique max among labels present that month
-                if comp > 0 and all(c < comp for l, c in ctr.items() if l != x):
+            lines, n = [], 0
+            for mo in sorted(per):
+                ctr = per[mo]; comp = ctr.get(x, 0)
+                top = comp > 0 and all(c < comp for l, c in ctr.items() if l != x)
+                if top:
                     n += 1
-            return str(n)
+                tally = ", ".join(f"{l}={c}" for l, c in ctr.most_common())
+                lines.append(f"  {mo}: {tally}" + ("  <- " + x + " sole top" if top else ""))
+            work = (f"Per month, is {x} the sole most-common label?\n" + "\n".join(lines)
+                    + f"\nMonths where {x} is the sole top: {n}.")
+            return str(n), work
         if self.tmode == "month_first":
             x, y = self.t_cmp
             for mo in sorted(per):  # chronological (YYYY-MM sorts correctly)
                 if per[mo][x] > per[mo][y]:
                     yr, mn = mo.split("-")
                     mname = [k for k, v in self._MONTHS.items() if v == int(mn)][0]
-                    return f"{mname} {yr}"
-            return None
-        return None
+                    work = f"Earliest month (chronologically) with {x} > {y}: {mo} -> {mname} {yr}."
+                    return f"{mname} {yr}", work
+            return None, ""
+        return None, ""
 
     @staticmethod
     def _derive_counting(q, label_counts):
         m = re.search(r"classified as label '([^']+)'", q)
-        if m:
-            return str(label_counts.get(m.group(1), 0))
+        if m:                                    # the answer IS the tally entry -> no extra work
+            return str(label_counts.get(m.group(1), 0)), ""
         m = re.search(r"is label '([^']+)' more common, less common, or the same "
                       r"frequency as label '([^']+)'", q)
         if m:
-            a, b = label_counts.get(m.group(1), 0), label_counts.get(m.group(2), 0)
-            return ("more common than" if a > b
-                    else "less common than" if a < b else "same frequency as")
+            la, lb = m.group(1), m.group(2)
+            a, b = label_counts.get(la, 0), label_counts.get(lb, 0)
+            ans = "more common than" if a > b else "less common than" if a < b else "same frequency as"
+            return ans, f"{la}={a} vs {lb}={b} -> {la} is {ans} {lb}."
         if "is the most common" in q:
-            return max(label_counts, key=label_counts.get)
+            w = max(label_counts, key=label_counts.get)
+            return w, f"Most common label: {w} ({label_counts[w]})."
         if "is the least common" in q:
-            return min(label_counts, key=label_counts.get)
-        return None
+            w = min(label_counts, key=label_counts.get)
+            return w, f"Least common label: {w} ({label_counts[w]})."
+        return None, ""
 
     def _derive_user(self, q, counts):
-        """User-family answers from a 1-D tally (keyed by the answer axis; any user
-        subset / label filter was already applied at the leaf via _relevant).
+        """User-family (answer, work) from a 1-D tally (keyed by the answer axis; any
+        user subset / label filter was already applied at the leaf via _relevant).
 
         uaxis='label': a label question scoped to a user subset -> counts is a plain
         label tally; most-/least-common / count / A-vs-B all reduce to counting.
@@ -1148,17 +1172,23 @@ class OolongOracle(ModelBackend):
         if self.uaxis == "label":
             return self._derive_counting(q, counts)
         if not counts:
-            return None
+            return None, ""
         if "second most" in q:
-            ranked = [u for u, _ in Counter(counts).most_common()]
-            return ranked[1] if len(ranked) > 1 else None
+            ranked = Counter(counts).most_common()
+            if len(ranked) < 2:
+                return None, ""
+            top = ", ".join(f"{u}({c})" for u, c in ranked[:3])
+            return ranked[1][0], f"Users by count: {top}… -> second most = {ranked[1][0]}."
         # "...: User A or User B?" -> whichever of the two has more (of label X)
         m = re.search(r": User (\S+) or User (\S+)\?", q)
         if m:
             a, b = m.group(1), m.group(2)
-            return a if counts.get(a, 0) >= counts.get(b, 0) else b
+            ca, cb = counts.get(a, 0), counts.get(b, 0)
+            w = a if ca >= cb else b
+            return w, f"User {a}={ca} vs User {b}={cb} -> {w}."
         # represented most often / most instances with label X -> the top user
-        return max(counts, key=counts.get)
+        w = max(counts, key=counts.get)
+        return w, f"Top user: {w} ({counts[w]})."
 
 
 def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):

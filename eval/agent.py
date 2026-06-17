@@ -59,7 +59,7 @@ async def run_agent(
     budget: int,
     max_chunk_tokens: int,
     max_depth: int,
-    max_turns: int,
+    max_turns: int | None = None,
     depth: int = 0,
     subtask: str = "",
 ) -> AgentNode:
@@ -75,10 +75,12 @@ async def run_agent(
     ]
     children: list[AgentNode] = []
     answer: str | None = None
-    termination = "max_turns"
+    termination = "overflow"   # the context budget is the real terminator
     n_turns = 0
 
-    for _ in range(max_turns):
+    # No turn cap by default: every turn strictly grows the conversation, so an agent
+    # always hits used >= budget eventually. max_turns is an optional safety cap.
+    while max_turns is None or n_turns < max_turns:
         used = backend.count_tokens(messages)
         if used >= budget:
             termination = "overflow"
@@ -123,6 +125,8 @@ async def run_agent(
             messages.append(msg)
             if child is not None:
                 children.append(child)
+    else:
+        termination = "max_turns"   # only reachable when an explicit cap is hit
 
     return AgentNode(
         depth=depth,
@@ -145,7 +149,7 @@ async def _handle_call(
     budget: int,
     max_chunk_tokens: int,
     max_depth: int,
-    max_turns: int,
+    max_turns: int | None,
     depth: int,
 ) -> tuple[dict, AgentNode | None]:
     if tc.name == "read_chunk":
