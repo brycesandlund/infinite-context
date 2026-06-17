@@ -964,31 +964,36 @@ class OolongOracle(ModelBackend):
         if rng:
             a, b = int(rng.group(1)), int(rng.group(2))
             if (b - a) <= self.LEAF_TOKENS:
-                return self._leaf(a, b, has_tool)
+                return self._leaf(a, b, messages)
             return self._internal(a, b, has_tool, messages)
         return self._root(user, has_tool, messages)  # root: original question
 
-    def _leaf(self, a, b, has_tool):
-        """Read [a,b] AND [a, b+overlap], then EXHAUSTIVELY classify every example whose
-        line starts in [a,b) (not just the matches) and count the requested labels."""
-        if not has_tool:
-            ob = min(b + self.LEAF_OVERLAP, self.doc_len)
-            calls = [
-                ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
-                ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
-            ]
-            text = (f"Range {a}..{b} is small enough to count directly. Reading it, then the "
-                    f"next {ob - b} tokens so the final example (which may run past {b}) is complete.")
-            # GENERAL SKILL: extend the read if the final example's line STILL runs past
-            # b+overlap (long entries — e.g. full reviews — exceed any fixed overlap).
-            last_end = max((s[1] for s in self._spans_in(a, b)), default=b)
-            if last_end > ob:
-                end2 = min(last_end, self.doc_len)
-                calls.append(ToolCall(_new_id(), "read_chunk", {"start": ob, "end": end2}))
-                text += (f" That final example's line still isn't finished at {ob}, so I keep "
-                         f"reading to {end2} until its line ends.")
-            return AssistantTurn(text=text, tool_calls=calls)
+    def _leaf(self, a, b, messages):
+        """Read [a,b] + [b,b+overlap]; if the final example's line is STILL cut off
+        after that, extend with one more read — but as a SEPARATE turn, only after we
+        have actually SEEN the line run past the overlap (no foreknowledge). Then
+        EXHAUSTIVELY enumerate every example whose line starts in [a,b) and count."""
+        n_read = sum(1 for m in messages if m["role"] == "tool")
+        ob = min(b + self.LEAF_OVERLAP, self.doc_len)
         spans_in = self._spans_in(a, b)
+        last_end = min(max((s[1] for s in spans_in), default=b), self.doc_len)
+
+        if n_read == 0:                       # turn 1: the range + the standard finish-read
+            return AssistantTurn(
+                text=f"Range {a}..{b} is small enough to count directly. Reading it, then the "
+                     f"next {ob - b} tokens to finish the final example (its line may run past {b}).",
+                tool_calls=[
+                    ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
+                    ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
+                ],
+            )
+        if n_read == 2 and last_end > ob:     # turn 2: we SAW the final line is still cut off
+            return AssistantTurn(
+                text=f"The final example's line is still cut off at {ob} (no end-of-line yet), so "
+                     f"I read on to {last_end} until it ends.",
+                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": ob, "end": last_end})],
+            )
+        # all needed reads are in hand -> enumerate + count
         report = self._fmt(self._counts(spans_in))
         # EXHAUSTIVE: list EVERY owned example with its label (accountability per example
         # — "list only matches" silently undercounts), then count the requested labels.
