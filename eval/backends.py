@@ -1155,11 +1155,19 @@ class OolongOracle(ModelBackend):
             ans = "more common than" if a > b else "less common than" if a < b else "same frequency as"
             return ans, f"{la}={a} vs {lb}={b} -> {la} is {ans} {lb}."
         if "is the most common" in q:
+            mx = max(label_counts.values())
+            tied = [l for l, c in label_counts.items() if c == mx]
             w = max(label_counts, key=label_counts.get)
-            return w, f"Most common label: {w} ({label_counts[w]})."
+            work = (f"Most common (tie at {mx}): {', '.join(tied)} — answering {w}."
+                    if len(tied) > 1 else f"Most common label: {w} ({mx}).")
+            return w, work
         if "is the least common" in q:
+            mn = min(label_counts.values())
+            tied = [l for l, c in label_counts.items() if c == mn]
             w = min(label_counts, key=label_counts.get)
-            return w, f"Least common label: {w} ({label_counts[w]})."
+            work = (f"Least common (tie at {mn}): {', '.join(tied)} — answering {w}."
+                    if len(tied) > 1 else f"Least common label: {w} ({mn}).")
+            return w, work
         return None, ""
 
     def _derive_user(self, q, counts):
