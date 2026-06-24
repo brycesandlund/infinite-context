@@ -40,8 +40,7 @@ paper's frontier collapse (0.85→0.40 over 8K→128K).
 | **OVERALL** | **0.532** | **0.561** | **0.514** | **0.583** |
 
 Read: near-parity at 10K (we win counting there); at 20K gpt-5.4 is slightly ahead. Frontier does
-**not** collapse at ≤20K (its 1.05M window reads everything). The "decomposition wins at scale"
-crossover requires the large-context regime (128K+), **not yet tested for the frontier**.
+**not** collapse at ≤20K (its 1.05M window reads everything) — **the crossover appears at 40K**, see §6.
 
 ## 3. gpt-5.4 on the OFFICIAL released oolong-synth (≤8K) — sanity vs the paper
 Single-shot on `oolongbench/oolong-synth` validation rows (their exact context+question+gold):
@@ -74,3 +73,19 @@ SFT 10K/20K OOLONG, SFT RULER, old-counting-only, gpt-5.4 @10K (our data), gpt-5
 All are reproducible: SFT evals are deterministic in problem selection (temp 0.2 sampling varies
 slightly); gpt-5.4 single-shot is temp 0 (near-deterministic). Commands in `frontier_ceiling.py`,
 `frontier_released.py`, and `eval/run.py` (env: CKPT, DOC_SIZE_TOKENS, EVAL_TASKS, N_PER_TASK, TEMP).
+
+---
+
+## 6. THE CROSSOVER — OURS vs gpt-5.4 across the length sweep (same problems)
+Single number = OVERALL (mean of counting/user/temporal). gpt-5.4 single-shot full-doc; ours 8K-budget decomposition.
+
+| OVERALL | 10K | 20K | 40K |
+|---|---|---|---|
+| Ours | 0.532 | 0.514 | **0.562** |
+| gpt-5.4 | 0.561 | 0.583 | **0.338** |
+
+Per-family @40K (ours wins all three): counting 0.377 vs 0.309 · user 0.818 vs 0.388 · temporal 0.491 vs 0.317.
+
+**Story:** frontier is competitive/ahead at 10K–20K, then **collapses at 40K** (0.583→0.338) — its 1.05M
+window holds the text but single-pass aggregation over ~600+ items fails. Our decomposition stays **flat**
+and crosses above. Graceful-degradation-vs-collapse, on identical problems. (gpt-5.4 raw: `raw/gpt5_4_oolong_40k.log`.)
