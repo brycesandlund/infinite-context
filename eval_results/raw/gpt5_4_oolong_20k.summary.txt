@@ -1,0 +1,6 @@
+[92m14:16:48 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m14:16:48 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+FRONTIER single-shot ceiling | model=gpt-5.4 | doc=20000 | 10/task | tasks=['oolong_counting', 'oolong_user', 'oolong_temporal']
+== oolong_counting: 0.552 ==
+== oolong_user: 0.742 ==
+== oolong_temporal: 0.455 ==

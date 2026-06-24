@@ -11,6 +11,7 @@ from tasks.oolong import make_oolong_problem, oolong_spec
 litellm.drop_params = True
 MODEL = os.environ.get("FRONTIER", "gpt-5.4")
 BASE = 2_000_000
+DOC = int(os.environ.get("DOC", "10000"))
 N = int(os.environ.get("N", "10"))
 TASKS = os.environ.get("TASKS", "oolong_counting,oolong_user,oolong_temporal").split(",")
 SEM = asyncio.Semaphore(int(os.environ.get("CONC", "6")))
@@ -18,7 +19,7 @@ tok = tokenizer_utils.get_tokenizer("Qwen/Qwen3.6-35B-A3B")
 
 async def one(task, idx):
     seed, ds = oolong_spec(task, idx, BASE)
-    p = make_oolong_problem(task, [], tok, 10000, seed, dataset=ds)
+    p = make_oolong_problem(task, [], tok, DOC, seed, dataset=ds)
     doc = tok.decode(p.document_tokens)
     prompt = f"{p.task_context}\n\n{doc}\n\n{p.question}"
     async with SEM:
@@ -33,7 +34,7 @@ async def one(task, idx):
     return task, ds, p.metadata.get("task_type"), p.gold_answers, ans, sc
 
 async def main():
-    print(f"FRONTIER single-shot ceiling | model={MODEL} | {N}/task | tasks={TASKS}")
+    print(f"FRONTIER single-shot ceiling | model={MODEL} | doc={DOC} | {N}/task | tasks={TASKS}")
     for task in TASKS:
         res = await asyncio.gather(*[one(task, i) for i in range(N)])
         for t, ds, qt, gold, ans, sc in res:

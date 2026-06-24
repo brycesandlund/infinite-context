@@ -1,0 +1,5 @@
+Backend: tinker | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: 8000 | doc: 40000 | depth: 10
+oolong_counting: 0.377  (grounded 0.377 | 10 rollouts | no_answer=0/10 | mean_tree=208.0)
+oolong_temporal: 0.491  (grounded 0.491 | 10 rollouts | no_answer=1/10 | mean_tree=219.0)
+oolong_user: 0.818  (grounded 0.818 | 10 rollouts | no_answer=1/10 | mean_tree=191.8)
+OVERALL: 0.562  (grounded 0.562 | 30 rollouts)

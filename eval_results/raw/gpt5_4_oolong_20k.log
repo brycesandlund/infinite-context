@@ -1,0 +1,37 @@
+[92m14:16:48 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m14:16:48 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+FRONTIER single-shot ceiling | model=gpt-5.4 | doc=20000 | 10/task | tasks=['oolong_counting', 'oolong_user', 'oolong_temporal']
+Warning: Requested 94 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+  trec_coarse numeric_one_class  gold=['77']         ans=Answer: 113    score=0.000
+  imdb        relative_freq      gold=['more common than'] ans=Answer: negative is more common than positive score=1.000
+  agnews      numeric_one_class  gold=['94']         ans=Answer: 92     score=0.562
+  negation    numeric_one_class  gold=['129']        ans=\text{Answer: 193 score=0.000
+  yahoo       relative_freq      gold=['less common than'] ans=Answer: Computers & Internet is less common than Politics & Government score=1.000
+  formality   relative_freq      gold=['more common than'] ans=Answer: formal is more common than informal score=1.000
+  spam        least_common_label gold=['spam', 'ham'] ans=Label: ham     score=1.000
+  multinli    numeric_one_class  gold=['123']        ans=Answer: 117    score=0.178
+  metaphors   numeric_one_class  gold=['183']        ans=\text{Answer: 171 score=0.032
+  app_reviews numeric_one_class  gold=['212']        ans=Answer: 211    score=0.750
+== oolong_counting: 0.552 ==
+  trec_coarse least_common_label gold=['location']   ans=location: location score=1.000
+  imdb        least_common_label gold=['positive']   ans=Label: positive score=1.000
+  agnews      second_most_freq   gold=['42334']      ans=User: 30216    score=0.000
+  negation    second_most_freq   gold=['25023']      ans=User: 24301    score=0.000
+  yahoo       relative_freq      gold=['81013']      ans=User: 81013    score=1.000
+  formality   numeric_one_class  gold=['5']          ans=Answer: 8      score=0.422
+  spam        most_common_label  gold=['ham']        ans=Label: ham     score=1.000
+  multinli    most_common_label  gold=['84252']      ans=User: 84252    score=1.000
+  metaphors   relative_freq      gold=['63232']      ans=\text{User: 63232 score=1.000
+  app_reviews most_common_label  gold=['21200']      ans=User: 21200    score=1.000
+== oolong_user: 0.742 ==
+  trec_coarse most_common_label  gold=['3']          ans=Answer: 17     score=0.018
+  imdb        least_common_label gold=['negative']   ans=Label: negative score=1.000
+  agnews      relative_freq      gold=['10']         ans=Answer: 22     score=0.032
+  negation    represented_n_times gold=['4']          ans=\text{Answer: 34 score=0.000
+  yahoo       relative_freq      gold=['14']         ans=Answer: 17     score=0.422
+  formality   represented_n_times gold=['43']         ans=\text{Answer: 39 score=0.316
+  spam        relative_freq      gold=['less common than'] ans=Answer: spam is less common than ham score=1.000
+  multinli    relative_freq      gold=['7']          ans=\text{Answer: 8 score=0.750
+  metaphors   numeric_one_class  gold=['58']         ans=Answer: 74     score=0.010
+  app_reviews relative_freq      gold=['more common than'] ans=Answer: positive is more common than negative score=1.000
+== oolong_temporal: 0.455 ==

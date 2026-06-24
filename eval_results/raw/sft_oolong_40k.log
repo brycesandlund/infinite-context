@@ -1,0 +1,95 @@
+Backend: tinker | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: 8000 | doc: 40000 | depth: 10
+Loading + tokenizing PG-essay corpus...
+Loading checkpoint: tinker://ee547d3e-0366-53c6-aba2-326dc04f671f:train:0/weights/sft_oolong
+temp=0.2 | out=/tmp/eval_40k.{jsonl,txt}
+Warning: Requested 190 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 371 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 365 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 151 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 469 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 267 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 128 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 355 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 381 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+
+========================================================================
+EVAL: backend=tinker ckpt=tinker://ee547d3e-0366-53c6-aba2-326dc04f671f:train:0/weights/sft_oolong
+========================================================================
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['156'] nodes=189 answer='172' term=answered score=0.010
+# task=oolong_counting seed=2000001 dataset=imdb gold=['more common than'] nodes=253 answer='more common than' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['191'] nodes=133 answer='187' term=answered score=0.316
+# task=oolong_counting seed=2000003 dataset=negation gold=['261'] nodes=255 answer='349' term=answered score=0.000
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['same frequency as'] nodes=119 answer='more common than' term=answered score=0.000
+# task=oolong_counting seed=2000005 dataset=formality gold=['more common than'] nodes=235 answer='more common than' term=answered score=1.000
+# task=oolong_counting seed=2000006 dataset=spam gold=['spam'] nodes=253 answer='spam' term=answered score=1.000
+# task=oolong_counting seed=2000007 dataset=multinli gold=['248'] nodes=133 answer='196' term=answered score=0.000
+# task=oolong_counting seed=2000008 dataset=metaphors gold=['371'] nodes=255 answer='368' term=answered score=0.422
+# task=oolong_counting seed=2000009 dataset=app_reviews gold=['430'] nodes=255 answer='417' term=answered score=0.024
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['1'] nodes=227 answer='1' term=answered score=1.000
+# task=oolong_user seed=2100001 dataset=imdb gold=['21844'] nodes=143 answer='21844' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['51817'] nodes=113 answer='51817' term=answered score=1.000
+# task=oolong_user seed=2100003 dataset=negation gold=['21992'] nodes=253 answer='21992' term=answered score=1.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['Entertainment & Music'] nodes=127 answer='Entertainment & Music' term=answered score=1.000
+# task=oolong_user seed=2100005 dataset=formality gold=['3'] nodes=211 answer='9' term=answered score=0.178
+# task=oolong_user seed=2100006 dataset=spam gold=['spam'] nodes=255 answer='spam' term=answered score=1.000
+# task=oolong_user seed=2100007 dataset=multinli gold=['69911'] nodes=129 answer='69911' term=answered score=1.000
+# task=oolong_user seed=2100008 dataset=metaphors gold=['80466'] nodes=253 answer='80466' term=answered score=1.000
+# task=oolong_user seed=2100009 dataset=app_reviews gold=['14543'] nodes=207 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['February 2022'] nodes=343 answer='none' term=answered score=0.000
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['negative'] nodes=139 answer='negative' term=answered score=1.000
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['4'] nodes=197 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=2200003 dataset=negation gold=['3'] nodes=253 answer='0' term=answered score=0.422
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['20'] nodes=125 answer='13' term=answered score=0.133
+# task=oolong_temporal seed=2200005 dataset=formality gold=['4'] nodes=227 answer='0' term=answered score=0.316
+# task=oolong_temporal seed=2200006 dataset=spam gold=['more common than'] nodes=247 answer='more common than' term=answered score=1.000
+# task=oolong_temporal seed=2200007 dataset=multinli gold=['4'] nodes=149 answer='4' term=answered score=1.000
+# task=oolong_temporal seed=2200008 dataset=metaphors gold=['148'] nodes=255 answer='159' term=answered score=0.042
+# task=oolong_temporal seed=2200009 dataset=app_reviews gold=['more common than'] nodes=255 answer='more common than' term=answered score=1.000
+
+------------------------------------------------------------------------
+oolong_counting: 0.377  (grounded 0.377 | 10 rollouts | no_answer=0/10 | mean_tree=208.0)
+    dataset agnews         0.316  (n=1)
+    dataset app_reviews    0.024  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.422  (n=1)
+    dataset multinli       0.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.010  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   numeric_one_class  0.129  (n=6)
+    qtype   relative_freq      0.667  (n=3)
+oolong_temporal: 0.491  (grounded 0.491 | 10 rollouts | no_answer=1/10 | mean_tree=219.0)
+    dataset agnews         0.000  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      0.316  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.042  (n=1)
+    dataset multinli       1.000  (n=1)
+    dataset negation       0.422  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          0.133  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   numeric_one_class  0.042  (n=1)
+    qtype   relative_freq      0.522  (n=6)
+    qtype   represented_n_times 0.369  (n=2)
+oolong_user: 0.818  (grounded 0.818 | 10 rollouts | no_answer=1/10 | mean_tree=191.8)
+    dataset agnews         1.000  (n=1)
+    dataset app_reviews    0.000  (n=1)
+    dataset formality      0.178  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      1.000  (n=1)
+    dataset multinli       1.000  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   most_common_label  0.800  (n=5)
+    qtype   numeric_one_class  0.589  (n=2)
+    qtype   relative_freq      1.000  (n=3)
+
+OVERALL: 0.562  (grounded 0.562 | 30 rollouts)
+All 30 rollouts saved -> /tmp/eval_40k.jsonl + /tmp/eval_40k.txt
