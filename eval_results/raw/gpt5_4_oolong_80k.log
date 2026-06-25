@@ -1,0 +1,55 @@
+[92m22:21:13 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m22:21:13 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+FRONTIER single-shot ceiling | model=gpt-5.4 | doc=80000 | 10/task | tasks=['oolong_counting', 'oolong_user', 'oolong_temporal']
+Warning: Requested 383 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 663 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 746 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 735 samples for label 'correct', but only 200 are available. Using duplicate examples.
+  trec_coarse numeric_one_class  gold=['314']        ans=\text{Answer: 445 score=0.000
+  imdb        relative_freq      gold=['more common than'] ans=Answer: negative is more common than positive score=1.000
+  agnews      numeric_one_class  gold=['385']        ans=\text{Answer: 319 score=0.000
+  negation    numeric_one_class  gold=['526']        ans=\text{Answer: 706 score=0.000
+  yahoo       relative_freq      gold=['less common than'] ans=Answer: Computers & Internet is more common than Politics & Government score=0.000
+  formality   relative_freq      gold=['more common than'] ans=Answer: formal is more common than informal score=1.000
+  spam        least_common_label gold=['spam', 'ham'] ans=\text{Label: spam score=1.000
+  multinli    numeric_one_class  gold=['497']        ans=\text{Answer: 445 score=0.000
+  metaphors   numeric_one_class  gold=['746']        ans=Answer: 698    score=0.000
+  app_reviews numeric_one_class  gold=['864']        ans=\text{Answer: 839 score=0.001
+== oolong_counting: 0.300 ==
+Warning: Requested 303 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 671 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 944 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 537 samples for label 'correct', but only 200 are available. Using duplicate examples.
+  trec_coarse numeric_one_class  gold=['3']          ans=Answer: 0      score=0.422
+  imdb        second_most_freq   gold=['41677']      ans=User: 41677    score=1.000
+  agnews      numeric_one_class  gold=['4']          ans=Answer: 13     score=0.075
+  negation    most_common_label  gold=['62341']      ans=User: 15570    score=0.000
+  yahoo       relative_freq      gold=['same frequency as'] ans=Answer: Education & Reference is more common than Politics & Government score=0.000
+  formality   numeric_one_class  gold=['8']          ans=\text{Answer: 8 score=1.000
+  spam        most_common_label  gold=['ham']        ans=\text{Label: ham score=1.000
+  multinli    least_common_label gold=['contradiction'] ans=Label: neutral score=0.000
+  metaphors   relative_freq      gold=['43222']      ans=\text{User: 68372 score=0.000
+  app_reviews least_common_label gold=['positive']   ans=Label: positive score=1.000
+== oolong_user: 0.450 ==
+Warning: Requested 258 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 713 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 768 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+  trec_coarse relative_freq      gold=['February 2022'] ans=Answer: July 2022 score=0.000
+  imdb        numeric_one_class  gold=['6']          ans=Answer: 12     score=0.178
+  agnews      relative_freq      gold=['8']          ans=\text{Answer: 17 score=0.075
+  negation    relative_freq      gold=['less common'] ans=Answer: False is less common before 2022-12-31 score=1.000
+  yahoo       relative_freq      gold=['21']         ans=\text{Answer: 4 score=0.008
+  formality   represented_n_times gold=['10']         ans=\text{Answer: 31 score=0.002
+  spam        relative_freq      gold=['less common than'] ans=None           score=0.000
+  multinli    relative_freq      gold=['6']          ans=None           score=0.000
+  metaphors   numeric_one_class  gold=['7']          ans=Answer: 17     score=0.056
+  app_reviews relative_freq      gold=['more common than'] ans=Answer: positive is more common than negative score=1.000
+== oolong_temporal: 0.232 ==

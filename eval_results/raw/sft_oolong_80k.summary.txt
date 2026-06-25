@@ -1,0 +1,4 @@
+oolong_counting: 0.415  (grounded 0.415 | 10 rollouts | no_answer=0/10 | mean_tree=364.6)
+oolong_temporal: 0.323  (grounded 0.323 | 10 rollouts | no_answer=3/10 | mean_tree=1705.3)
+oolong_user: 0.550  (grounded 0.550 | 10 rollouts | no_answer=2/10 | mean_tree=759.4)
+OVERALL: 0.429  (grounded 0.429 | 30 rollouts)
