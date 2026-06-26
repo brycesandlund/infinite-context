@@ -62,7 +62,8 @@ is why our absolute numbers sit lower and are NOT directly comparable to the pap
 ## 4. Cross-task transfer — OURS on RULER (zero-shot; SFT was OOLONG-only) @10K, N=5
 7 RULER task types × 5 problems = 35 questions, same seeds for both columns.
 
-| task                       | gpt-5.4                    | fine-tuned Qwen3.6-35B-A3B |
+| task                       | gpt-5.4 (1M budget)        | fine-tuned Qwen3.6-35B-A3B |
+|                            |                            | (8K budget)                |
 |----------------------------|----------------------------|----------------------------|
 | niah_single_2              | 1.000                      | 0.400                      |
 | niah_multikey_1            | 1.000                      | 0.200                      |
