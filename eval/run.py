@@ -84,9 +84,17 @@ OUT = os.environ.get("OUT", "/tmp/eval_rollouts")
 # doc and just answer — isolating "can it do the task" from "can it operate the 10k harness").
 AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", train.AGENT_CONTEXT))
 MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", train.MAX_CHUNK_TOKENS))
-MAX_DEPTH = train.MAX_DEPTH
+# MAX_DEPTH=none lifts the depth cap entirely (left-fold is a depth-#chunks chain, so
+# depth must NOT be the binding constraint); the total-node cap below is the real
+# runaway/speed guard. Default falls back to train.py.
+_mdpth = os.environ.get("MAX_DEPTH")
+MAX_DEPTH = (None if _mdpth.lower() == "none" else int(_mdpth)) if _mdpth else train.MAX_DEPTH
 _mt = os.environ.get("MAX_TURNS")
 MAX_TURNS = int(_mt) if _mt else train.MAX_TURNS  # default None = uncapped (budget terminates)
+# Hard cap on total agents per rollout tree — kills runaway chains/cascades early and
+# bounds per-rollout work (a clean binary tree @80K is ~500 nodes; overflow cascades hit
+# 6000+). Set generously above legit trees; lower it to speed sampling.
+MAX_NODES = int(os.environ.get("MAX_NODES", "2000"))
 DOC_SIZE_TOKENS = int(os.environ.get("DOC_SIZE_TOKENS", train.DOC_SIZE_TOKENS))
 # Tinker base model + renderer are env-overridable so we can probe ANY Tinker-hosted
 # model (e.g. MODEL_NAME=moonshotai/Kimi-K2.6 RENDERER_NAME=kimi_k26) through the same
@@ -203,6 +211,7 @@ async def main() -> None:
                 max_chunk_tokens=MAX_CHUNK_TOKENS,
                 max_depth=MAX_DEPTH,
                 max_turns=MAX_TURNS,
+                max_nodes=MAX_NODES,
             )
 
     nodes = await asyncio.gather(*[_one(p) for (_, _, p) in work])

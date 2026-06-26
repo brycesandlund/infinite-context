@@ -38,6 +38,21 @@ class AgentNode:
     judge_score: float | None = None    # the judge's score for this node (None for the gold-graded root)
 
 
+@dataclass
+class _RolloutBudget:
+    """Shared across every agent in ONE rollout tree: a hard cap on total nodes.
+    A runaway policy (e.g. a left-fold chain that never shrinks its range, or an
+    overflow-driven re-spawn cascade) would otherwise spin up thousands of agents;
+    this kills the tree early. Also a speed governor — bounds the work per rollout.
+    asyncio is single-threaded, so the plain counter needs no lock."""
+
+    max_nodes: int | None = None
+    count: int = 0
+
+    def exhausted(self) -> bool:
+        return self.max_nodes is not None and self.count >= self.max_nodes
+
+
 def flatten(node: AgentNode) -> list[AgentNode]:
     out = [node]
     for c in node.children:
@@ -58,11 +73,18 @@ async def run_agent(
     question: str,
     budget: int,
     max_chunk_tokens: int,
-    max_depth: int,
+    max_depth: int | None,
     max_turns: int | None = None,
+    max_nodes: int | None = None,
     depth: int = 0,
     subtask: str = "",
+    node_budget: _RolloutBudget | None = None,
 ) -> AgentNode:
+    # One budget object is created at the root (depth 0) and threaded to every
+    # descendant, so the cap is on the WHOLE tree, not per-agent.
+    if node_budget is None:
+        node_budget = _RolloutBudget(max_nodes=max_nodes)
+    node_budget.count += 1
     system = harness.make_system_prompt(
         doc_length=len(document_tokens),
         context_budget=budget,
@@ -117,6 +139,7 @@ async def run_agent(
                     max_depth=max_depth,
                     max_turns=max_turns,
                     depth=depth,
+                    node_budget=node_budget,
                 )
                 for tc in turn.tool_calls
             ]
@@ -187,9 +210,10 @@ async def _handle_call(
     task_context: str,
     budget: int,
     max_chunk_tokens: int,
-    max_depth: int,
+    max_depth: int | None,
     max_turns: int | None,
     depth: int,
+    node_budget: _RolloutBudget,
 ) -> tuple[dict, AgentNode | None]:
     if tc.name == "read_chunk":
         try:
@@ -200,8 +224,10 @@ async def _handle_call(
         return _tool_msg(tc, text), None
 
     if tc.name == "spawn_subagent":
-        if depth >= max_depth:
+        if max_depth is not None and depth >= max_depth:
             return _tool_msg(tc, "Error: max recursion depth reached. Solve directly."), None
+        if node_budget.exhausted():
+            return _tool_msg(tc, "Error: rollout node budget reached. Solve directly."), None
         child_subtask = str(tc.arguments.get("subtask", "")).strip()
         child = await run_agent(
             backend,
@@ -215,6 +241,7 @@ async def _handle_call(
             max_turns=max_turns,
             depth=depth + 1,
             subtask=child_subtask,
+            node_budget=node_budget,
         )
         # Tell the parent WHY a subagent failed, so it can react (e.g. shrink the
         # range on overflow, or retry on a non-answer) rather than guessing.

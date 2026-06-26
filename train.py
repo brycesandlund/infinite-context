@@ -109,7 +109,11 @@ JUDGE_SOURCE_CHARS = 24_000   # cap on the source text (chunk reads / child repo
 # Reasoning models burn hidden reasoning tokens against this budget; too small a cap
 # truncates the verdict to empty (no SCORE -> parse fail). 16k gives ample headroom.
 JUDGE_MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", "16000"))
-MAX_DEPTH = int(os.environ.get("MAX_DEPTH", "10"))  # binary recursion needs ~log2(doc/leaf); 10 = headroom
+# Depth is NO LONGER the binding constraint: left-fold is a depth-#chunks chain, so
+# the cap must lift. Default None = infinite; the total-node cap is the real runaway
+# guard. (MAX_DEPTH=<int> still pins it for binary-only experiments.)
+_md = os.environ.get("MAX_DEPTH", "none")
+MAX_DEPTH = None if _md.lower() == "none" else int(_md)
 MAX_TURNS = None            # no per-agent turn cap: every turn strictly grows the
                             # conversation, so the context budget is the real (and
                             # sufficient) terminator. A cap would only cut off the leaf
@@ -273,7 +277,7 @@ class SubagentTool:
     renderer: Renderer
     read_chunk_tool: ReadChunkTool
     system_prompt: str
-    max_depth: int
+    max_depth: int | None
     max_turns: int
     context_budget: int           # per-agent total context (trajectory + remaining gen room)
     current_depth: int = 0
@@ -285,7 +289,7 @@ class SubagentTool:
         subtask: Annotated[str, "Sub-problem statement (free text) for the child to solve"],
     ) -> ToolResult:
         """Spawn a fresh-context copy of yourself to solve `subtask`; returns the child's \\boxed{} answer."""
-        if self.current_depth >= self.max_depth:
+        if self.max_depth is not None and self.current_depth >= self.max_depth:
             return simple_tool_result("Error: max recursion depth reached. Solve directly.")
 
         child_subagent = SubagentTool(
