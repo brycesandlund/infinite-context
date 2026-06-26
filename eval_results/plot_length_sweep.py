@@ -39,10 +39,11 @@ def main():
     if SHOW_VALUE_LABELS:
         for x, y in zip(CTX, OURS):
             ax.annotate(f"{y:.2f}", (x, y), textcoords="offset points",
-                        xytext=(0, 9), ha="center", fontsize=9, color=C_OURS)
+                        xytext=(0, -15), ha="center", fontsize=9, color=C_OURS)
         for x, y in zip(CTX, GPT):
+            dx = 13 if x == 40 else 0   # nudge the 40K label right to clear the line
             ax.annotate(f"{y:.2f}", (x, y), textcoords="offset points",
-                        xytext=(0, 9), ha="center", fontsize=9, color=C_GPT)
+                        xytext=(dx, 9), ha="center", fontsize=9, color=C_GPT)
 
     if SHOW_CROSSOVER:
         ax.annotate("crossover", xy=(28, 0.55), fontsize=10,
