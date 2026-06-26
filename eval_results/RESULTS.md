@@ -171,3 +171,12 @@ pairwise. An O(distinct-keys) combine re-hits the wall at *some* length; 1.5× b
 The real fix is a **non-growing combine** (streaming/thresholded/top-k sketches) or a **sequential
 left-fold** that threads one running tally instead of unioning pairwise — keeping the working set O(1).
 Raw: `raw/sft_oolong_80k_12kbudget.*` (vs the 8K baseline `raw/sft_oolong_80k.*`).
+
+### SFT @ 80K, 12K budget — per-family scores
+
+| family | score 12K budget |
+|---|---|
+| counting | 0.445 |
+| user | 0.575 |
+| temporal | **0.398** |
+| **OVERALL** | **0.473** |
