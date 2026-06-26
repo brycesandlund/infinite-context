@@ -1,6 +1,6 @@
 """Shared rollout-tree rendering — THE one way trees are printed everywhere.
 
-eval/run.py (eval rollouts), sft.py (oracle traces), and train.py (RL rollouts,
+eval/run.py (eval rollouts), sft.py (oracle traces), and rl.py (RL rollouts,
 both the per-step dump and the post-run eval) all render through these helpers,
 so a tree reads identically no matter which pipeline produced it. RL trajectories
 (token-level) are first converted to the same neutral AgentNode shape by
@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from eval.agent import AgentNode
-    from train import RolloutNode
+    from rl import RolloutNode
 
 
 def print_tree(node: "AgentNode", indent: int = 0, full: bool = False) -> None:

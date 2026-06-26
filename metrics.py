@@ -1,12 +1,12 @@
 """Optional Weights & Biases logging, gated behind the WANDB env var.
 
 Every function here is a no-op unless the run is started with `WANDB=1`, so
-train.py / sft.py can call `metrics.init/log/summary/finish` unconditionally and
+rl.py / sft.py can call `metrics.init/log/summary/finish` unconditionally and
 stay free of `if use_wandb:` clutter.
 
 Usage:
-    WANDB=1 uv run python train.py                 # log online (needs `wandb login`)
-    WANDB=1 WANDB_MODE=offline uv run python train.py   # log locally, `wandb sync` later
+    WANDB=1 uv run python rl.py                 # log online (needs `wandb login`)
+    WANDB=1 WANDB_MODE=offline uv run python rl.py   # log locally, `wandb sync` later
 
 `wandb` itself is only imported when enabled, so the dependency never loads on a
 normal (unlogged) run.

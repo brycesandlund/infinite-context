@@ -92,7 +92,7 @@ class TinkerBackend(ModelBackend):
     """Drives the Tinker-hosted policy through the SAME renderer + tool specs
     that training uses, so eval rollouts are faithful to training rollouts.
 
-    Reuses train.py's actual cookbook tool specs (read_chunk, spawn_subagent)
+    Reuses rl.py's actual cookbook tool specs (read_chunk, spawn_subagent)
     so the model sees byte-identical `<tools>` JSON in eval and training.
     """
 
@@ -103,7 +103,7 @@ class TinkerBackend(ModelBackend):
         self.renderer = renderer
         self.temperature = temperature
         # Pull the exact specs training serializes (class-level to_spec()).
-        from train import ReadChunkTool, SubagentTool  # tinker-side import
+        from rl import ReadChunkTool, SubagentTool  # tinker-side import
 
         self._tool_specs = [
             ReadChunkTool.read_chunk.to_spec(),
@@ -1214,14 +1214,21 @@ class OolongOracle(ModelBackend):
         return w, f"Top user: {w} ({counts[w]})."
 
 
-def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens):
+def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
     """Pick the scripted oracle that best decomposes this task.
 
-    All three OOLONG families (counting / user / temporal) use the unified
-    OolongOracle: a show-your-work leaf (classify <= ~12 enumerated examples)
-    plus tree-reduce summing, so no agent ever classifies the whole document.
-    Every other task uses the standard split-and-delegate OracleBackend.
+    - Synthetic decomposition tasks (synth_*) use SynthOracle, which renders the
+      binary OR left-fold strategy (`strategy`, the per-task training knob; None =
+      the task's favored default).
+    - All three OOLONG families use the unified OolongOracle (show-your-work leaf +
+      tree-reduce). Every other task uses the split-and-delegate OracleBackend.
     """
+    if problem.task.startswith("synth_"):
+        from eval.synth_oracle import SynthOracle  # lazy: synth_oracle imports this module
+
+        return SynthOracle(
+            problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens, strategy=strategy
+        )
     if problem.task in ("oolong_counting", "oolong_user", "oolong_temporal"):
         return OolongOracle(
             problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens

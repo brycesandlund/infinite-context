@@ -15,7 +15,7 @@ Pipeline:
    assistant turn with TrainOnWhat.LAST_ASSISTANT_MESSAGE rather than training
    multiple assistant messages in one example).
 3. SFT: forward_backward(loss_fn="cross_entropy") + optim_step over epochs.
-4. Save a checkpoint to warm-start RL from (set train.py's LOAD_CHECKPOINT_PATH
+4. Save a checkpoint to warm-start RL from (set rl.py's LOAD_CHECKPOINT_PATH
    to it, with RESUME_OPTIMIZER=False).
 
 Run: uv run python sft.py
@@ -35,11 +35,13 @@ from tinker_cookbook.renderers import TrainOnWhat, get_renderer
 from tinker_cookbook.supervised import datum_from_model_input_weights
 
 import metrics  # optional W&B logging (no-op unless WANDB=1)
-import train  # shared constants + cookbook tool specs
+import rl  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
 from eval.backends import make_oracle, neutral_to_cookbook
 from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
-from tasks import grade_answer, list_tasks, load_pg_essays_text, resolve_eval_grading_mode
+from tasks import (
+    grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode,
+)
 from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministic spec
 
 
@@ -65,6 +67,18 @@ SFT_TASKS = os.environ.get(
 N_PER_TASK = int(os.environ.get("N_PER_TASK", "150"))
 N_PER_TASK_OVERRIDE: dict[str, int] = {}
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
+# Decomposition strategy for the synth_* tasks (the TRAINING knob). "mixed" = each
+# task's favored default (binary for bounded, left_fold for stateful); "binary" or
+# "left_fold" forces ALL synth tasks onto one strategy (the head-to-head experiment).
+SYNTH_STRATEGY = os.environ.get("SYNTH_STRATEGY", "mixed")
+
+
+def _strategy_for(task: str) -> str | None:
+    """Strategy to render for `task`; None lets make_oracle use the task default
+    (only synth_* tasks read this — oolong/ruler ignore the strategy arg)."""
+    if not task.startswith("synth_"):
+        return None
+    return None if SYNTH_STRATEGY == "mixed" else SYNTH_STRATEGY
 
 EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: the 2nd
                                 # epoch on 30 traces bought NLL via surface memorization
@@ -88,14 +102,14 @@ PRINT_TRACES = os.environ.get("PRINT_TRACES", "0") == "1"
 TRACE_OUT = os.environ.get("TRACE_OUT", "/tmp/sft_traces")
 
 # Shared with training / eval (single source of truth).
-MODEL_NAME = train.MODEL_NAME
-RENDERER_NAME = train.RENDERER_NAME
-LORA_RANK = train.LORA_RANK
-AGENT_CONTEXT = train.AGENT_CONTEXT
-MAX_CHUNK_TOKENS = train.MAX_CHUNK_TOKENS
-DOC_SIZE_TOKENS = train.DOC_SIZE_TOKENS
-MAX_DEPTH = train.MAX_DEPTH
-MAX_TURNS = train.MAX_TURNS
+MODEL_NAME = rl.MODEL_NAME
+RENDERER_NAME = rl.RENDERER_NAME
+LORA_RANK = rl.LORA_RANK
+AGENT_CONTEXT = rl.AGENT_CONTEXT
+MAX_CHUNK_TOKENS = rl.MAX_CHUNK_TOKENS
+DOC_SIZE_TOKENS = rl.DOC_SIZE_TOKENS
+MAX_DEPTH = rl.MAX_DEPTH
+MAX_TURNS = rl.MAX_TURNS
 
 
 # ---------------------------------------------------------------------------
@@ -111,22 +125,30 @@ MAX_TURNS = train.MAX_TURNS
 _SKIP_TMODES = {"date_most", "date_2nd"}
 
 
+def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
+    """Deterministic (task, idx) -> problem. OOLONG uses the shared oolong_spec (same
+    problem as eval by seed); synth/ruler use make_problem with a per-task seed range."""
+    if task.startswith("oolong"):
+        seed, dataset = oolong_spec(task, i, DATA_SEED)
+        return seed, make_oolong_problem(
+            task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=dataset
+        )
+    seed = DATA_SEED + ti * 100_000 + i
+    return seed, make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
+
+
 async def _gen_traces(corpus_tokens, tokenizer):
     coros, meta = [], []
-    for task in SFT_TASKS:
+    for ti, task in enumerate(SFT_TASKS):
         want = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
         collected, i = 0, 0
         while collected < want:
-            # Shared deterministic spec (same (base, task, idx) -> same problem as
-            # eval), so we can train and probe on identical questions.
-            seed, dataset = oolong_spec(task, i, DATA_SEED)
+            seed, problem = _make_sft_problem(task, ti, i, corpus_tokens, tokenizer)
             i += 1
-            problem = make_oolong_problem(
-                task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=dataset
-            )
             oracle = make_oracle(
                 problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
+                strategy=_strategy_for(task),
             )
             if getattr(oracle, "tmode", None) in _SKIP_TMODES:
                 continue  # un-trainable gold — skip, try the next index
@@ -194,8 +216,8 @@ async def main() -> None:
     tokenizer = tokenizer_utils.get_tokenizer(MODEL_NAME)
     renderer = get_renderer(RENDERER_NAME, tokenizer)
     tool_specs = [
-        train.ReadChunkTool.read_chunk.to_spec(),
-        train.SubagentTool.spawn_subagent.to_spec(),
+        rl.ReadChunkTool.read_chunk.to_spec(),
+        rl.SubagentTool.spawn_subagent.to_spec(),
     ]
 
     print(f"SFT warm-start | tasks={len(SFT_TASKS)} x {N_PER_TASK} | "
@@ -297,7 +319,7 @@ async def main() -> None:
         LAST_SFT_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
         LAST_SFT_CHECKPOINT_FILE.write_text(save_resp.path)
         print(f"  saved: {save_resp.path}  (path -> {LAST_SFT_CHECKPOINT_FILE})")
-    print("\nTo warm-start RL: set train.py LOAD_CHECKPOINT_PATH to the path above "
+    print("\nTo warm-start RL: set rl.py LOAD_CHECKPOINT_PATH to the path above "
           "and RESUME_OPTIMIZER=False.")
     metrics.finish()
 

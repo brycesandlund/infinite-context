@@ -8,7 +8,7 @@
 # Python can't intercept the line (OS-level stderr from a grandchild process), so we
 # filter it at the redirect here.
 #
-# Usage:  ./train.sh [logfile]          (defaults to /tmp/rl_run.log)
+# Usage:  ./rl.sh [logfile]          (defaults to /tmp/rl_run.log)
 #   TINKER_API_KEY / WANDB_API_KEY must already be in the environment.
 #   OPENAI_API_KEY too when JUDGE=1 (the default — gpt-5.4-nano grades subagents);
 #   set JUDGE=0 to disable the judge and run on the root gold reward alone.
@@ -26,6 +26,6 @@ export CKPT
 export WANDB="${WANDB:-1}"
 
 echo "RL run -> $LOG   (warm-start CKPT=$CKPT, WANDB=$WANDB)"
-uv run python -u train.py 2>&1 \
+uv run python -u rl.py 2>&1 \
   | grep --line-buffered -vF "MallocStackLogging:" \
   > "$LOG"

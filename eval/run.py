@@ -5,7 +5,7 @@ over a set of RULER tasks, and reports RULER-official scores per task — so you
 can drop in Qwen (via Tinker), Claude, or GPT and compare on identical problems
 through identical harness code.
 
-Budget/recursion/data constants are imported from train.py (single source of
+Budget/recursion/data constants are imported from rl.py (single source of
 truth) so eval and training can't silently diverge on them.
 
 Every rollout (full tree) is saved to $OUT.jsonl (structured) + $OUT.txt
@@ -29,7 +29,7 @@ from collections import defaultdict
 from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.renderers import get_renderer
 
-import train  # single source of truth for budget/recursion/data constants
+import rl  # single source of truth for budget/recursion/data constants
 from eval.agent import AgentNode, flatten, run_agent, run_single_shot
 from eval.backends import APIBackend, ModelBackend, TinkerBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
@@ -78,30 +78,30 @@ VERBOSE = os.environ.get("VERBOSE", "0") == "1"   # also dump trees to stdout (a
 OUT = os.environ.get("OUT", "/tmp/eval_rollouts")
 
 
-# Pull the shared harness constants from train.py so they can't drift. AGENT_CONTEXT
+# Pull the shared harness constants from rl.py so they can't drift. AGENT_CONTEXT
 # and MAX_CHUNK_TOKENS are env-overridable so we can probe a backend's RAW capability
 # at a task by lifting the budget (e.g. give an API model 50k so it can hold the whole
 # doc and just answer — isolating "can it do the task" from "can it operate the 10k harness").
-AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", train.AGENT_CONTEXT))
-MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", train.MAX_CHUNK_TOKENS))
+AGENT_CONTEXT = int(os.environ.get("AGENT_CONTEXT", rl.AGENT_CONTEXT))
+MAX_CHUNK_TOKENS = int(os.environ.get("MAX_CHUNK_TOKENS", rl.MAX_CHUNK_TOKENS))
 # MAX_DEPTH=none lifts the depth cap entirely (left-fold is a depth-#chunks chain, so
 # depth must NOT be the binding constraint); the total-node cap below is the real
-# runaway/speed guard. Default falls back to train.py.
+# runaway/speed guard. Default falls back to rl.py.
 _mdpth = os.environ.get("MAX_DEPTH")
-MAX_DEPTH = (None if _mdpth.lower() == "none" else int(_mdpth)) if _mdpth else train.MAX_DEPTH
+MAX_DEPTH = (None if _mdpth.lower() == "none" else int(_mdpth)) if _mdpth else rl.MAX_DEPTH
 _mt = os.environ.get("MAX_TURNS")
-MAX_TURNS = int(_mt) if _mt else train.MAX_TURNS  # default None = uncapped (budget terminates)
+MAX_TURNS = int(_mt) if _mt else rl.MAX_TURNS  # default None = uncapped (budget terminates)
 # Hard cap on total agents per rollout tree — kills runaway chains/cascades early and
 # bounds per-rollout work (a clean binary tree @80K is ~500 nodes; overflow cascades hit
 # 6000+). Set generously above legit trees; lower it to speed sampling.
 MAX_NODES = int(os.environ.get("MAX_NODES", "2000"))
-DOC_SIZE_TOKENS = int(os.environ.get("DOC_SIZE_TOKENS", train.DOC_SIZE_TOKENS))
+DOC_SIZE_TOKENS = int(os.environ.get("DOC_SIZE_TOKENS", rl.DOC_SIZE_TOKENS))
 # Tinker base model + renderer are env-overridable so we can probe ANY Tinker-hosted
 # model (e.g. MODEL_NAME=moonshotai/Kimi-K2.6 RENDERER_NAME=kimi_k26) through the same
 # harness — no checkpoint = base-model behaviour.
-MODEL_NAME = os.environ.get("MODEL_NAME", train.MODEL_NAME)
-RENDERER_NAME = os.environ.get("RENDERER_NAME", train.RENDERER_NAME)
-LORA_RANK = int(os.environ.get("LORA_RANK", train.LORA_RANK))
+MODEL_NAME = os.environ.get("MODEL_NAME", rl.MODEL_NAME)
+RENDERER_NAME = os.environ.get("RENDERER_NAME", rl.RENDERER_NAME)
+LORA_RANK = int(os.environ.get("LORA_RANK", rl.LORA_RANK))
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ async def _build_backend(tokenizer) -> ModelBackend:
 
 
 # ---------------------------------------------------------------------------
-# Verbose tree printer — shared with sft.py and train.py via eval/render.py.
+# Verbose tree printer — shared with sft.py and rl.py via eval/render.py.
 # Underscore aliases preserved for existing imports.
 # ---------------------------------------------------------------------------
 

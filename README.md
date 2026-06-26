@@ -52,7 +52,7 @@ left-fold** that threads one running tally instead of unioning pairwise.
 ## Training pipeline
 
 ```
-OolongOracle  ──►  sft.py (SFT warm-start)  ──►  train.py (GRPO RL)
+OolongOracle  ──►  sft.py (SFT warm-start)  ──►  rl.py (GRPO RL)
 scripted-optimal     the currently EVALUATED        token-level reward
 delegation traces    checkpoint (sft_oolong)        propagation, next stage
 ```
@@ -66,7 +66,7 @@ delegation traces    checkpoint (sft_oolong)        propagation, next stage
 2. **SFT warm-start** (`sft.py`): base Qwen sits in the 0-reward regime on this
    harness (handed the tools untrained, it never even calls `read_chunk`). SFT on
    the oracle traces teaches the *protocol*. The evaluated checkpoint is SFT-only.
-3. **GRPO RL** (`train.py`): token-level recursive-agent RL where **every node in a
+3. **GRPO RL** (`rl.py`): token-level recursive-agent RL where **every node in a
    tree inherits the root's advantage** (reward propagation), with an LLM judge
    (`eval/judge.py`) scoring open-ended subagent subtasks. This is the infra for the
    next stage beyond SFT.
@@ -110,7 +110,7 @@ leaf-ops (needle/track/QA). The scaffold is task-general; the leaf-op must be ta
 ```
 harness.py            Shared agent primitives (single source of truth)
 sft.py                SFT warm-start from oracle traces (-> sft_oolong checkpoint)
-train.py              Recursive-agent RL (token-level, GRPO, Tinker)
+rl.py                 Recursive-agent RL (token-level, GRPO, Tinker)
 metrics.py            Optional W&B logging (no-op unless WANDB=1)
 debug.py              Rollout-tree inspection helpers
 calibrate_judge.py    One-off: calibrate the LLM judge vs gold on OOLONG counting
@@ -145,7 +145,7 @@ Holds the parts that **must be identical** between training, SFT, and eval so a
 Qwen-vs-base-vs-GPT comparison isn't confounded: `make_system_prompt`,
 `make_single_shot_prompt`, `read_chunk_impl` (token-slice/decode/cap semantics),
 `extract_boxed`, and the canonical tool descriptions / `openai_tool_specs()`.
-`train.py` asserts at import that its cookbook `@tool` docstrings equal the harness
+`rl.py` asserts at import that its cookbook `@tool` docstrings equal the harness
 constants, so the two can't silently drift.
 
 ### `eval/` — one eval path, two modes
@@ -160,8 +160,8 @@ seam, over identical problems and graders, in either of two modes:
   single-shot, or an un-finetuned base model). Same problem construction, same grading.
 
 `TinkerBackend` drives the Qwen policy through the **same renderer + exact tool specs
-train.py uses** (eval faithful to training); `APIBackend` covers any LiteLLM model.
-Budget/recursion/data constants are imported from `train.py` so eval and training
+rl.py uses** (eval faithful to training); `APIBackend` covers any LiteLLM model.
+Budget/recursion/data constants are imported from `rl.py` so eval and training
 can't diverge.
 
 ## Setup & running
@@ -193,7 +193,7 @@ eval), `datasets` (released OOLONG sanity).
   and evaluated; multi-backend + single-shot eval unified in `eval/run.py`.
 - ✅ Characterized the method: graceful-degradation-vs-collapse crossover (40K), the
   combine-state-complexity wall (80K), SFT-teaches-the-protocol, RULER leaf-op transfer.
-- ⏭ **GRPO RL** on top of the SFT warm-start (`train.py` infra ready).
+- ⏭ **GRPO RL** on top of the SFT warm-start (`rl.py` infra ready).
 - ⏭ A **non-growing / sequential-fold combine** to break the irreducible-combine wall
   on user/temporal at scale.
 - ⏭ Teach additional leaf-ops (needle/track/QA) to broaden zero-shot RULER transfer.

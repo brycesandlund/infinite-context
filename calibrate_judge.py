@@ -22,7 +22,7 @@ import os
 
 from tinker_cookbook import tokenizer_utils
 
-import train
+import rl
 from eval.judge import JUDGE_SYSTEM, _SCORE_RE, Judge, make_judge
 from tasks.oolong import OOLONG_DATASETS, make_oolong_problem
 
@@ -110,7 +110,7 @@ async def _grade_raw(model, system, user, max_tokens):
 
 # Sweep one or more grader models (comma-separated), so we can see where
 # discrimination kicks in: GRADERS=openai/gpt-5.4-nano,openai/gpt-5.4-mini,openai/gpt-5.4
-GRADERS = os.environ.get("GRADERS", train.JUDGE_MODEL).split(",")
+GRADERS = os.environ.get("GRADERS", rl.JUDGE_MODEL).split(",")
 
 
 async def _grade_all(model, trials, helper):
@@ -156,9 +156,9 @@ def _report(model, graded, helper):
 
 
 async def main():
-    tokenizer = tokenizer_utils.get_tokenizer(train.MODEL_NAME)
+    tokenizer = tokenizer_utils.get_tokenizer(rl.MODEL_NAME)
     trials = _build_trials(tokenizer)
-    helper = Judge(backend=make_judge(train.JUDGE_MODEL).backend)  # reuse _prompt()
+    helper = Judge(backend=make_judge(rl.JUDGE_MODEL).backend)  # reuse _prompt()
     print(f"{len(trials)} trials | max_tokens={JUDGE_MAX_TOKENS} | graders: {GRADERS}\n"
           "(want: GAP large, FP low, FN low)")
     for model in GRADERS:

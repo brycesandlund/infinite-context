@@ -1,7 +1,7 @@
 """Shared agent-harness primitives.
 
 Single source of truth for the parts of the recursive-agent setup that MUST be
-identical between the RL training loop (train.py) and the multi-backend eval
+identical between the RL training loop (rl.py) and the multi-backend eval
 driver (eval/), so a Qwen-vs-Claude-vs-GPT comparison isn't confounded by
 harness differences:
 
@@ -10,8 +10,8 @@ harness differences:
   read_chunk tool.
 - `extract_boxed`: pull the final \\boxed{} answer out of a response.
 - Canonical tool descriptions + `openai_tool_specs()`: the tool schema text the
-  model is shown. train.py asserts its cookbook @tool descriptions equal these
-  constants at import time (see train.py), so the two can't drift.
+  model is shown. rl.py asserts its cookbook @tool descriptions equal these
+  constants at import time (see rl.py), so the two can't drift.
 
 Training keeps its own (token-level, RL) rollout machinery; this module holds
 only the backend-agnostic surface.
@@ -23,7 +23,7 @@ import re
 
 
 # ---------------------------------------------------------------------------
-# Canonical tool descriptions (the text the model is shown). train.py's cookbook
+# Canonical tool descriptions (the text the model is shown). rl.py's cookbook
 # @tool docstrings must equal these — enforced by an import-time assert there.
 # ---------------------------------------------------------------------------
 
@@ -79,7 +79,7 @@ def openai_tool_specs() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# read_chunk semantics (shared by train.py's cookbook tool and the eval driver)
+# read_chunk semantics (shared by rl.py's cookbook tool and the eval driver)
 # ---------------------------------------------------------------------------
 
 

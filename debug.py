@@ -22,7 +22,7 @@ from eval.render import rollout_to_agent_node, tree_to_text
 
 if TYPE_CHECKING:
     from tasks import Problem
-    from train import ParentRollout
+    from rl import ParentRollout
 
 
 def _summarize_datum(datum: tinker.Datum) -> dict[str, int]:
@@ -61,7 +61,7 @@ async def debug_run_rollouts_niah(
         max_depth = max(node.depth for node in nodes)
         if max_depth > 0:
             n_with_children += 1
-        from train import compute_reward  # post-hoc single-source training reward
+        from rl import compute_reward  # post-hoc single-source training reward
 
         parent_reward = compute_reward(result)
         print()
