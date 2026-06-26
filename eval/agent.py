@@ -139,6 +139,45 @@ async def run_agent(
     )
 
 
+async def run_single_shot(
+    backend: ModelBackend,
+    *,
+    document_tokens: list[int],
+    tokenizer,
+    task_context: str,
+    question: str,
+    max_output_tokens: int,
+) -> AgentNode:
+    """MODE=single: put the WHOLE document in context and ask for the answer in one
+    tool-free call. This is the raw-ability ceiling (frontier single-shot; un-finetuned
+    base model) — no decomposition, no budget. Returns the same AgentNode shape as
+    run_agent so eval/run.py's scoring + persistence path is identical across modes."""
+    system = harness.make_single_shot_prompt(task_context)
+    doc_text = tokenizer.decode(document_tokens)
+    messages: list[dict] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": f"{doc_text}\n\n{question}"},
+    ]
+    turn = await backend.sample(messages, max_tokens=max_output_tokens, tools=False)
+    messages.append({"role": "assistant", "content": turn.text, "tool_calls": []})
+    answer = harness.extract_boxed(turn.text)
+    if answer is not None:
+        termination = "answered"
+    elif turn.truncated:
+        termination = "overflow"   # ran out of output room (e.g. enumerating too much)
+    else:
+        termination = "stopped_no_answer"
+    return AgentNode(
+        depth=0,
+        subtask="",
+        answer=answer,
+        n_turns=1,
+        termination=termination,
+        messages=messages,
+        children=[],
+    )
+
+
 async def _handle_call(
     tc: ToolCall,
     *,

@@ -67,8 +67,13 @@ class ModelBackend(ABC):
         used for the per-agent context budget."""
 
     @abstractmethod
-    async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
-        """Produce one assistant turn given the conversation so far."""
+    async def sample(
+        self, messages: list[dict], max_tokens: int, tools: bool = True
+    ) -> AssistantTurn:
+        """Produce one assistant turn given the conversation so far. With
+        `tools=False` the read_chunk/spawn_subagent schema is NOT offered — the
+        single-shot full-document mode (MODE=single) needs the model to just answer
+        out of context, not to reach for tools that aren't part of that protocol."""
 
     async def complete(self, messages: list[dict], max_tokens: int = 512) -> str:
         """Plain text completion — used by the LLM judge (eval/judge.py). Shared by
@@ -115,10 +120,14 @@ class TinkerBackend(ModelBackend):
         model_input = self.renderer.build_generation_prompt(self._to_cookbook(messages))
         return model_input.length
 
-    async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
+    async def sample(
+        self, messages: list[dict], max_tokens: int, tools: bool = True
+    ) -> AssistantTurn:
         import tinker
 
-        model_input = self.renderer.build_generation_prompt(self._to_cookbook(messages))
+        specs = self._tool_specs if tools else []
+        cookbook = neutral_to_cookbook(messages, self.renderer, specs)
+        model_input = self.renderer.build_generation_prompt(cookbook)
         resp = await self.sampling_client.sample_async(
             model_input,
             num_samples=1,
@@ -211,7 +220,7 @@ class APIBackend(ModelBackend):
     Each model counts tokens in its own tokenizer (litellm.token_counter).
     """
 
-    def __init__(self, model: str, temperature: float = 1.0, max_output_cap: int = 8192):
+    def __init__(self, model: str, temperature: float = 1.0, max_output_cap: int = 16384):
         self.name = model
         self.model = model
         self.temperature = temperature
@@ -261,18 +270,22 @@ class APIBackend(ModelBackend):
             # Fallback: rough char/4 estimate if the model isn't in litellm's map.
             return sum(len(m.get("content") or "") for m in messages) // 4
 
-    async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
+    async def sample(
+        self, messages: list[dict], max_tokens: int, tools: bool = True
+    ) -> AssistantTurn:
         import litellm
 
         out_cap = max(256, min(max_tokens, self.max_output_cap))
-        resp = await litellm.acompletion(
+        kwargs = dict(
             model=self.model,
             messages=self._to_openai(messages),
-            tools=self._tools,
-            tool_choice="auto",
             temperature=self.temperature,
             max_tokens=out_cap,
         )
+        if tools:
+            kwargs["tools"] = self._tools
+            kwargs["tool_choice"] = "auto"
+        resp = await litellm.acompletion(**kwargs)
         msg = resp.choices[0].message
         # finish_reason == "length" => generation hit the cap (overflow).
         truncated = getattr(resp.choices[0], "finish_reason", None) == "length"
@@ -499,7 +512,9 @@ class OracleBackend(ModelBackend):
                 total += len(self.tokenizer.encode(c, add_special_tokens=False))
         return total + 600  # rough system+tools+header overhead
 
-    async def sample(self, messages: list[dict], max_tokens: int) -> AssistantTurn:
+    async def sample(
+        self, messages: list[dict], max_tokens: int, tools: bool = True
+    ) -> AssistantTurn:
         user_msg = next((m["content"] for m in messages if m["role"] == "user"), "")
         has_tool_result = any(m["role"] == "tool" for m in messages)
         m = _RANGE_RE.search(user_msg if isinstance(user_msg, str) else "")
@@ -955,7 +970,7 @@ class OolongOracle(ModelBackend):
 
     # -- the policy -------------------------------------------------------------
 
-    async def sample(self, messages, max_tokens):
+    async def sample(self, messages, max_tokens, tools: bool = True):
         user = next((m["content"] for m in messages if m["role"] == "user"), "")
         user = user if isinstance(user, str) else ""
         has_tool = any(m["role"] == "tool" for m in messages)

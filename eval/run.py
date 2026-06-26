@@ -30,7 +30,7 @@ from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.renderers import get_renderer
 
 import train  # single source of truth for budget/recursion/data constants
-from eval.agent import AgentNode, flatten, run_agent
+from eval.agent import AgentNode, flatten, run_agent, run_single_shot
 from eval.backends import APIBackend, ModelBackend, TinkerBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
 from tasks.oolong import make_oolong_problem, oolong_spec
@@ -44,6 +44,15 @@ from tasks.oolong import make_oolong_problem, oolong_spec
 # Anything else → a LiteLLM model string, e.g.:
 #   "anthropic/claude-sonnet-4-20250514", "openai/gpt-5-mini"
 BACKEND = os.environ.get("BACKEND", "tinker")
+
+# "decompose" (default): the recursive 8K-budget agent harness — the model must read
+# the doc via read_chunk and delegate (run_agent). "single": the whole document is put
+# directly in context and the model answers in ONE tool-free call (run_single_shot) —
+# the raw-ability ceiling (frontier single-shot, or an un-finetuned base model). Same
+# problems, same grading; only the protocol differs. MODE=single ignores the budget.
+MODE = os.environ.get("MODE", "decompose")
+# Single-shot output cap (room for reasoning models to think before \boxed{}).
+OUT_TOKENS = int(os.environ.get("OUT_TOKENS", "16384"))
 
 # Tinker-backend knobs (ignored for API backends).
 # CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt)
@@ -135,8 +144,9 @@ async def main() -> None:
         raise SystemExit(f"Unknown tasks in EVAL_TASKS: {unknown}. Available: {list_tasks()}")
 
     tokenizer = tokenizer_utils.get_tokenizer(MODEL_NAME)
-    print(f"Backend: {BACKEND} | tasks: {EVAL_TASKS} | n/task: {N_PER_TASK} | "
-          f"budget: {AGENT_CONTEXT} | doc: {DOC_SIZE_TOKENS} | depth: {MAX_DEPTH}")
+    budget_str = "n/a (whole doc in context)" if MODE == "single" else str(AGENT_CONTEXT)
+    print(f"Backend: {BACKEND} | mode: {MODE} | tasks: {EVAL_TASKS} | n/task: {N_PER_TASK} | "
+          f"budget: {budget_str} | doc: {DOC_SIZE_TOKENS} | depth: {MAX_DEPTH}")
     print("Loading + tokenizing PG-essay corpus...")
     corpus_tokens = tokenizer.encode(load_pg_essays_text(), add_special_tokens=False)
 
@@ -174,6 +184,15 @@ async def main() -> None:
 
     async def _one(problem) -> AgentNode:
         async with sem:
+            if MODE == "single":
+                return await run_single_shot(
+                    backend,
+                    document_tokens=problem.document_tokens,
+                    tokenizer=tokenizer,
+                    task_context=problem.task_context,
+                    question=problem.question,
+                    max_output_tokens=OUT_TOKENS,
+                )
             return await run_agent(
                 backend,
                 document_tokens=problem.document_tokens,
@@ -191,7 +210,11 @@ async def main() -> None:
     def _grounded(node: AgentNode) -> bool:
         """Did any agent in the tree actually read the document? An answer produced
         without a single read_chunk can only be a guess (binary/comparison questions
-        pay ~0.5 EV for free), so we report score split on this."""
+        pay ~0.5 EV for free), so we report score split on this. In MODE=single the
+        whole document is already in context, so every answer is grounded by
+        construction (there is no read_chunk to look for)."""
+        if MODE == "single":
+            return True
         return any(
             tc.name == "read_chunk"
             for n in flatten(node)

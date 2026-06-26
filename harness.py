@@ -149,6 +149,20 @@ def make_system_prompt(
     )
 
 
+def make_single_shot_prompt(task_context: str) -> str:
+    """System prompt for MODE=single: the whole document is placed directly in the
+    user message (no read_chunk, no decomposition), so there is no budget/tool prose
+    — only the per-task instructions plus the boxed-answer contract the grader needs.
+    This is the frontier-ceiling / raw-base-model protocol: read everything, answer."""
+    task_block = f"{task_context}\n\n" if task_context else ""
+    return (
+        f"{task_block}"
+        "You are given a complete document followed by a question about it. Read the "
+        "document carefully and answer the question. Show your reasoning, then emit "
+        "your final answer as \\boxed{value} and stop."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Boxed-answer extraction
 # ---------------------------------------------------------------------------
