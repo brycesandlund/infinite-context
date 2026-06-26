@@ -117,3 +117,57 @@ wall (counting, the bounded combine, holds at 0.415) — fixable, and we stay ab
 **Story:** frontier is competitive/ahead at 10K–20K, then **collapses at 40K** (0.583→0.338) — its 1.05M
 window holds the text but single-pass aggregation over ~600+ items fails. Our decomposition stays **flat**
 and crosses above. Graceful-degradation-vs-collapse, on identical problems. (gpt-5.4 raw: `raw/gpt5_4_oolong_40k.log`.)
+
+## 7. What does SFT actually buy? — single-shot vs the harness, OOLONG counting @10K (N=10)
+Same 10 counting problems, four ways. "harness" = MODE=decompose (8K budget, must use read_chunk/spawn);
+"single-shot" = MODE=single (whole doc in context, no tools).
+
+| config                  | score | mean_tree | reads doc?          |
+|-------------------------|-------|-----------|---------------------|
+| base Qwen single-shot   | 0.681 | 1.0       | yes (in context)    |
+| **SFT + harness**       | 0.519 | ~40       | yes (read_chunk)    |
+| gpt-5.4 single-shot     | 0.468 | 1.0       | yes (in context)    |
+| gpt-5.4 + harness       | 0.376 | 3.3       | yes (read_chunk)    |
+| base Qwen + harness     | 0.000 | 1.5       | **no — never reads**|
+
+Three reads:
+1. **The harness HURTS anyone not trained on it.** gpt-5.4 drops 0.468 → 0.376 (decomposes shallowly,
+   ~3 nodes, and loses accuracy in the clumsy split/aggregate); base Qwen drops 0.681 → **0.000** —
+   handed the tools with no training it never even calls read_chunk (`no_answer=10/10`, `grounded=0`).
+2. **SFT's entire value is the PROTOCOL.** Identical base weights go from 0.000 (with the harness) to
+   **0.519** after SFT — and SFT beats *frontier operating the same harness* (0.519 > 0.376) by
+   decomposing finely (~40 nodes) instead of clumsily (gpt-5.4's 3.3).
+3. **At 10K, single-shot still wins overall** (base 0.681 > SFT-harness 0.519): the doc fits native
+   context, so forced decomposition is pure added error. The harness only earns its keep past native
+   context — the §6 crossover (40K+), where single-shot can't fit or the frontier collapses.
+
+Raw: `raw/gpt5_4_oolong_counting_decomp.*`, `raw/base_qwen_oolong_counting_decomp.*` (+ single-shot
+`raw/base_qwen_oolong_single.*`). gpt-5.4 single-shot 0.468 is the §2 number (old-prompt path).
+
+## 8. Budget sweep — is the 80K dip the working-memory wall? (SFT, 80K doc, 8K→12K budget)
+Direct test of the §1 overflow hypothesis: same SFT checkpoint, same 80K problems by seed, only the
+per-agent context budget changes 8K → **12K (1.5×)**. If the dip is the *combine* outgrowing the budget
+(not a method flaw), raising the budget should recover the irreducible-combine families (user/temporal)
+and leave counting — whose combine is a bounded ≤6-label vector — flat.
+
+| family | score 8K | score 12K | Δ | overflow 8K→12K | mean tree 8K→12K | max tree 8K→12K |
+|---|---|---|---|---|---|---|
+| counting | 0.415 | 0.445 | +0.03 | 0 → 0 | 365 → 424 | 499 → 497 |
+| user | 0.550 | 0.575 | +0.03 | 2 → **1** | **759 → 373** | **4293 → 497** |
+| temporal | 0.323 | **0.398** | **+0.08** | 3 → **2** | **1705 → 707** | 6653 → 3853 |
+| **OVERALL** | **0.429** | **0.473** | **+0.044** | 5 → 3 | — | — |
+
+**Causal confirmation.** The improvement lands exactly where the mechanism predicts: temporal (widest
+tallies, most overflow) gains most (+0.08); counting (bounded combine, 0 overflow) is flat. The
+smoking gun is the **cascade collapse** — the 4293-node user rollout (a node that couldn't sum its
+children's tallies in 8K → overflow → re-split/re-spawn explosion) **drops to a clean 497 nodes at 12K**:
+give the node room to hold the merged tally and the whole retry-cascade evaporates. Mean tree size
+*falls* for user (759→373) and temporal (1705→707) **while scores rise** — leaner trees, fewer
+overflow-driven re-spawns. Counting's tree is unchanged (~365→424; pure binary split, no cascade either way).
+
+**But the irreducible combine is pushed out, not solved.** Temporal still has 2/10 overflows and a
+3853-node cascade — its widest ~290-pair `YYYY-MM|label`/`date` tallies exceed even 12K when summed
+pairwise. An O(distinct-keys) combine re-hits the wall at *some* length; 1.5× budget just moves it.
+The real fix is a **non-growing combine** (streaming/thresholded/top-k sketches) or a **sequential
+left-fold** that threads one running tally instead of unioning pairwise — keeping the working set O(1).
+Raw: `raw/sft_oolong_80k_12kbudget.*` (vs the 8K baseline `raw/sft_oolong_80k.*`).
