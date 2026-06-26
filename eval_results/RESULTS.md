@@ -27,12 +27,17 @@ Same checkpoint, same problems by seed, only `DOC_SIZE_TOKENS` changes. Agent bu
 | **OVERALL** | **0.532** | **0.514** | **0.562** | **0.429** |
 
 mean tree grew ~40 → ~110–240 → ~190–220 → **365 (counting) / 759 (user) / 1705 (temporal)** nodes.
-**Flat to 40K (4×); bends at 80K (8×).** The bend is the *irreducible-combine* tasks, not the method:
-at 80K the per-user / per-month tally that the combine must carry exceeds the **8K agent budget** →
-**root overflow** (counting 0/10 overflow → 0.415 holds; user 2/10; temporal 3/10). I.e. **bounded /
-associative combines (counting = sum, O(1) state) scale gracefully; irreducible O(n) combines scale
-only until their state outgrows the budget (~80K here).** Fix is known (bigger budget, or sequential/
-streaming decomposition), not a flaw. Contrast the OOLONG paper's frontier collapse (0.85→0.40, 8K→128K)
+**Flat to 40K (4×); bends at 80K (8×).** The bend is the *irreducible-combine* tasks, not the method.
+Verified mechanism (from the 80K rollouts): the per-key tally (`YYYY-MM|label`, `userID`) **grows as it
+sums up the tree** — mid-tree child reports reach ~1.3–1.8K tokens, so a node summing 2–3 of them
+(~4K+ tokens + prompt) **exceeds the 8K agent budget at depth 1–2** (in context reading children, or in
+output truncating the summed tally). Worse, an overflowed child makes its parent **re-split and re-spawn**,
+cascading into malformed ~2000-node trees (vs ~320 for a clean binary split) with `"agent overflowed
+context"` stubs propagating up → incomplete aggregate / root overflow. Overflow counts: counting 0/10
+(its `label:count` combine is O(≤6) ≈ 30 tok, never accumulates → 0.415 holds), user 2/10, temporal 3/10.
+**Bounded/associative combines scale gracefully; irreducible O(n) combines scale only until the growing
+tally outgrows the budget (~80K here).** Fix: bigger budget, a non-growing/streaming combine, or
+sequential decomposition — not a method flaw. Contrast the paper's frontier collapse (0.85→0.40, 8K→128K)
 and our §6 crossover (frontier already at 0.338 by 40K).
 
 ## 2. OOLONG head-to-head — OURS vs gpt-5.4 (single-shot, same problems)
