@@ -62,17 +62,16 @@ is why our absolute numbers sit lower and are NOT directly comparable to the pap
 ## 4. Cross-task transfer — OURS on RULER (zero-shot; SFT was OOLONG-only) @10K, N=5
 7 RULER task types × 5 problems = 35 questions, same seeds for both columns.
 
-| task                       | gpt-5.4 (1M budget)        | fine-tuned Qwen3.6-35B-A3B |
-|                            |                            | (8K budget)                |
-|----------------------------|----------------------------|----------------------------|
-| niah_single_2              | 1.000                      | 0.400                      |
-| niah_multikey_1            | 1.000                      | 0.200                      |
-| niah_multiquery            | 0.000                      | 0.000                      |
-| vt                         | 1.000                      | 0.160                      |
-| cwe                        | 1.000                      | 1.000                      |
-| fwe                        | 1.000                      | 0.600                      |
-| qa_1                       | 0.400                      | 0.000                      |
-| **OVERALL**                | **0.771**                  | **0.337**                  |
+| task                                   | gpt-5.4 (1M budget)                    | fine-tuned Qwen3.6-35B-A3B (8K budget) |
+|----------------------------------------|----------------------------------------|----------------------------------------|
+| niah_single_2                          | 1.000                                  | 0.400                                  |
+| niah_multikey_1                        | 1.000                                  | 0.200                                  |
+| niah_multiquery                        | 0.000                                  | 0.000                                  |
+| vt                                     | 1.000                                  | 0.160                                  |
+| cwe                                    | 1.000                                  | 1.000                                  |
+| fwe                                    | 1.000                                  | 0.600                                  |
+| qa_1                                   | 0.400                                  | 0.000                                  |
+| **OVERALL**                            | **0.771**                              | **0.337**                              |
 
 Frontier (1M window, single pass) reads everything and crushes the needle/track tasks. Our SFT
 transfers only where the leaf-op matches training (cwe = counting → 1.0, decomposed ~30 nodes) and
