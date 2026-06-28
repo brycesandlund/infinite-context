@@ -39,7 +39,11 @@ def _new_id() -> str:
 class SynthOracle(ModelBackend):
     name = "synth_oracle"
     LEAF_TOKENS = int(os.environ.get("LEAF_TOKENS", "500"))
-    LEAF_OVERLAP = int(os.environ.get("LEAF_OVERLAP", "120"))
+    # One finish-read block. The leaf reads [a,b]+[b,b+overlap] and KEEPS extending by
+    # another block while the last owned record still runs past what it has read — so it
+    # generalizes to any record length / document type (an OOLONG example can be ~450
+    # tokens). 200 keeps most records to one extra read; long ones trigger the extension.
+    LEAF_OVERLAP = int(os.environ.get("LEAF_OVERLAP", "200"))
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
         self.doc_len = len(problem.document_tokens)
@@ -147,15 +151,13 @@ class SynthOracle(ModelBackend):
     async def sample(self, messages, max_tokens, tools: bool = True):
         user = next((m["content"] for m in messages if m["role"] == "user"), "")
         user = user if isinstance(user, str) else ""
-        n_tool = sum(1 for m in messages if m["role"] == "tool")
         rng = _RANGE_RE.search(user)
-
         if rng is None:
-            return self._root(n_tool, messages)
+            return self._root(messages)
         a, b = int(rng.group(1)), int(rng.group(2))
         if self.strategy == "left_fold":
-            return self._fold_node(a, b, self._parse_acc(user), n_tool, messages)
-        return self._binary_node(a, b, n_tool, messages)
+            return self._fold_node(a, b, self._parse_acc(user), messages)
+        return self._binary_node(a, b, messages)
 
     def _parse_acc(self, user: str):
         m = _ACC_RE.search(user)
@@ -163,27 +165,72 @@ class SynthOracle(ModelBackend):
             return self._identity()
         return None if m.group(1) == "none" else int(m.group(1))
 
+    @staticmethod
+    def _reads_spawns(messages):
+        """Count read_chunk vs spawn_subagent tool results separately — a fold node has
+        BOTH (its reads, then its one child spawn), so a single tool-count can't tell the
+        read phase from the post-read phase."""
+        nr = ns = 0
+        for m in messages:
+            if m.get("role") != "tool":
+                continue
+            if m.get("name") == "read_chunk":
+                nr += 1
+            elif m.get("name") == "spawn_subagent":
+                ns += 1
+        return nr, ns
+
+    def _spawn_returns(self, messages):
+        return [m["content"] for m in messages if m.get("role") == "tool" and m.get("name") == "spawn_subagent"]
+
     # -- root -------------------------------------------------------------------
 
-    def _root(self, n_tool, messages):
-        if n_tool == 0:
-            if self.strategy == "left_fold":
-                sub = self._fold_subtask(0, self.doc_len, self._identity())
-                txt = (f"The document is {self.doc_len} tokens. I'll LEFT-FOLD a running "
-                       f"accumulator from the start, threading it through the chain.")
+    def _root(self, messages):
+        # The root IS the top node — it demonstrates the actual operation (binary split of
+        # the whole doc, or the first left-fold step), not a wrapper that hands the whole
+        # range to one child. Route straight into the node logic over [0, doc_len].
+        if self.strategy == "left_fold":
+            return self._fold_node(0, self.doc_len, self._identity(), messages)
+        return self._binary_node(0, self.doc_len, messages)
+
+    # -- grounded iterative boundary read (generalizes to any record length) ----
+
+    def _read_phase(self, a, end, messages):
+        """Return the next read turn while the last owned record isn't fully covered yet,
+        else None (reading done). Observe-then-extend, deciding to continue only from what
+        has actually been read: read [a,end] + [end,end+ov], then keep reading +ov blocks
+        while the last record whose line starts in [a,end) still runs past what we've read."""
+        ov = self.LEAF_OVERLAP
+        n_reads, _ = self._reads_spawns(messages)
+        recs = self._recs_in(a, end)
+        last_end = min(max((s[1] for s in recs), default=end), self.doc_len)
+        if n_reads == 0:
+            ob = min(end + ov, self.doc_len)
+            calls = [ToolCall(_new_id(), "read_chunk", {"start": a, "end": end})]
+            if ob > end:
+                calls.append(ToolCall(_new_id(), "read_chunk", {"start": end, "end": ob}))
+                txt = (f"Range {a}..{end} fits; reading it, then the next {ob - end} tokens to "
+                       f"finish the last record (its line may run past {end}).")
             else:
-                sub = self._binary_subtask(0, self.doc_len)
-                txt = (f"The document is {self.doc_len} tokens — too large to read. I'll split "
-                       f"with a BINARY tree and {self._combine_phrase()} the parts.")
-            return AssistantTurn(text=txt, tool_calls=[ToolCall(_new_id(), "spawn_subagent", {"subtask": sub})])
-        val = self._child_int(messages)
-        return AssistantTurn(text=f"The decomposition returned {val}.\n\\boxed{{{val}}}", tool_calls=[])
+                txt = f"Range {a}..{end} fits and reaches the document end; reading it."
+            return AssistantTurn(text=txt, tool_calls=calls)
+        # first read is [a,end]; every read after it is a contiguous +ov block
+        covered = min(end + (n_reads - 1) * ov, self.doc_len)
+        if covered < last_end:
+            nxt = min(covered + ov, self.doc_len)
+            return AssistantTurn(
+                text=f"The last record's line is still cut off at {covered} (no end-of-line yet), "
+                     f"so I read the next {nxt - covered} tokens ({covered}..{nxt}) to finish it.",
+                tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": covered, "end": nxt})],
+            )
+        return None
 
     # -- binary node ------------------------------------------------------------
 
-    def _binary_node(self, a, b, n_tool, messages):
+    def _binary_node(self, a, b, messages):
+        nr, ns = self._reads_spawns(messages)
         if (b - a) > self.LEAF_TOKENS:
-            if n_tool == 0:
+            if ns == 0:
                 m = (a + b) // 2
                 return AssistantTurn(
                     text=f"Range {a}..{b} > {self.LEAF_TOKENS}; splitting at midpoint {m}.",
@@ -192,60 +239,50 @@ class SynthOracle(ModelBackend):
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(m, b)}),
                     ],
                 )
-            vals = [self._extract_int(x["content"]) for x in messages if x["role"] == "tool"]
+            vals = [self._extract_int(c) for c in self._spawn_returns(messages)]
             res = self._combine(vals)
             return AssistantTurn(
                 text=f"{self._combine_phrase().capitalize()} of children {vals} = {res}.\n\\boxed{{{res}}}",
                 tool_calls=[],
             )
-        # leaf: read the range, then compute the partial
-        if n_tool == 0:
-            return self._read(a, b)
+        # leaf: read (iteratively, until the last owned record is covered), then compute
+        read_turn = self._read_phase(a, b, messages)
+        if read_turn is not None:
+            return read_turn
         recs = self._recs_in(a, b)
         lines = "\n".join(self._contrib(s) for s in recs) or "  (no record starts here)"
         val = self._leaf_value(recs)
         return AssistantTurn(
-            text=f"Computing the partial over {len(recs)} records ({self._op_phrase()}):\n"
+            text=f"Computing the partial over the {len(recs)} records whose line STARTS in "
+                 f"{a}..{b} ({self._op_phrase()}; the trailing reads only finish the last line, "
+                 f"and any record starting at/after {b} belongs to the next range):\n"
                  f"{lines}\nPartial = {val}.\n\\boxed{{{val}}}",
             tool_calls=[],
         )
 
-    # -- left-fold node: read slice (n_tool 0->2) -> fold+spawn (2) -> bubble (3) --
+    # -- left-fold node: read slice (iterative) -> fold + spawn rest -> bubble ---
 
-    def _fold_node(self, a, b, acc, n_tool, messages):
+    def _fold_node(self, a, b, acc, messages):
         cut = min(a + self.LEAF_TOKENS, b)
-        if n_tool == 0:
-            return self._read(a, cut)
+        read_turn = self._read_phase(a, cut, messages)
+        if read_turn is not None:
+            return read_turn
         recs = self._recs_in(a, cut)
         acc_out = self._fold(recs, acc)
         lines = "\n".join(self._contrib(s) for s in recs) or "  (no record starts here)"
-        body = f"Folding {len(recs)} records into accumulator {acc}:\n{lines}\n→ accumulator = {acc_out}"
-        if cut >= b:                       # final slice — return the accumulator
+        body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
+                f"accumulator {acc} (in order):\n{lines}\n→ accumulator = {acc_out}")
+        if cut >= b:                            # final slice — return the accumulator
             return AssistantTurn(text=f"{body} (final).\n\\boxed{{{acc_out}}}", tool_calls=[])
-        if n_tool == 2:                    # just read my slice — delegate the rest
+        _, ns = self._reads_spawns(messages)
+        if ns == 0:                             # reads done, not yet delegated — delegate the rest
             sub = self._fold_subtask(cut, b, acc_out)
             return AssistantTurn(
                 text=f"{body}. Delegating the rest {cut}..{b} with accumulator {acc_out}.",
                 tool_calls=[ToolCall(_new_id(), "spawn_subagent", {"subtask": sub})],
             )
-        final = self._child_int(messages)  # n_tool == 3: child returned the final
+        final = self._extract_int(self._spawn_returns(messages)[-1])   # child returned the final
         return AssistantTurn(text=f"The chain returned {final}.\n\\boxed{{{final}}}", tool_calls=[])
-
-    # -- shared read (range + small overlap to finish the last line) ------------
-
-    def _read(self, a, b):
-        ob = min(b + self.LEAF_OVERLAP, self.doc_len)
-        return AssistantTurn(
-            text=f"Range {a}..{b} fits; reading it (plus overlap to finish the last line).",
-            tool_calls=[
-                ToolCall(_new_id(), "read_chunk", {"start": a, "end": b}),
-                ToolCall(_new_id(), "read_chunk", {"start": b, "end": ob}),
-            ],
-        )
-
-    def _child_int(self, messages):
-        tool_msgs = [m for m in messages if m["role"] == "tool"]
-        return self._extract_int(tool_msgs[-1]["content"]) if tool_msgs else 0
 
     @staticmethod
     def _extract_int(text: str):
