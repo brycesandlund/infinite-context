@@ -321,3 +321,118 @@ class RealDocOracle(SynthOracle):
         return (f"Counting the {n} occurrences of '{self.entity}' that START in tokens {a}..{b} "
                 f"(the trailing reads only finish an occurrence straddling {b}; an occurrence "
                 f"starting at/after {b} belongs to the next range)")
+
+
+class BookQAOracle(SynthOracle):
+    """Real-question QA over a real (anonymized) novel. Binary scan; the leaf retrieves
+    sentences mentioning the question's entities; the combine keeps the top-K most-relevant
+    evidence sentences (BOUNDED -> no overflow); the root reads the collected evidence and
+    emits the gold answer (an entity sentence contains it). Reuses SynthOracle's scaffold +
+    iterative read; only the combine (collect-top-K) and the root (answer) differ."""
+
+    name = "bookqa_oracle"
+    _SEP = " ⟐ "
+
+    def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
+        super().__init__(problem, tokenizer, budget=budget,
+                         max_chunk_tokens=max_chunk_tokens, strategy="binary")
+        self.entities = self.meta["entities"]
+        self.answer = self.meta["answer"]
+        self.k = self.meta.get("k", 12)
+
+    def _op_phrase(self):
+        ents = ", ".join(self.entities) if self.entities else "the question's subject"
+        return f"report sentences relevant to the question (mentioning {ents})"
+
+    def _combine_phrase(self):
+        return "merge and keep the most relevant"
+
+    # -- evidence (rel, snippet) serialization through \boxed{} ------------------
+
+    def _ser(self, evid):
+        evid = sorted(evid, key=lambda e: -e[0])[: self.k]
+        return self._SEP.join(f"{r}¦{s}" for r, s in evid) if evid else "none"
+
+    def _parse(self, boxed):
+        out = []
+        for part in (boxed or "").split(self._SEP):
+            r, sep, s = part.partition("¦")
+            if sep:
+                try:
+                    out.append((int(r.strip()), s.strip()))
+                except ValueError:
+                    pass
+        return out
+
+    def _leaf_evidence(self, a, b):
+        return [(s[3], s[4]) for s in self._recs_in(a, b)]
+
+    def _merge(self, returns):
+        evid = []
+        for c in returns:
+            evid += self._parse(c)
+        return sorted(evid, key=lambda e: -e[0])[: self.k]
+
+    def _show(self, evid):
+        return "\n".join(f"  [rel {r}] {s}" for r, s in evid) or "  (no relevant evidence found)"
+
+    # -- root: collect evidence, then ANSWER (not box evidence) -----------------
+
+    def _root(self, messages):
+        nr, ns = self._reads_spawns(messages)
+        if self.doc_len > self.LEAF_TOKENS:
+            if ns == 0:
+                m = self.doc_len // 2
+                return AssistantTurn(
+                    text=f"The document is {self.doc_len} tokens. Scanning both halves for "
+                         f"sentences relevant to the question, then answering from the evidence.",
+                    tool_calls=[
+                        ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(0, m)}),
+                        ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(m, self.doc_len)}),
+                    ],
+                )
+            return self._answer(self._merge(self._spawn_returns(messages)))
+        rt = self._read_phase(0, self.doc_len, messages)
+        if rt is not None:
+            return rt
+        return self._answer(self._leaf_evidence(0, self.doc_len))
+
+    def _answer(self, evid):
+        evid = sorted(evid, key=lambda e: -e[0])[: self.k]
+        return AssistantTurn(
+            text=f"Collected evidence (top {len(evid)}):\n{self._show(evid)}\n\n"
+                 f"From this evidence, the answer is:\n\\boxed{{{self.answer}}}",
+            tool_calls=[],
+        )
+
+    # -- internal/leaf: collect + box serialized top-K evidence -----------------
+
+    def _binary_node(self, a, b, messages):
+        nr, ns = self._reads_spawns(messages)
+        if (b - a) > self.LEAF_TOKENS:
+            if ns == 0:
+                m = (a + b) // 2
+                return AssistantTurn(
+                    text=f"Range {a}..{b} > {self.LEAF_TOKENS}; splitting at midpoint {m} and "
+                         f"merging the relevant evidence from each half.",
+                    tool_calls=[
+                        ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(a, m)}),
+                        ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(m, b)}),
+                    ],
+                )
+            merged = self._merge(self._spawn_returns(messages))
+            return AssistantTurn(
+                text=f"Merging my children's evidence, keeping the top {len(merged)}:\n"
+                     f"{self._show(merged)}\n\\boxed{{{self._ser(merged)}}}",
+                tool_calls=[],
+            )
+        rt = self._read_phase(a, b, messages)
+        if rt is not None:
+            return rt
+        evid = self._leaf_evidence(a, b)
+        return AssistantTurn(
+            text=f"Scanning tokens {a}..{b} for question-relevant sentences "
+                 f"({self._op_phrase()}); found {len(evid)}:\n{self._show(evid)}\n"
+                 f"\\boxed{{{self._ser(evid)}}}",
+            tool_calls=[],
+        )

@@ -19,6 +19,7 @@ from tasks.oolong import OOLONG_TASKS, make_oolong_problem
 from tasks.ruler import RULER_TASKS, make_ruler_problem
 from tasks.synth import SYNTH_TASKS, make_synth_problem
 from tasks.realdoc import REALDOC_TASKS, make_realdoc_problem
+from tasks.bookqa import BOOKQA_TASKS, make_bookqa_problem
 
 
 # All 13 RULER tasks resolve through the same vendored builder; per-task
@@ -35,6 +36,7 @@ _GENERATORS = {name: _bind(make_ruler_problem, name) for name in RULER_TASKS}
 _GENERATORS.update({name: _bind(make_oolong_problem, name) for name in OOLONG_TASKS})
 _GENERATORS.update({name: _bind(make_synth_problem, name) for name in SYNTH_TASKS})
 _GENERATORS.update({name: _bind(make_realdoc_problem, name) for name in REALDOC_TASKS})
+_GENERATORS.update({name: _bind(make_bookqa_problem, name) for name in BOOKQA_TASKS})
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -53,6 +55,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     # Synthetic decomposition tasks: integer answers -> numeric partial credit.
     "synth_sum": "numeric", "synth_count": "numeric", "synth_max": "numeric", "synth_runreset": "numeric",
     "realdoc_count": "numeric",
+    "bookqa": "ruler_part",
 }
 
 
@@ -69,6 +72,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "oolong_counting": "oolong_exact", "oolong_user": "oolong_exact", "oolong_temporal": "oolong_exact",
     "synth_sum": "numeric", "synth_count": "numeric", "synth_max": "numeric", "synth_runreset": "numeric",
     "realdoc_count": "numeric",
+    "bookqa": "ruler_part",
 }
 
 
