@@ -253,12 +253,14 @@ class SynthOracle(ModelBackend):
         lines = "\n".join(self._contrib(s) for s in recs) or "  (no record starts here)"
         val = self._leaf_value(recs)
         return AssistantTurn(
-            text=f"Computing the partial over the {len(recs)} records whose line STARTS in "
-                 f"{a}..{b} ({self._op_phrase()}; the trailing reads only finish the last line, "
-                 f"and any record starting at/after {b} belongs to the next range):\n"
-                 f"{lines}\nPartial = {val}.\n\\boxed{{{val}}}",
+            text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\nPartial = {val}.\n\\boxed{{{val}}}",
             tool_calls=[],
         )
+
+    def _partial_header(self, a, b, n) -> str:
+        return (f"Computing the partial over the {n} records whose line STARTS in {a}..{b} "
+                f"({self._op_phrase()}; the trailing reads only finish the last line, and any "
+                f"record starting at/after {b} belongs to the next range)")
 
     # -- left-fold node: read slice (iterative) -> fold + spawn rest -> bubble ---
 
@@ -290,3 +292,32 @@ class SynthOracle(ModelBackend):
         src = boxed if boxed is not None else (text or "")
         m = re.search(r"-?\d+", src)
         return int(m.group()) if m else 0
+
+
+class RealDocOracle(SynthOracle):
+    """realdoc_count over real novel prose. Each 'record' is one occurrence of the
+    queried word (contributing +1); the binary tree-reduce sums per-chunk counts — the
+    same bounded-associative combine as synth_count, but the leaf-op is 'find the word
+    in real prose'. Reuses SynthOracle's scaffold + iterative boundary read wholesale."""
+
+    name = "realdoc_oracle"
+
+    def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
+        super().__init__(problem, tokenizer, budget=budget,
+                         max_chunk_tokens=max_chunk_tokens, strategy="binary")
+        self.entity = self.meta["entity"]
+
+    def _leaf_value(self, recs):
+        return len(recs)                       # every occurrence counts +1
+
+    def _op_phrase(self):
+        return f"count the occurrences of the word '{self.entity}'"
+
+    def _contrib(self, s):
+        idx, snip = s[2], s[3]
+        return f"- occurrence {idx}: …{snip}…"
+
+    def _partial_header(self, a, b, n) -> str:
+        return (f"Counting the {n} occurrences of '{self.entity}' that START in tokens {a}..{b} "
+                f"(the trailing reads only finish an occurrence straddling {b}; an occurrence "
+                f"starting at/after {b} belongs to the next range)")

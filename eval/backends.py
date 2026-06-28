@@ -1223,6 +1223,12 @@ def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
     - All three OOLONG families use the unified OolongOracle (show-your-work leaf +
       tree-reduce). Every other task uses the split-and-delegate OracleBackend.
     """
+    if problem.task.startswith("realdoc_"):
+        from eval.synth_oracle import RealDocOracle  # lazy: imports this module
+
+        return RealDocOracle(
+            problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens
+        )
     if problem.task.startswith("synth_"):
         from eval.synth_oracle import SynthOracle  # lazy: synth_oracle imports this module
 
