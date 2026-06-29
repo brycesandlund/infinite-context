@@ -114,6 +114,9 @@ class SynthOracle(ModelBackend):
     def _combine_phrase(self) -> str:
         return "take the max of" if self.task == "synth_max" else "sum"
 
+    def _empty_phrase(self) -> str:
+        return "  (no record starts here)"
+
     # -- subtask construction (carries strategy + range [+ accumulator]) --------
 
     def _binary_subtask(self, a: int, b: int) -> str:
@@ -250,7 +253,7 @@ class SynthOracle(ModelBackend):
         if read_turn is not None:
             return read_turn
         recs = self._recs_in(a, b)
-        lines = "\n".join(self._contrib(s) for s in recs) or "  (no record starts here)"
+        lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
         val = self._leaf_value(recs)
         return AssistantTurn(
             text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\nPartial = {val}.\n\\boxed{{{val}}}",
@@ -271,7 +274,7 @@ class SynthOracle(ModelBackend):
             return read_turn
         recs = self._recs_in(a, cut)
         acc_out = self._fold(recs, acc)
-        lines = "\n".join(self._contrib(s) for s in recs) or "  (no record starts here)"
+        lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
         body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
                 f"accumulator {acc} (in order):\n{lines}\n→ accumulator = {acc_out}")
         if cut >= b:                            # final slice — return the accumulator
@@ -322,6 +325,9 @@ class RealDocOracle(SynthOracle):
                 f"(the trailing reads only finish an occurrence straddling {b}; an occurrence "
                 f"starting at/after {b} belongs to the next range)")
 
+    def _empty_phrase(self) -> str:
+        return f"  (no occurrences of '{self.entity}' start here)"
+
 
 class BookQAOracle(SynthOracle):
     """Real-question QA over a real (anonymized) novel. Binary scan; the leaf retrieves
@@ -336,6 +342,7 @@ class BookQAOracle(SynthOracle):
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
         super().__init__(problem, tokenizer, budget=budget,
                          max_chunk_tokens=max_chunk_tokens, strategy="binary")
+        self.question = problem.question
         self.entities = self.meta["entities"]
         self.answer = self.meta["answer"]
         self.k = self.meta.get("k", 12)
@@ -344,8 +351,16 @@ class BookQAOracle(SynthOracle):
         ents = ", ".join(self.entities) if self.entities else "the question's subject"
         return f"report sentences relevant to the question (mentioning {ents})"
 
-    def _combine_phrase(self):
-        return "merge and keep the most relevant"
+    def _binary_subtask(self, a, b):
+        m = (a + b) // 2
+        return (
+            f"Strategy: BINARY scan for QA evidence. Find the sentences in tokens {a}..{b} "
+            f"relevant to the question: \"{self.question}\" — i.e. {self._op_phrase()}.\n"
+            f"- If {b}-{a} > {self.LEAF_TOKENS}: split at the midpoint — spawn one subagent "
+            f"for tokens {a}..{m} and one for tokens {m}..{b}, then MERGE their reported "
+            f"evidence and keep the most relevant sentences.\n"
+            f"- Otherwise read the range and report the relevant sentences (or 'none')."
+        )
 
     # -- evidence (rel, snippet) serialization through \boxed{} ------------------
 

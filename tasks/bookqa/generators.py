@@ -31,7 +31,11 @@ BOOKQA_TASKS: dict[str, dict] = {"bookqa": {"family": "bookqa", "strategy": "bin
 
 K_EVIDENCE = 12   # bounded combine: keep at most this many evidence sentences up the tree
 _STOPQ = {"Which", "What", "Who", "Whom", "When", "Where", "Why", "How", "The", "Mr",
-          "Mrs", "Miss", "For", "And", "Did", "Does", "Is", "Are", "Was", "Were"}
+          "Mrs", "Miss", "For", "And", "Did", "Does", "Is", "Are", "Was", "Were",
+          # common titles / function words that get capitalized in title-cased questions
+          "Ser", "Lord", "Lady", "King", "Queen", "Prince", "Princess", "Sir", "Saint",
+          "His", "Her", "Their", "Love", "Youth", "Life", "Death", "Name", "Home", "In",
+          "Of", "On", "At", "To", "By", "With", "From", "About", "Into", "Over"}
 _SENT = re.compile(r"[^.!?]*[.!?]")   # crude sentence splitter (good enough for evidence units)
 
 
@@ -46,43 +50,67 @@ def _rows() -> list[dict]:
     return _ROWS
 
 
-def _entities(question: str) -> list[str]:
-    return sorted(set(re.findall(r"\b[A-Z][a-z]{2,}\b", question)) - _STOPQ)
+def _entities(question: str, context: str) -> list[str]:
+    """Proper nouns named in the question. Title-cased questions capitalize every word,
+    so keep only candidates that appear PREDOMINANTLY CAPITALIZED in the prose (real names
+    like 'Barristan' are always capitalized; 'love'/'youth' are mostly lowercase)."""
+    keep = []
+    for e in sorted(set(re.findall(r"\b[A-Z][a-z]{2,}\b", question)) - _STOPQ):
+        cap = len(re.findall(r"\b" + re.escape(e) + r"\b", context))
+        low = len(re.findall(r"\b" + re.escape(e.lower()) + r"\b", context))
+        if cap >= 2 and cap >= low:   # a genuine proper noun in this text
+            keep.append(e)
+    return keep
 
 
-def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
-    rng = random.Random(seed)
-    row = _rows()[rng.randrange(len(_rows()))]
-    q, ans, ctx = row["question"], row["answer"], row["context"]
-    ents = _entities(q)
-
-    # Window the (huge) novel context around a gold occurrence so the answer sentence is
-    # present, then re-encode with offsets so token positions match document_tokens.
-    ai = max(0, ctx.find(ans))
-    span_chars = doc_size_tokens * 4
-    cs = max(0, ai - span_chars // 2)
-    window = ctx[cs:cs + span_chars]
-    enc = tokenizer(window, return_offsets_mapping=True, add_special_tokens=False)
-    ids, offs = enc["input_ids"], enc["offset_mapping"]
-
-    # Candidate evidence sentences: mention a question entity (relevance = #entities), with
-    # the answer-bearing sentence boosted so it survives the top-K combine.
-    spans: list[tuple] = []
-    ti = 0
+def _build_spans(window, offs, ents, ans):
+    """Evidence = sentences mentioning a question ENTITY (relevance = #entities). NO
+    answer-based selection — the leaf must retrieve on the question alone, or the oracle
+    leaks the gold. Returns (spans, grounded) where grounded means an entity sentence
+    also contains the answer (so entity-retrieval genuinely surfaces it)."""
+    spans, grounded, ti = [], False, 0
     for m in _SENT.finditer(window):
         sent = m.group()
         mentioned = [e for e in ents if re.search(r"\b" + re.escape(e) + r"\b", sent)]
-        has_ans = ans in sent
-        if not mentioned and not has_ans:
+        if not mentioned:
             continue
         sc = m.start()
         while ti < len(offs) and not (offs[ti][0] <= sc < offs[ti][1]):
             ti += 1
         if ti >= len(offs):
             break
-        relevance = len(mentioned) + (3 if has_ans else 0)
+        has_ans = ans in sent
+        grounded = grounded or has_ans
         snip = re.sub(r"\s+", " ", sent).strip()[:140].replace("}", ")")
-        spans.append((ti, ti + 1, len(spans), relevance, snip, has_ans))
+        spans.append((ti, ti + 1, len(spans), len(mentioned), snip, has_ans))
+    return spans, grounded
+
+
+def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
+    rng = random.Random(seed)
+    rows = _rows()
+    span_chars = doc_size_tokens * 4
+    chosen = None
+    # Resample until we find an entity-retrievable question: one whose answer sits in a
+    # sentence that ALSO mentions a question entity, so the entity-retrieval leaf surfaces
+    # it without the oracle ever consulting the gold. (Fallback to the last try.)
+    for _ in range(60):
+        row = rows[rng.randrange(len(rows))]
+        ents = _entities(row["question"], row["context"])
+        if not ents:
+            continue
+        ai = max(0, row["context"].find(row["answer"]))
+        cs = max(0, ai - span_chars // 2)
+        window = row["context"][cs:cs + span_chars]
+        enc = tokenizer(window, return_offsets_mapping=True, add_special_tokens=False)
+        spans, grounded = _build_spans(window, enc["offset_mapping"], ents, row["answer"])
+        chosen = (row, ents, window, enc, spans)
+        if grounded and spans:
+            break
+
+    row, ents, window, enc, spans = chosen
+    q, ans = row["question"], row["answer"]
+    ids = enc["input_ids"]
 
     return Problem(
         document_tokens=ids,
