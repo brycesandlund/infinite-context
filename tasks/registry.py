@@ -54,6 +54,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "oolong_counting": "oolong_exact", "oolong_user": "oolong_exact", "oolong_temporal": "oolong_exact",
     # Synthetic decomposition tasks: integer answers -> numeric partial credit.
     "synth_sum": "numeric", "synth_count": "numeric", "synth_max": "numeric", "synth_runreset": "numeric",
+    "synth_min": "numeric", "synth_sumwhere": "numeric", "synth_distinct": "numeric", "synth_varchain": "numeric", "synth_mode": "exact",
     "realdoc_count": "numeric",
     "bookqa": "ruler_part",
 }
@@ -71,6 +72,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     # decided per-problem via Problem.grading_mode; these are fallbacks only.
     "oolong_counting": "oolong_exact", "oolong_user": "oolong_exact", "oolong_temporal": "oolong_exact",
     "synth_sum": "numeric", "synth_count": "numeric", "synth_max": "numeric", "synth_runreset": "numeric",
+    "synth_min": "numeric", "synth_sumwhere": "numeric", "synth_distinct": "numeric", "synth_varchain": "numeric", "synth_mode": "exact",
     "realdoc_count": "numeric",
     "bookqa": "ruler_part",
 }

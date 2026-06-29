@@ -24,12 +24,16 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from collections import Counter
 
 import harness
 from eval.backends import AssistantTurn, ModelBackend, ToolCall
 
 _RANGE_RE = re.compile(r"tokens (\d+)\.\.(\d+)")
-_ACC_RE = re.compile(r"accumulator so far = (-?\d+|none)")
+# accumulator can now be a scalar OR a serialized state (counter/set/dict), so it runs
+# to end-of-line; the left-fold subtask puts it on its own "accumulator so far = ..." line.
+_ACC_RE = re.compile(r"accumulator so far = (.+)")
+_GROUPS_DEFAULT = "K1"
 
 
 def _new_id() -> str:
@@ -53,10 +57,11 @@ class SynthOracle(ModelBackend):
         self.spans = self.meta["record_spans"]   # (start, end, idx, amt, flag, grp)
         self.strategy = strategy or self.meta.get("strategy_default", "binary")
         self.budget = budget
-        if self.strategy == "binary" and self.task == "synth_runreset":
-            # runreset's combine is non-associative; a binary tree would need a
-            # richer monoid. Not rendered yet — the all-binary experiment adds it.
-            raise ValueError("synth_runreset has no binary oracle yet; use left_fold")
+        self.query_var = self.meta.get("query_var")   # synth_varchain: which var to report
+        if self.strategy == "binary" and self.task in ("synth_runreset", "synth_varchain"):
+            # non-associative combines; a binary tree would need a richer monoid. Not
+            # rendered yet — these are left-fold tasks.
+            raise ValueError(f"{self.task} has no binary oracle; use left_fold")
 
     # -- per-task leaf-op / combine / fold --------------------------------------
 
@@ -64,43 +69,78 @@ class SynthOracle(ModelBackend):
         """Records whose line STARTS in [a, b), in document order."""
         return [s for s in self.spans if a <= s[0] < b]
 
+    # State kind per task — how the partial/accumulator is carried through \boxed{} and
+    # subtasks: int (scalar reduce/fold), counter (per-key tally -> argmax), set (distinct
+    # -> count), dict (variable bindings). The leaf makes a state, combine/fold merges it,
+    # and only the ROOT finalizes it to the boxed answer.
+    _KIND = {
+        "synth_sum": "int", "synth_count": "int", "synth_max": "int", "synth_min": "int",
+        "synth_sumwhere": "int", "synth_runreset": "int",
+        "synth_mode": "counter", "synth_distinct": "set", "synth_varchain": "dict",
+    }
+
+    def _kind(self):
+        return self._KIND.get(self.task, "int")
+
     def _identity(self):
-        return None if self.task == "synth_max" else 0
+        if self.task in ("synth_max", "synth_min"):
+            return None
+        return {"int": 0, "counter": Counter(), "set": set(), "dict": {}}[self._kind()]
 
-    def _leaf_value(self, recs: list[tuple]):
-        if self.task == "synth_sum":
-            return sum(s[3] for s in recs)
-        if self.task == "synth_count":
-            return sum(1 for s in recs if s[4] == "Y")
-        if self.task == "synth_max":
-            return max((s[3] for s in recs), default=None)
-        raise ValueError(self.task)
+    def _leaf_value(self, recs):
+        t = self.task
+        if t == "synth_sum":      return sum(s[3] for s in recs)
+        if t == "synth_count":    return sum(1 for s in recs if s[4] == "Y")
+        if t == "synth_sumwhere": return sum(s[3] for s in recs if s[4] == "Y")
+        if t == "synth_max":      return max((s[3] for s in recs), default=None)
+        if t == "synth_min":      return min((s[3] for s in recs), default=None)
+        if t == "synth_mode":     return Counter(s[5] for s in recs if s[5] != "RST")
+        if t == "synth_distinct": return {s[5] for s in recs if s[5] != "RST"}
+        raise ValueError(t)
 
-    def _combine(self, vals: list):
-        vals = [v for v in vals if v is not None]
-        if self.task == "synth_max":
-            return max(vals) if vals else None
-        return sum(vals)
+    def _combine(self, states):
+        t = self.task
+        if t == "synth_max":
+            v = [s for s in states if s is not None]; return max(v) if v else None
+        if t == "synth_min":
+            v = [s for s in states if s is not None]; return min(v) if v else None
+        if t == "synth_mode":
+            tot = Counter()
+            for s in states: tot += s
+            return tot
+        if t == "synth_distinct":
+            out = set()
+            for s in states: out |= s
+            return out
+        return sum(s for s in states if s is not None)   # sum / count / sumwhere
 
-    def _fold(self, recs: list[tuple], acc):
+    def _fold(self, recs, acc):
+        t = self.task
         for s in recs:
+            if t == "synth_varchain":
+                _, _, _, var, rhs, is_ref = s
+                acc = dict(acc); acc[var] = acc.get(rhs, 0) if is_ref else int(rhs)
+                continue
             amt, flag, grp = s[3], s[4], s[5]
-            if self.task == "synth_runreset":
-                acc = 0 if grp == "RST" else acc + amt
-            elif self.task == "synth_sum":
-                acc += amt
-            elif self.task == "synth_count":
-                acc += 1 if flag == "Y" else 0
-            elif self.task == "synth_max":
-                acc = amt if acc is None else max(acc, amt)
+            if t == "synth_runreset": acc = 0 if grp == "RST" else acc + amt
+            elif t == "synth_sum":    acc += amt
+            elif t == "synth_count":  acc += 1 if flag == "Y" else 0
         return acc
 
-    def _contrib(self, s: tuple) -> str:
+    def _contrib(self, s) -> str:
+        t = self.task
+        if t == "synth_varchain":
+            _, _, idx, var, rhs, is_ref = s
+            return f"- [{idx:04d}] set {var} = {rhs}" + ("  (copy)" if is_ref else "")
         idx, amt, flag, grp = s[2], s[3], s[4], s[5]
-        if self.task == "synth_count":
+        if t == "synth_count":
             return f"- [{idx:04d}] flag={flag}" + ("  (+1)" if flag == "Y" else "")
-        if self.task == "synth_runreset":
+        if t == "synth_sumwhere":
+            return f"- [{idx:04d}] flag={flag} amt={amt:+d}" + ("  (+)" if flag == "Y" else "  (skip)")
+        if t == "synth_runreset":
             return f"- [{idx:04d}] grp={grp} amt={amt:+d}" + ("  -> RESET to 0" if grp == "RST" else "")
+        if t in ("synth_mode", "synth_distinct"):
+            return f"- [{idx:04d}] grp={grp}" + ("  (ignore RST)" if grp == "RST" else "")
         return f"- [{idx:04d}] amt={amt:+d}"
 
     def _op_phrase(self) -> str:
@@ -108,14 +148,70 @@ class SynthOracle(ModelBackend):
             "synth_sum": "add up the 'amt' fields",
             "synth_count": "count the records with flag=Y",
             "synth_max": "take the maximum 'amt'",
+            "synth_min": "take the minimum 'amt'",
+            "synth_sumwhere": "sum the 'amt' of records with flag=Y",
+            "synth_mode": "tally each grp value (ignoring RST)",
+            "synth_distinct": "collect the distinct grp values (ignoring RST)",
             "synth_runreset": "fold 'amt' left-to-right, resetting to 0 on grp=RST",
+            "synth_varchain": "apply each assignment to the running variable bindings",
         }[self.task]
 
     def _combine_phrase(self) -> str:
-        return "take the max of" if self.task == "synth_max" else "sum"
+        return {
+            "synth_max": "take the max of", "synth_min": "take the min of",
+            "synth_mode": "merge the tallies of", "synth_distinct": "union the distinct-sets of",
+        }.get(self.task, "sum")
 
     def _empty_phrase(self) -> str:
         return "  (no record starts here)"
+
+    # -- state <-> string (carried through \boxed{} and the fold subtask) -------
+
+    def _ser_state(self, state) -> str:
+        if state is None:
+            return "none"
+        k = self._kind()
+        if k == "int":     return str(state)
+        if k == "counter": return "|".join(f"{g}:{c}" for g, c in sorted(state.items())) or "none"
+        if k == "set":     return "|".join(sorted(state)) or "none"
+        return "|".join(f"{v}={x}" for v, x in sorted(state.items())) or "none"   # dict
+
+    def _parse_state(self, s):
+        k = self._kind(); s = (s or "").strip()
+        if k == "int":
+            if self.task in ("synth_max", "synth_min") and "none" in s.lower():
+                return None
+            m = re.search(r"-?\d+", s); return int(m.group()) if m else self._identity()
+        if s.lower() == "none":
+            return self._identity()
+        if k == "counter":
+            c = Counter()
+            for p in s.split("|"):
+                g, sep, n = p.partition(":")
+                if sep:
+                    try: c[g.strip()] += int(re.search(r"-?\d+", n).group())
+                    except (ValueError, AttributeError): pass
+            return c
+        if k == "set":
+            return {p.strip() for p in s.split("|") if p.strip()}
+        d = {}
+        for p in s.split("|"):
+            v, sep, x = p.partition("=")
+            if sep:
+                try: d[v.strip()] = int(re.search(r"-?\d+", x).group())
+                except (ValueError, AttributeError): pass
+        return d
+
+    def _finalize(self, state) -> str:
+        t = self.task
+        if t == "synth_mode":
+            if not state: return _GROUPS_DEFAULT
+            mx = max(state.values()); return min(g for g, n in state.items() if n == mx)
+        if t == "synth_distinct":
+            return str(len(state))
+        if t == "synth_varchain":
+            return str(state.get(self.query_var, 0))
+        return "0" if state is None else str(state)
 
     # -- subtask construction (carries strategy + range [+ accumulator]) --------
 
@@ -131,10 +227,10 @@ class SynthOracle(ModelBackend):
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
-        accs = "none" if acc is None else str(acc)
         return (
-            f"Strategy: LEFT-FOLD. accumulator so far = {accs}. Process tokens "
-            f"{a}..{b} left-to-right (leaf-op: {self._op_phrase()}).\n"
+            f"Strategy: LEFT-FOLD. Process tokens {a}..{b} left-to-right "
+            f"(leaf-op: {self._op_phrase()}).\n"
+            f"accumulator so far = {self._ser_state(acc)}\n"
             f"- Read the first ~{self.LEAF_TOKENS} tokens, update the accumulator over "
             f"those records, then spawn ONE subagent for the rest with the updated "
             f"accumulator.\n"
@@ -164,9 +260,7 @@ class SynthOracle(ModelBackend):
 
     def _parse_acc(self, user: str):
         m = _ACC_RE.search(user)
-        if not m:
-            return self._identity()
-        return None if m.group(1) == "none" else int(m.group(1))
+        return self._parse_state(m.group(1).strip()) if m else self._identity()
 
     @staticmethod
     def _reads_spawns(messages):
@@ -191,10 +285,15 @@ class SynthOracle(ModelBackend):
     def _root(self, messages):
         # The root IS the top node — it demonstrates the actual operation (binary split of
         # the whole doc, or the first left-fold step), not a wrapper that hands the whole
-        # range to one child. Route straight into the node logic over [0, doc_len].
+        # range to one child. It alone FINALIZES the combined state into the boxed answer.
         if self.strategy == "left_fold":
-            return self._fold_node(0, self.doc_len, self._identity(), messages)
-        return self._binary_node(0, self.doc_len, messages)
+            return self._fold_node(0, self.doc_len, self._identity(), messages, is_root=True)
+        return self._binary_node(0, self.doc_len, messages, is_root=True)
+
+    def _box(self, state, is_root):
+        """Internal nodes box the serialized STATE (so the parent can keep combining);
+        the root boxes the FINALIZED answer."""
+        return self._finalize(state) if is_root else self._ser_state(state)
 
     # -- grounded iterative boundary read (generalizes to any record length) ----
 
@@ -230,7 +329,7 @@ class SynthOracle(ModelBackend):
 
     # -- binary node ------------------------------------------------------------
 
-    def _binary_node(self, a, b, messages):
+    def _binary_node(self, a, b, messages, is_root=False):
         nr, ns = self._reads_spawns(messages)
         if (b - a) > self.LEAF_TOKENS:
             if ns == 0:
@@ -242,10 +341,12 @@ class SynthOracle(ModelBackend):
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(m, b)}),
                     ],
                 )
-            vals = [self._extract_int(c) for c in self._spawn_returns(messages)]
-            res = self._combine(vals)
+            states = [self._parse_state(c) for c in self._spawn_returns(messages)]
+            res = self._combine(states)
+            shown = ", ".join(self._ser_state(s) for s in states)
             return AssistantTurn(
-                text=f"{self._combine_phrase().capitalize()} of children {vals} = {res}.\n\\boxed{{{res}}}",
+                text=f"{self._combine_phrase().capitalize()} my children [{shown}] -> "
+                     f"{self._ser_state(res)}.\n\\boxed{{{self._box(res, is_root)}}}",
                 tool_calls=[],
             )
         # leaf: read (iteratively, until the last owned record is covered), then compute
@@ -254,9 +355,10 @@ class SynthOracle(ModelBackend):
             return read_turn
         recs = self._recs_in(a, b)
         lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
-        val = self._leaf_value(recs)
+        state = self._leaf_value(recs)
         return AssistantTurn(
-            text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\nPartial = {val}.\n\\boxed{{{val}}}",
+            text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\n"
+                 f"Partial = {self._ser_state(state)}.\n\\boxed{{{self._box(state, is_root)}}}",
             tool_calls=[],
         )
 
@@ -267,7 +369,7 @@ class SynthOracle(ModelBackend):
 
     # -- left-fold node: read slice (iterative) -> fold + spawn rest -> bubble ---
 
-    def _fold_node(self, a, b, acc, messages):
+    def _fold_node(self, a, b, acc, messages, is_root=False):
         cut = min(a + self.LEAF_TOKENS, b)
         read_turn = self._read_phase(a, cut, messages)
         if read_turn is not None:
@@ -276,25 +378,24 @@ class SynthOracle(ModelBackend):
         acc_out = self._fold(recs, acc)
         lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
         body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
-                f"accumulator {acc} (in order):\n{lines}\n→ accumulator = {acc_out}")
-        if cut >= b:                            # final slice — return the accumulator
-            return AssistantTurn(text=f"{body} (final).\n\\boxed{{{acc_out}}}", tool_calls=[])
+                f"accumulator {self._ser_state(acc)} (in order):\n{lines}\n"
+                f"→ accumulator = {self._ser_state(acc_out)}")
+        if cut >= b:                            # final slice — return the accumulator/answer
+            return AssistantTurn(text=f"{body} (final).\n\\boxed{{{self._box(acc_out, is_root)}}}", tool_calls=[])
         _, ns = self._reads_spawns(messages)
         if ns == 0:                             # reads done, not yet delegated — delegate the rest
             sub = self._fold_subtask(cut, b, acc_out)
             return AssistantTurn(
-                text=f"{body}. Delegating the rest {cut}..{b} with accumulator {acc_out}.",
+                text=f"{body}. Delegating the rest {cut}..{b} with accumulator {self._ser_state(acc_out)}.",
                 tool_calls=[ToolCall(_new_id(), "spawn_subagent", {"subtask": sub})],
             )
-        final = self._extract_int(self._spawn_returns(messages)[-1])   # child returned the final
-        return AssistantTurn(text=f"The chain returned {final}.\n\\boxed{{{final}}}", tool_calls=[])
-
-    @staticmethod
-    def _extract_int(text: str):
-        boxed = harness.extract_boxed(text or "")
-        src = boxed if boxed is not None else (text or "")
-        m = re.search(r"-?\d+", src)
-        return int(m.group()) if m else 0
+        # child returned the chain's final accumulator (serialized); finalize iff root
+        final_state = self._parse_state(self._spawn_returns(messages)[-1])
+        return AssistantTurn(
+            text=f"The chain returned {self._ser_state(final_state)}.\n"
+                 f"\\boxed{{{self._box(final_state, is_root)}}}",
+            tool_calls=[],
+        )
 
 
 class RealDocOracle(SynthOracle):
