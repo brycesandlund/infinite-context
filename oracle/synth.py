@@ -45,15 +45,44 @@ class SynthOracle(ScaffoldOracle):
             return None
         return super()._identity()
 
-    def _leaf_value(self, recs):
+    def _acc_step(self, acc, s):
+        """One record -> (new_acc, line showing the running state). The binary leaf calls
+        this from identity (so its partial is built one record at a time, never summed in
+        one shot); the left-fold calls it threading the incoming accumulator."""
         t = self.task
-        if t == "synth_sum":      return sum(s[3] for s in recs)
-        if t == "synth_count":    return sum(1 for s in recs if s[4] == "Y")
-        if t == "synth_sumwhere": return sum(s[3] for s in recs if s[4] == "Y")
-        if t == "synth_max":      return max((s[3] for s in recs), default=None)
-        if t == "synth_min":      return min((s[3] for s in recs), default=None)
-        if t == "synth_mode":     return Counter(s[5] for s in recs if s[5] != "RST")
-        if t == "synth_distinct": return {s[5] for s in recs if s[5] != "RST"}
+        if t == "synth_varchain":
+            _, _, idx, var, rhs, is_ref = s
+            if is_ref:
+                val = acc.get(rhs, 0)
+                return {**acc, var: val}, f"- [{idx:04d}] set {var} = {rhs}  → {var}={val} (copied {rhs}'s current value)"
+            return {**acc, var: int(rhs)}, f"- [{idx:04d}] set {var} = {rhs}  → {var}={rhs}"
+        idx, amt, flag, grp = s[2], s[3], s[4], s[5]
+        if t == "synth_sum":
+            acc += amt
+            return acc, f"- [{idx:04d}] amt={amt:+d}  → sum={acc}"
+        if t == "synth_count":
+            if flag == "Y": acc += 1
+            return acc, f"- [{idx:04d}] flag={flag}  → count={acc}"
+        if t == "synth_sumwhere":
+            mark = "(skip)"
+            if flag == "Y": acc += amt; mark = "(add)"
+            return acc, f"- [{idx:04d}] flag={flag} amt={amt:+d} {mark}  → sum={acc}"
+        if t == "synth_max":
+            acc = amt if acc is None else max(acc, amt)
+            return acc, f"- [{idx:04d}] amt={amt:+d}  → max={acc}"
+        if t == "synth_min":
+            acc = amt if acc is None else min(acc, amt)
+            return acc, f"- [{idx:04d}] amt={amt:+d}  → min={acc}"
+        if t == "synth_mode":
+            if grp != "RST": acc = acc + Counter([grp])
+            return acc, f"- [{idx:04d}] grp={grp}" + ("  (ignore RST)" if grp == "RST" else "") + f"  → {self._ser_state(acc)}"
+        if t == "synth_distinct":
+            if grp != "RST": acc = acc | {grp}
+            return acc, f"- [{idx:04d}] grp={grp}" + ("  (ignore RST)" if grp == "RST" else "") + f"  → {self._ser_state(acc)}"
+        if t == "synth_runreset":
+            if grp == "RST": return 0, f"- [{idx:04d}] grp=RST  → RESET, total=0"
+            acc += amt
+            return acc, f"- [{idx:04d}] amt={amt:+d}  → total={acc}"
         raise ValueError(t)
 
     def _combine(self, states):
@@ -71,42 +100,6 @@ class SynthOracle(ScaffoldOracle):
             for s in states: out |= s
             return out
         return sum(s for s in states if s is not None)   # sum / count / sumwhere
-
-    def _fold_lines(self, recs, acc):
-        """Step-by-step left fold: (final_acc, display_lines) where each line shows a record
-        AND the running state after it, so the fold is AUDITABLE. For varchain a `= VAR`
-        copy shows the RESOLVED value (the source's current binding)."""
-        lines = []
-        for s in recs:
-            if self.task == "synth_varchain":
-                _, _, idx, var, rhs, is_ref = s
-                if is_ref:
-                    val = acc.get(rhs, 0)
-                    acc = {**acc, var: val}
-                    lines.append(f"- [{idx:04d}] set {var} = {rhs}  → {var}={val} (copied {rhs}'s current value)")
-                else:
-                    acc = {**acc, var: int(rhs)}
-                    lines.append(f"- [{idx:04d}] set {var} = {rhs}  → {var}={rhs}")
-            else:  # synth_runreset
-                idx, amt, grp = s[2], s[3], s[5]
-                if grp == "RST":
-                    acc = 0
-                    lines.append(f"- [{idx:04d}] grp=RST  → RESET, total=0")
-                else:
-                    acc += amt
-                    lines.append(f"- [{idx:04d}] amt={amt:+d}  → total={acc}")
-        return acc, lines
-
-    def _contrib(self, s) -> str:
-        t = self.task
-        idx, amt, flag, grp = s[2], s[3], s[4], s[5]
-        if t == "synth_count":
-            return f"- [{idx:04d}] flag={flag}" + ("  (+1)" if flag == "Y" else "")
-        if t == "synth_sumwhere":
-            return f"- [{idx:04d}] flag={flag} amt={amt:+d}" + ("  (+)" if flag == "Y" else "  (skip)")
-        if t in ("synth_mode", "synth_distinct"):
-            return f"- [{idx:04d}] grp={grp}" + ("  (ignore RST)" if grp == "RST" else "")
-        return f"- [{idx:04d}] amt={amt:+d}"
 
     def _op_phrase(self) -> str:
         # Imperative description: the binary entries narrate the leaf header; the two

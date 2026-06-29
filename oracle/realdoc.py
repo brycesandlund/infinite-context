@@ -18,18 +18,16 @@ class RealDocOracle(ScaffoldOracle):
                          max_chunk_tokens=max_chunk_tokens, strategy="binary")
         self.entity = self.meta["entity"]
 
-    def _leaf_value(self, recs):
-        return len(recs)                       # every occurrence counts +1
+    def _acc_step(self, acc, s):
+        idx, snip = s[2], s[3]
+        acc += 1                               # every occurrence counts +1, running tally
+        return acc, f"- occurrence {idx}: …{snip}…  → count={acc}"
 
     def _unit(self):
         return f"occurrences of the word '{self.entity}'"
 
     def _goal_phrase(self):
         return "the total count"
-
-    def _contrib(self, s):
-        idx, snip = s[2], s[3]
-        return f"- occurrence {idx}: …{snip}…"
 
     def _partial_header(self, a, b, n) -> str:
         return (f"Counting the {n} occurrences of '{self.entity}' that START in tokens {a}..{b} "

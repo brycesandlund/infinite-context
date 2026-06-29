@@ -65,23 +65,30 @@ class ScaffoldOracle(ModelBackend):
     def _identity(self):
         return {"int": 0, "counter": Counter(), "set": set(), "dict": {}}[self._kind()]
 
-    def _leaf_value(self, recs):
+    def _acc_step(self, acc, s):
+        """Accumulate ONE record into `acc`, returning (new_acc, display_line) where the
+        line shows the record AND the running state after it. This is THE per-record op —
+        the leaf's aggregation and the left-fold step are the same accumulation, so the
+        model never has to compute a total over many records in one shot."""
         raise NotImplementedError
+
+    def _accumulate(self, recs, acc):
+        """Left-accumulate `recs` into `acc` -> (final_acc, lines). Shared by the binary
+        leaf (acc = identity, result = the partial) and the left-fold node (acc = incoming)."""
+        lines = []
+        for s in recs:
+            acc, line = self._acc_step(acc, s)
+            lines.append(line)
+        return acc, lines
 
     def _combine(self, states):
         return sum(s for s in states if s is not None)   # default: scalar sum
-
-    def _fold_lines(self, recs, acc):
-        raise NotImplementedError   # only left-fold tasks implement this
 
     def _finalize(self, state) -> str:
         return "0" if state is None else str(state)
 
     def _finalize_note(self, state) -> str:
         return ""
-
-    def _contrib(self, s) -> str:
-        return f"- [{s[2]:04d}]"
 
     def _op_phrase(self) -> str:
         return "process the records"
@@ -278,13 +285,15 @@ class ScaffoldOracle(ModelBackend):
                      f"{self._ser_state(res)}.{self._box_text(res, is_root)}",
                 tool_calls=[],
             )
-        # leaf: read (iteratively, until the last owned record is covered), then compute
+        # leaf: read (iteratively, until the last owned record is covered), then accumulate
+        # the records ONE AT A TIME, showing the running partial after each (never a total
+        # computed in one shot).
         read_turn = self._read_phase(a, b, messages)
         if read_turn is not None:
             return read_turn
         recs = self._recs_in(a, b)
-        lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
-        state = self._leaf_value(recs)
+        state, acc_lines = self._accumulate(recs, self._identity())
+        lines = "\n".join(acc_lines) or self._empty_phrase()
         return AssistantTurn(
             text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\n"
                  f"Partial = {self._ser_state(state)}.{self._box_text(state, is_root)}",
@@ -299,7 +308,7 @@ class ScaffoldOracle(ModelBackend):
         if read_turn is not None:
             return read_turn
         recs = self._recs_in(a, cut)
-        acc_out, fold_lines = self._fold_lines(recs, acc)
+        acc_out, fold_lines = self._accumulate(recs, acc)
         lines = "\n".join(fold_lines) or self._empty_phrase()
         body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
                 f"accumulator {self._ser_state(acc)} (in order):\n{lines}\n"
