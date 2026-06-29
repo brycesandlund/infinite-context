@@ -127,6 +127,32 @@ class SynthOracle(ModelBackend):
             elif t == "synth_count":  acc += 1 if flag == "Y" else 0
         return acc
 
+    def _fold_lines(self, recs, acc):
+        """Step-by-step left fold: return (final_acc, display_lines) where each line shows
+        a record AND the running state after it — so the fold is AUDITABLE (the model can
+        verify the final accumulator), not a leap from the record list to the result. For
+        varchain a `= VAR` copy shows the RESOLVED value (the source's current binding)."""
+        lines = []
+        for s in recs:
+            if self.task == "synth_varchain":
+                _, _, idx, var, rhs, is_ref = s
+                if is_ref:
+                    val = acc.get(rhs, 0)
+                    acc = {**acc, var: val}
+                    lines.append(f"- [{idx:04d}] set {var} = {rhs}  → {var}={val} (copied {rhs}'s current value)")
+                else:
+                    acc = {**acc, var: int(rhs)}
+                    lines.append(f"- [{idx:04d}] set {var} = {rhs}  → {var}={rhs}")
+            else:  # synth_runreset
+                idx, amt, grp = s[2], s[3], s[5]
+                if grp == "RST":
+                    acc = 0
+                    lines.append(f"- [{idx:04d}] grp=RST  → RESET, total=0")
+                else:
+                    acc += amt
+                    lines.append(f"- [{idx:04d}] amt={amt:+d}  → total={acc}")
+        return acc, lines
+
     def _contrib(self, s) -> str:
         t = self.task
         if t == "synth_varchain":
@@ -393,8 +419,8 @@ class SynthOracle(ModelBackend):
         if read_turn is not None:
             return read_turn
         recs = self._recs_in(a, cut)
-        acc_out = self._fold(recs, acc)
-        lines = "\n".join(self._contrib(s) for s in recs) or self._empty_phrase()
+        acc_out, fold_lines = self._fold_lines(recs, acc)
+        lines = "\n".join(fold_lines) or self._empty_phrase()
         body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
                 f"accumulator {self._ser_state(acc)} (in order):\n{lines}\n"
                 f"→ accumulator = {self._ser_state(acc_out)}")
