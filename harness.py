@@ -144,9 +144,7 @@ def make_system_prompt(
         f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself "
         f"(also {context_budget} tokens) with `subtask` as the user prompt. The same "
         f"tools and system prompt as above are inherited by the subagent.\n\n"
-        f"You may call spawn_subagent multiple times in parallel within a single turn "
-        f"to scan disjoint ranges concurrently. When you are confident in the final "
-        f"answer, emit it as \\boxed{{value}} and stop."
+        f"When you are confident in the final answer, emit it as \\boxed{{value}} and stop."
     )
 
 
