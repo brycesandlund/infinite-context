@@ -157,9 +157,11 @@ class SynthOracle(ModelBackend):
         }[self.task]
 
     def _combine_phrase(self) -> str:
+        # Must read naturally in BOTH "then {phrase} their two results" (subtask) and
+        # "{Phrase} my children [...]" (combine display).
         return {
             "synth_max": "take the max of", "synth_min": "take the min of",
-            "synth_mode": "merge the tallies of", "synth_distinct": "union the distinct-sets of",
+            "synth_mode": "merge", "synth_distinct": "union",
         }.get(self.task, "sum")
 
     def _empty_phrase(self) -> str:

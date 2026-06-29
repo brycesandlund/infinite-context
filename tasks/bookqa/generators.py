@@ -37,6 +37,11 @@ _STOPQ = {"Which", "What", "Who", "Whom", "When", "Where", "Why", "How", "The", 
           "His", "Her", "Their", "Love", "Youth", "Life", "Death", "Name", "Home", "In",
           "Of", "On", "At", "To", "By", "With", "From", "About", "Into", "Over"}
 _SENT = re.compile(r"[^.!?]*[.!?]")   # crude sentence splitter (good enough for evidence units)
+# Questions our retrieval+collect oracle CANNOT answer faithfully: comparison /
+# superlative / aggregation needs reasoning over many mentions, not a single retrieved
+# sentence, so the root would have to assert the gold. Keep only direct factoid retrieval.
+_SKIP_Q = re.compile(r"\bamong\b|\bhow many\b|\bhow much\b|\bcompare\b|\brank\b|\boldest\b"
+                     r"|\byoungest\b|\bmost\b|\bleast\b| or .+\?", re.I)
 
 
 def _rows() -> list[dict]:
@@ -94,8 +99,10 @@ def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -
     # Resample until we find an entity-retrievable question: one whose answer sits in a
     # sentence that ALSO mentions a question entity, so the entity-retrieval leaf surfaces
     # it without the oracle ever consulting the gold. (Fallback to the last try.)
-    for _ in range(60):
+    for _ in range(80):
         row = rows[rng.randrange(len(rows))]
+        if _SKIP_Q.search(row["question"]):
+            continue   # comparison/aggregation — our oracle can't answer it faithfully
         ents = _entities(row["question"], row["context"])
         if not ents:
             continue
@@ -103,9 +110,14 @@ def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -
         cs = max(0, ai - span_chars // 2)
         window = row["context"][cs:cs + span_chars]
         enc = tokenizer(window, return_offsets_mapping=True, add_special_tokens=False)
-        spans, grounded = _build_spans(window, enc["offset_mapping"], ents, row["answer"])
+        spans, _ = _build_spans(window, enc["offset_mapping"], ents, row["answer"])
+        # STRICT grounding: the answer-bearing sentence must actually survive the oracle's
+        # global top-K (merge keeps top-K by rel, ties broken by doc order), or the root
+        # would have to conjure the answer from evidence that doesn't include it.
+        kept = sorted(spans, key=lambda s: (-s[3], s[2]))[:K_EVIDENCE]
+        grounded = any(s[5] for s in kept)
         chosen = (row, ents, window, enc, spans)
-        if grounded and spans:
+        if grounded:
             break
 
     row, ents, window, enc, spans = chosen
