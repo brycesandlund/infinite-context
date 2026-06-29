@@ -154,16 +154,16 @@ class ScaffoldOracle(ModelBackend):
         # handoff shape. The midpoint isn't stated; the parent's two spawn calls show it.
         L, goal, unit = self.LEAF_TOKENS, self._goal_phrase(), self._unit()
         return (
-            f"Strategy: BINARY split. Over the {unit} STARTING in tokens {a}..{b}, compute "
-            f"{goal}. Recursively split the range at its midpoint, delegating each half to "
-            f"a subagent, until the range is less than {L} tokens. When the range is less "
-            f"than {L} tokens, read it and compute {goal} over the {unit} STARTING in the range."
+            f"Over the {unit} STARTING in tokens {a}..{b}, compute {goal}. Recursively split "
+            f"the range at its midpoint, delegating each half to a subagent, until the range "
+            f"is less than {L} tokens. When the range is less than {L} tokens, read it and "
+            f"compute {goal} over the {unit} STARTING in the range."
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
         L, unit = self.LEAF_TOKENS, self._unit()
         return (
-            f"Strategy: LEFT-FOLD. Continue the running accumulator by {self._op_phrase()}, "
+            f"Continue the running accumulator by {self._op_phrase()}, "
             f"over the {unit} STARTING in tokens {a}..{b}.\n"
             f"accumulator so far = {self._ser_state(acc)}\n"
             f"Read the first ~{L} tokens and update the accumulator over the {unit} STARTING "

@@ -33,7 +33,7 @@ class BookQAOracle(ScaffoldOracle):
         L = self.LEAF_TOKENS
         ents = ", ".join(self.entities) if self.entities else "the question's subject"
         return (
-            f"Strategy: BINARY scan for QA evidence. Find the sentences STARTING in tokens "
+            f"Find the sentences STARTING in tokens "
             f"{a}..{b} relevant to the question \"{self.question}\" (sentences mentioning "
             f"{ents}). Recursively split the range at its midpoint, delegating each half to "
             f"a subagent, until the range is less than {L} tokens. When the range is less "
