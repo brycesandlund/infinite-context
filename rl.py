@@ -586,7 +586,6 @@ async def _rollout_one_parent(
     system_prompt = _make_system_prompt(
         doc_length=len(problem.document_tokens),
         context_budget=AGENT_CONTEXT,
-        max_chunk_tokens=MAX_CHUNK_TOKENS,
         task_context=problem.task_context,
     )
     parent_subagent = SubagentTool(

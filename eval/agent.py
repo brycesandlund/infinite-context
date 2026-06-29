@@ -88,7 +88,6 @@ async def run_agent(
     system = harness.make_system_prompt(
         doc_length=len(document_tokens),
         context_budget=budget,
-        max_chunk_tokens=max_chunk_tokens,
         task_context=task_context,
     )
     messages: list[dict] = [

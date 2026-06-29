@@ -116,17 +116,22 @@ def read_chunk_impl(
 def make_system_prompt(
     doc_length: int,
     context_budget: int,
-    max_chunk_tokens: int,
     task_context: str,
 ) -> str:
     """Build the system prompt shared by parent and every spawned subagent.
 
-    `task_context` carries per-task instructions (label space, format hint, etc.)
-    placed right after the role/budget intro (so the agent is oriented before it
-    reads the task framing) and above the tools — pinned to every freshly-spawned
-    subagent so it already knows the task without the parent re-explaining it. For
-    RULER tasks it is empty (the root receives RULER's instruction in the user
-    message)."""
+    Kept deliberately RAW (no read-size advice / subtask examples): the decomposition
+    behavior is taught by the SFT demonstrations, not by prompt engineering, so the
+    prompt only states the load-bearing facts (role, budget, tool signatures, the
+    \\boxed answer contract). read_chunk's size cap is enforced by read_chunk_impl as a
+    silent guardrail — not surfaced here, since the oracle reads ~LEAF_TOKENS-sized
+    chunks anyway.
+
+    `task_context` carries per-task instructions (label space, format hint, etc.) placed
+    right after the role/budget intro (so the agent is oriented before it reads the task
+    framing) and above the tools — pinned to every freshly-spawned subagent so it already
+    knows the task without the parent re-explaining it. For RULER tasks it is empty (the
+    root receives RULER's instruction in the user message)."""
     task_block = f"{task_context}\n\n" if task_context else ""
     return (
         f"You are a long-document assistant. The document is {doc_length} tokens "
@@ -135,16 +140,10 @@ def make_system_prompt(
         f"and all tool results) must fit in this budget or the episode ends.\n\n"
         f"{task_block}"
         f"You have two tools:\n"
-        f"- `read_chunk(start, end)`: read the document tokens in [start, end). A "
-        f"single read returns at most {max_chunk_tokens} tokens — most of your context "
-        f"window — so plan accordingly: typically you can do one read of any range and "
-        f"then must either answer or delegate further.\n"
+        f"- `read_chunk(start, end)`: read the document tokens in [start, end).\n"
         f"- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself "
         f"(also {context_budget} tokens) with the same tools and the same task "
-        f"instructions above. Pass an explicit subtask string that names a token "
-        f"range and the sub-question, e.g. \"Read tokens 5000..7000 and report the "
-        f"findings relevant to the task in that range, or 'none'.\" The subagent "
-        f"returns its final \\boxed{{}} answer as a string.\n\n"
+        f"instructions above.\n\n"
         f"You may call spawn_subagent multiple times in parallel within a single turn "
         f"to scan disjoint ranges concurrently. When you are confident in the final "
         f"answer, emit it as \\boxed{{value}} and stop."
