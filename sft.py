@@ -37,7 +37,8 @@ from tinker_cookbook.supervised import datum_from_model_input_weights
 import metrics  # optional W&B logging (no-op unless WANDB=1)
 import rl  # shared constants + cookbook tool specs
 from eval.agent import flatten, run_agent
-from eval.backends import make_oracle, neutral_to_cookbook
+from eval.backends import neutral_to_cookbook
+from oracle import make_oracle
 from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
 from tasks import (
     grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode,
