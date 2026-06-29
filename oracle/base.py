@@ -86,6 +86,12 @@ class ScaffoldOracle(ModelBackend):
     def _op_phrase(self) -> str:
         return "process the records"
 
+    def _unit(self) -> str:
+        return "records"        # what the spans represent (records / occurrences / sentences)
+
+    def _goal_phrase(self) -> str:
+        return "the result"     # noun phrase: what a node computes over its range
+
     def _combine_phrase(self) -> str:
         return "combine"
 
@@ -136,26 +142,27 @@ class ScaffoldOracle(ModelBackend):
     # -- subtask construction (carries strategy + range [+ accumulator]) --------
 
     def _binary_subtask(self, a: int, b: int) -> str:
-        m = (a + b) // 2
+        # Self-similar directive (no conditional): the same instruction works at every
+        # node — split-or-leaf is decided from the range, and the model learns the one
+        # handoff shape. The midpoint isn't stated; the parent's two spawn calls show it.
+        L, goal, unit = self.LEAF_TOKENS, self._goal_phrase(), self._unit()
         return (
-            f"Strategy: BINARY split. Compute the partial result for tokens {a}..{b} "
-            f"(leaf-op: {self._op_phrase()}).\n"
-            f"- If {b}-{a} > {self.LEAF_TOKENS}: split at the midpoint — spawn one "
-            f"subagent for tokens {a}..{m} and one for tokens {m}..{b}, then "
-            f"{self._combine_phrase()} their two results.\n"
-            f"- Otherwise read the range and compute the partial directly."
+            f"Strategy: BINARY split. Over the {unit} STARTING in tokens {a}..{b}, compute "
+            f"{goal}. Recursively split the range at its midpoint, delegating each half to "
+            f"a subagent, until the range is less than {L} tokens. When the range is less "
+            f"than {L} tokens, read it and compute {goal} over the {unit} STARTING in the range."
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
+        L, unit = self.LEAF_TOKENS, self._unit()
         return (
-            f"Strategy: LEFT-FOLD. Process tokens {a}..{b} left-to-right "
-            f"(leaf-op: {self._op_phrase()}).\n"
+            f"Strategy: LEFT-FOLD. Continue the running accumulator by {self._op_phrase()}, "
+            f"over the {unit} STARTING in tokens {a}..{b}.\n"
             f"accumulator so far = {self._ser_state(acc)}\n"
-            f"- Read the first ~{self.LEAF_TOKENS} tokens, update the accumulator over "
-            f"those records, then spawn ONE subagent for the rest with the updated "
-            f"accumulator.\n"
-            f"- If the whole range is ≤ {self.LEAF_TOKENS} tokens, process it and return "
-            f"the final accumulator."
+            f"Read the first ~{L} tokens and update the accumulator over the {unit} STARTING "
+            f"there, then delegate the rest of the range to one subagent with the updated "
+            f"accumulator. When the range is less than {L} tokens, process it directly and "
+            f"return the final accumulator."
         )
 
     def count_tokens(self, messages):

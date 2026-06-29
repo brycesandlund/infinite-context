@@ -109,6 +109,8 @@ class SynthOracle(ScaffoldOracle):
         return f"- [{idx:04d}] amt={amt:+d}"
 
     def _op_phrase(self) -> str:
+        # Imperative description: the binary entries narrate the leaf header; the two
+        # left-fold entries (runreset/varchain) are the gerund fold-step in the subtask.
         return {
             "synth_sum": "add up the 'amt' fields",
             "synth_count": "count the records with flag=Y",
@@ -117,8 +119,21 @@ class SynthOracle(ScaffoldOracle):
             "synth_sumwhere": "sum the 'amt' of records with flag=Y",
             "synth_mode": "tally each grp value (ignoring RST)",
             "synth_distinct": "collect the distinct grp values (ignoring RST)",
-            "synth_runreset": "fold 'amt' left-to-right, resetting to 0 on grp=RST",
-            "synth_varchain": "apply each assignment to the running variable bindings",
+            "synth_runreset": "adding each 'amt' to the running total, resetting the total to 0 at each grp=RST",
+            "synth_varchain": "applying each assignment in order (a `= VAR` copies that variable's current value)",
+        }[self.task]
+
+    def _goal_phrase(self) -> str:
+        # Noun goal a node computes over its range (binary tasks only; the fold tasks use
+        # the running accumulator instead). Reads as "... compute {goal} over the records ...".
+        return {
+            "synth_sum": "the SUM of 'amt'",
+            "synth_count": "how many have flag=Y",
+            "synth_max": "the MAXIMUM 'amt'",
+            "synth_min": "the MINIMUM 'amt'",
+            "synth_sumwhere": "the SUM of 'amt' (flag=Y records only)",
+            "synth_mode": "the per-grp tally (how many have each grp value, ignoring RST)",
+            "synth_distinct": "the set of distinct grp values (ignoring RST)",
         }[self.task]
 
     def _combine_phrase(self) -> str:

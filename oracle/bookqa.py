@@ -30,14 +30,15 @@ class BookQAOracle(ScaffoldOracle):
         return f"report sentences relevant to the question (mentioning {ents})"
 
     def _binary_subtask(self, a, b):
-        m = (a + b) // 2
+        L = self.LEAF_TOKENS
+        ents = ", ".join(self.entities) if self.entities else "the question's subject"
         return (
-            f"Strategy: BINARY scan for QA evidence. Find the sentences in tokens {a}..{b} "
-            f"relevant to the question: \"{self.question}\" — i.e. {self._op_phrase()}.\n"
-            f"- If {b}-{a} > {self.LEAF_TOKENS}: split at the midpoint — spawn one subagent "
-            f"for tokens {a}..{m} and one for tokens {m}..{b}, then MERGE their reported "
-            f"evidence and keep the most relevant sentences.\n"
-            f"- Otherwise read the range and report the relevant sentences (or 'none')."
+            f"Strategy: BINARY scan for QA evidence. Find the sentences STARTING in tokens "
+            f"{a}..{b} relevant to the question \"{self.question}\" (sentences mentioning "
+            f"{ents}). Recursively split the range at its midpoint, delegating each half to "
+            f"a subagent, until the range is less than {L} tokens. When the range is less "
+            f"than {L} tokens, read it and report the relevant sentences STARTING in the "
+            f"range (or 'none')."
         )
 
     # -- evidence (rel, snippet) serialization through \boxed{} ------------------

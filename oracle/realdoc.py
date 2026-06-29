@@ -21,8 +21,11 @@ class RealDocOracle(ScaffoldOracle):
     def _leaf_value(self, recs):
         return len(recs)                       # every occurrence counts +1
 
-    def _op_phrase(self):
-        return f"count the occurrences of the word '{self.entity}'"
+    def _unit(self):
+        return f"occurrences of the word '{self.entity}'"
+
+    def _goal_phrase(self):
+        return "the total count"
 
     def _contrib(self, s):
         idx, snip = s[2], s[3]
