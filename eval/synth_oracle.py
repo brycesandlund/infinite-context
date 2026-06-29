@@ -290,10 +290,26 @@ class SynthOracle(ModelBackend):
             return self._fold_node(0, self.doc_len, self._identity(), messages, is_root=True)
         return self._binary_node(0, self.doc_len, messages, is_root=True)
 
-    def _box(self, state, is_root):
-        """Internal nodes box the serialized STATE (so the parent can keep combining);
-        the root boxes the FINALIZED answer."""
-        return self._finalize(state) if is_root else self._ser_state(state)
+    def _box_text(self, state, is_root):
+        """The boxed suffix. Internal nodes box the serialized STATE (so the parent can
+        keep combining); the root SHOWS its finalize step (argmax / count / var lookup)
+        then boxes the finalized answer — so the root never silently conjures it."""
+        if is_root:
+            return f"{self._finalize_note(state)}\n\\boxed{{{self._finalize(state)}}}"
+        return f"\n\\boxed{{{self._ser_state(state)}}}"
+
+    def _finalize_note(self, state) -> str:
+        t = self.task
+        if t == "synth_mode":
+            if not state:
+                return ""
+            mx = max(state.values())
+            return f"\nMost frequent grp: {min(g for g, n in state.items() if n == mx)} ({mx})."
+        if t == "synth_distinct":
+            return f"\nDistinct grp values: {len(state)}."
+        if t == "synth_varchain":
+            return f"\nFinal value of {self.query_var}: {state.get(self.query_var, 0)}."
+        return ""   # numeric reduce/fold: the boxed answer IS the state
 
     # -- grounded iterative boundary read (generalizes to any record length) ----
 
@@ -346,7 +362,7 @@ class SynthOracle(ModelBackend):
             shown = ", ".join(self._ser_state(s) for s in states)
             return AssistantTurn(
                 text=f"{self._combine_phrase().capitalize()} my children [{shown}] -> "
-                     f"{self._ser_state(res)}.\n\\boxed{{{self._box(res, is_root)}}}",
+                     f"{self._ser_state(res)}.{self._box_text(res, is_root)}",
                 tool_calls=[],
             )
         # leaf: read (iteratively, until the last owned record is covered), then compute
@@ -358,7 +374,7 @@ class SynthOracle(ModelBackend):
         state = self._leaf_value(recs)
         return AssistantTurn(
             text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\n"
-                 f"Partial = {self._ser_state(state)}.\n\\boxed{{{self._box(state, is_root)}}}",
+                 f"Partial = {self._ser_state(state)}.{self._box_text(state, is_root)}",
             tool_calls=[],
         )
 
@@ -381,7 +397,7 @@ class SynthOracle(ModelBackend):
                 f"accumulator {self._ser_state(acc)} (in order):\n{lines}\n"
                 f"→ accumulator = {self._ser_state(acc_out)}")
         if cut >= b:                            # final slice — return the accumulator/answer
-            return AssistantTurn(text=f"{body} (final).\n\\boxed{{{self._box(acc_out, is_root)}}}", tool_calls=[])
+            return AssistantTurn(text=f"{body} (final).{self._box_text(acc_out, is_root)}", tool_calls=[])
         _, ns = self._reads_spawns(messages)
         if ns == 0:                             # reads done, not yet delegated — delegate the rest
             sub = self._fold_subtask(cut, b, acc_out)
@@ -392,8 +408,7 @@ class SynthOracle(ModelBackend):
         # child returned the chain's final accumulator (serialized); finalize iff root
         final_state = self._parse_state(self._spawn_returns(messages)[-1])
         return AssistantTurn(
-            text=f"The chain returned {self._ser_state(final_state)}.\n"
-                 f"\\boxed{{{self._box(final_state, is_root)}}}",
+            text=f"The chain returned {self._ser_state(final_state)}.{self._box_text(final_state, is_root)}",
             tool_calls=[],
         )
 
