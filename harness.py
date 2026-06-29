@@ -122,16 +122,18 @@ def make_system_prompt(
     """Build the system prompt shared by parent and every spawned subagent.
 
     `task_context` carries per-task instructions (label space, format hint, etc.)
-    pinned at the top so a freshly-spawned subagent already knows the task
-    without the parent re-explaining it in each subtask string. For RULER tasks
-    it is empty (the root receives RULER's instruction in the user message)."""
+    placed right after the role/budget intro (so the agent is oriented before it
+    reads the task framing) and above the tools — pinned to every freshly-spawned
+    subagent so it already knows the task without the parent re-explaining it. For
+    RULER tasks it is empty (the root receives RULER's instruction in the user
+    message)."""
     task_block = f"{task_context}\n\n" if task_context else ""
     return (
-        f"{task_block}"
         f"You are a long-document assistant. The document is {doc_length} tokens "
         f"long; you cannot see it directly. Your own context window is {context_budget} "
         f"tokens — the conversation (system prompt, user message, your responses, "
         f"and all tool results) must fit in this budget or the episode ends.\n\n"
+        f"{task_block}"
         f"You have two tools:\n"
         f"- `read_chunk(start, end)`: read the document tokens in [start, end). A "
         f"single read returns at most {max_chunk_tokens} tokens — most of your context "
