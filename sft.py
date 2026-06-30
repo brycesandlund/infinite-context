@@ -90,7 +90,7 @@ def _strategy_for(task: str) -> str | None:
 BOOKQA_LEAF_MODEL = os.environ.get("BOOKQA_LEAF_MODEL", "").strip()
 BOOKQA_LEAF_TEMP = float(os.environ.get("BOOKQA_LEAF_TEMP", "0"))
 REJECT_ACCEPT_MIN = float(os.environ.get("REJECT_ACCEPT_MIN", "1.0"))   # keep iff score >= this
-REJECT_TRY_CAP = int(os.environ.get("REJECT_TRY_CAP", "6"))            # max attempts per wanted trace
+BOOKQA_GEN_CONCURRENCY = int(os.environ.get("BOOKQA_GEN_CONCURRENCY", "8"))  # in-flight traces
 _REJECT_SAMPLE_TASKS = {"bookqa"}
 
 
@@ -195,14 +195,17 @@ async def _collect_scripted(task, ti, want, corpus_tokens, tokenizer):
 
 
 async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_model):
-    """Model-driven oracle (bookqa): the leaf answer can be wrong (or the gold noisy), so
-    grade each trace against gold and KEEP only the matches. Runs in concurrent waves,
-    overshooting to absorb rejects, up to a try cap."""
+    """Model-driven oracle (bookqa): the leaf answer can be wrong (or the gold noisy), so grade
+    each trace against gold and KEEP only the matches. Selection is 1:1 seed->question, so we
+    walk DISTINCT questions once each (no duplicates, no wraparound) up to the corpus size, in
+    concurrency-capped waves, harvesting every accepted trace."""
+    from tasks.bookqa.generators import bookqa_corpus_size
+    size = bookqa_corpus_size()
     out, i, tries = [], 0, 0
-    cap = max(want * REJECT_TRY_CAP, want + 8)
-    while len(out) < want and tries < cap:
+    while len(out) < want and i < size:
+        wave = min(BOOKQA_GEN_CONCURRENCY, size - i)
         batch = []   # (meta, oracle, problem)
-        for _ in range(min((want - len(out)) * 2, cap - tries)):
+        for _ in range(wave):
             seed, problem = _make_sft_problem(task, ti, i, corpus_tokens, tokenizer)
             i += 1
             tries += 1
@@ -220,8 +223,8 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
             if sc >= REJECT_ACCEPT_MIN:
                 out.append((meta, node))
     rate = len(out) / max(tries, 1)
-    tag = "" if len(out) >= want else "  ** under target **"
-    print(f"  [{task}] kept {len(out)}/{want} in {tries} tries (accept {rate:.0%}){tag}")
+    short = "" if len(out) >= want else f"  (exhausted {size} distinct questions)"
+    print(f"  [{task}] kept {len(out)}/{want} distinct, accept {rate:.0%}{short}")
     return out
 
 

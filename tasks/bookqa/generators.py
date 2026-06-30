@@ -104,37 +104,68 @@ def _build_spans(window, offs, ents, ans):
     return spans, grounded
 
 
-def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
-    rng = random.Random(seed)
-    rows = _rows()
-    span_chars = doc_size_tokens * 4
-    chosen = None
-    # Resample until we find an entity-retrievable question: one whose answer sits in a
-    # sentence that ALSO mentions a question entity, so the entity-retrieval leaf surfaces
-    # it without the oracle ever consulting the gold. (Fallback to the last try.)
-    for _ in range(80):
-        row = rows[rng.randrange(len(rows))]
-        if _SKIP_Q.search(row["question"]):
-            continue   # comparison/aggregation — our oracle can't answer it faithfully
-        ents = _entities(row["question"], row["context"])
-        if not ents:
-            continue
-        ai = max(0, row["context"].find(row["answer"]))
-        cs = max(0, ai - span_chars // 2)
-        window = row["context"][cs:cs + span_chars]
-        enc = tokenizer(window, return_offsets_mapping=True, add_special_tokens=False)
-        spans, _ = _build_spans(window, enc["offset_mapping"], ents, row["answer"])
-        # STRICT grounding: the answer-bearing sentence must actually survive the oracle's
-        # global top-K (merge keeps top-K by rel, ties broken by doc order), or the root
-        # would have to conjure the answer from evidence that doesn't include it.
-        kept = sorted(spans, key=lambda s: (-s[3], s[2]))[:K_EVIDENCE]
-        grounded = any(s[5] for s in kept)
-        chosen = (row, ents, window, enc, spans)
-        if grounded:
+def _best_answer_pos(context: str, ans: str, ents: list[str]) -> tuple[int, int]:
+    """The answer occurrence whose surrounding sentence mentions the MOST question entities —
+    the best guess at the actual evidence sentence (a bare name can recur many times; the one
+    co-located with the question's subjects is the one that answers). Returns (char_pos, score)."""
+    best_pos, best_score, start = context.find(ans), -1, 0
+    while True:
+        j = context.find(ans, start)
+        if j < 0:
             break
+        ls = context.rfind(".", 0, j) + 1
+        le = context.find(".", j)
+        sent = context[ls: le if le >= 0 else len(context)]
+        score = sum(1 for e in ents if re.search(r"\b" + re.escape(e) + r"\b", sent))
+        if score > best_score:
+            best_score, best_pos = score, j
+        start = j + 1
+    return best_pos, best_score
 
-    row, ents, window, enc, spans = chosen
+
+_ELIGIBLE: list[tuple] | None = None
+
+
+def _eligible_rows() -> list[tuple]:
+    """Usable bookqa rows as (row, answer_pos): non-comparison (`_SKIP_Q`), extractive (gold
+    verbatim), and ANSWERABLE-by-local-retrieval (some answer occurrence sits in a sentence
+    that also names a question entity — strongly correlated with the model finding it). Kept in
+    a FIXED shuffled order so indexing by seed is 1:1: consecutive SFT seeds draw DISTINCT,
+    answerable questions (no duplicate funnelling, high accept rate). Computed once."""
+    global _ELIGIBLE
+    if _ELIGIBLE is None:
+        elig = []
+        for r in _rows():
+            if _SKIP_Q.search(r["question"]) or r["answer"] not in r["context"]:
+                continue
+            ents = _entities(r["question"], r["context"])
+            if not ents:
+                continue
+            pos, score = _best_answer_pos(r["context"], r["answer"], ents)
+            if score >= 1:                      # the answer co-occurs with a question entity
+                elig.append((r, pos))
+        random.Random(20240607).shuffle(elig)   # fixed permutation — deterministic across runs
+        _ELIGIBLE = elig
+    return _ELIGIBLE
+
+
+def bookqa_corpus_size() -> int:
+    """Distinct usable questions — the ceiling on duplicate-free bookqa traces."""
+    return len(_eligible_rows())
+
+
+def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
+    eligible = _eligible_rows()
+    row, ai = eligible[seed % len(eligible)]   # 1:1 seed -> distinct, answerable question
+    span_chars = doc_size_tokens * 4
     q, ans = row["question"], row["answer"]
+    ents = _entities(q, row["context"])
+    # Center the window on the BEST answer occurrence (its sentence names a question entity),
+    # so the evidence the model needs is actually in-window. Spans built for the scripted fallback.
+    cs = max(0, ai - span_chars // 2)
+    window = row["context"][cs:cs + span_chars]
+    enc = tokenizer(window, return_offsets_mapping=True, add_special_tokens=False)
+    spans, _ = _build_spans(window, enc["offset_mapping"], ents, ans)
     ids = enc["input_ids"]
 
     return Problem(

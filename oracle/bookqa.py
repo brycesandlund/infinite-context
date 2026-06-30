@@ -35,7 +35,8 @@ class BookQAOracle(ScaffoldOracle):
         "Use ONLY this excerpt — no outside knowledge, no guessing from names alone.\n"
         "If the excerpt DIRECTLY answers the question, reply exactly:\n"
         "ANSWER: <the answer, as short as possible>\n"
-        "EVIDENCE: <the exact sentence from the excerpt that states it>\n"
+        "EVIDENCE: <the sentence or few sentences from the excerpt that establish it, quoted "
+        "verbatim>\n"
         "If the excerpt is related but does NOT actually answer the question, reply:\n"
         "CONTEXT: <one short relevant quote>\n"
         "If the excerpt is irrelevant, reply exactly:\nNONE"
@@ -133,8 +134,9 @@ class BookQAOracle(ScaffoldOracle):
         m = re.search(r"ANSWER:\s*(.+?)(?:\n|$)", t, re.I)
         if m:
             ans = m.group(1).strip().strip('"').rstrip(".").strip()
+            # EVIDENCE may span several sentences — keep the whole block, newlines collapsed.
             ev = re.search(r"EVIDENCE:\s*(.+)", t, re.I | re.S)
-            evid = (ev.group(1).strip().split("\n")[0].strip()[:200] if ev else "")
+            evid = (re.sub(r"\s+", " ", ev.group(1)).strip()[:400] if ev else "")
             if ans and ans.upper() != "NONE":
                 return ("answer", ans, evid or ans)
         m = re.search(r"CONTEXT:\s*(.+)", t, re.I | re.S)
