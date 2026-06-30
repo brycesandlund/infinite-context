@@ -99,7 +99,7 @@ ate it. But all in all, taking her from truck to helm, considering the
 dimensions of the cook’s boilers, including his own live parchment
 boilers; fore and aft, I say, the Samuel Enderby was a jolly ship; of
 good fare and plenty
-      [assistant] Counting the 0 occurrences of 'Dutch' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
   (no occurrences of 'Dutch' start here)
 Partial = 0.
 \boxed{0}
@@ -138,7 +138,7 @@ elucidated.
 
 During my researches in the Leviathanic histories, I stumbled upon an
 ancient Dutch volume, which, by the musty whaling smell of it, I knew
-      [assistant] Counting the 0 occurrences of 'Dutch' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
   (no occurrences of 'Dutch' start here)
 Partial = 0.
 \boxed{0}
@@ -198,9 +198,9 @@ sail of Dutch whalemen; from which list, as translated by Dr. Snodhead,
 I transcribe the following:
 
 400,000 lbs. of beef. 60,000 lbs. Friesland pork. 150,00
-      [assistant] Counting the 2 occurrences of 'Dutch' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
-- occurrence 0: …d upon an ancient Dutch volume, which, by…  → count=1
-- occurrence 1: …professor of Low Dutch and High German i…  → count=2
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
+…d upon an ancient Dutch volume, which, by…  → count=1
+…professor of Low Dutch and High German i…  → count=2
 Partial = 2.
 \boxed{2}
 
@@ -238,9 +238,9 @@ beer, beef, and bread, duri …[354 chars clipped]… amount of butter, and Texe
 Leyden cheese consumed, seems amazing. I impute it, though, to their
 naturally unctuous natures, being rendered still more unctuous by the
 nature of their vocation, and especially by their pursuing their game
-      [assistant] Counting the 2 occurrences of 'Dutch' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
-- occurrence 2: …t and learned Low Dutch book treated of t…  → count=1
-- occurrence 3: …rs of 180 sail of Dutch whalemen; from wh…  → count=2
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
+…t and learned Low Dutch book treated of t…  → count=1
+…rs of 180 sail of Dutch whalemen; from wh…  → count=2
 Partial = 2.
 \boxed{2}
 
@@ -319,9 +319,9 @@ allowance, exclusive of his fair proportion of that 55 …[253 chars clipped]…
 this was very far North, be it remembered, where beer agrees well with
 the constitution; upon the Equator, in our southern fishery, beer would
 be apt to make the harpooneer sleepy at the mast-head and boo
-      [assistant] Counting the 2 occurrences of 'Dutch' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
-- occurrence 4: …umed by every Low Dutch harpooneer in tha…  → count=1
-- occurrence 5: …e of one of these Dutch whalemen, includi…  → count=2
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
+…umed by every Low Dutch harpooneer in tha…  → count=1
+…e of one of these Dutch whalemen, includi…  → count=2
 Partial = 2.
 \boxed{2}
 
@@ -359,9 +359,9 @@ unconditional skeleton.
 But how now, Ishmael? How is it, that you, a mere oarsman in the
 fishery, pretend to know aught about the subterranean parts of the
 whale? Did erudite Stubb, mounted upon your cap
-      [assistant] Counting the 2 occurrences of 'Dutch' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
-- occurrence 6: …we have 5,400 Low Dutch seamen in all; th…  → count=1
-- occurrence 7: …show that the old Dutch whalers of two or…  → count=2
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
+…we have 5,400 Low Dutch seamen in all; th…  → count=1
+…show that the old Dutch whalers of two or…  → count=2
 Partial = 2.
 \boxed{2}
 
@@ -421,7 +421,7 @@ boat-hatchet and jack-knife, and breaking the seal and reading all the
 contents of that young cub?
 
 And as for my exact knowledge of the bones of the leviathan in
-      [assistant] Counting the 0 occurrences of 'Dutch' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
   (no occurrences of 'Dutch' start here)
 Partial = 0.
 \boxed{0}
@@ -451,7 +451,7 @@ I confess, that since Jonah, few whalemen have penetrated very f …[715 chars c
 of Algiers, I was invited to spend part of the Arsacidean holidays with
 the lord of Tranque, at his retired palm villa at Pupella; a sea-side
 glen not very far distant from what our sailors called Bamboo-Town, his
-      [assistant] Counting the 0 occurrences of 'Dutch' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Dutch' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
   (no occurrences of 'Dutch' start here)
 Partial = 0.
 \boxed{0}
@@ -557,10 +557,10 @@ to the same result.
 
 When the question began to be discussed as to what should be our next
 step, the very first thing we decided
-      [assistant] Counting the 3 occurrences of 'Van' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
-- occurrence 0: …o work!  When Dr. Van Helsing and Dr. S…  → count=1
-- occurrence 1: …t when he and Dr. Van Helsing had gone…  → count=2
-- occurrence 2: …ors had seen him. Van Helsing asked if…  → count=3
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
+…o work!  When Dr. Van Helsing and Dr. S…  → count=1
+…t when he and Dr. Van Helsing had gone…  → count=2
+…ors had seen him. Van Helsing asked if…  → count=3
 Partial = 3.
 \boxed{3}
 
@@ -599,7 +599,7 @@ came with direct simplicity, as though she were simply stating a fact:--
 harm to any that I love, I shall die!”
 
 “You would not kill yourself?”
-      [assistant] Counting the 0 occurrences of 'Van' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
   (no occurrences of 'Van' start here)
 Partial = 0.
 \boxed{0}
@@ -661,8 +661,8 @@ live, though death would seem a boon unspeakable. You must fight Death
 himself, though he come to you in pain or in joy; by the day, or the
 night; in safety or in peril! On your living soul I charge you that you
 do
-      [assistant] Counting the 1 occurrences of 'Van' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
-- occurrence 3: …w courage to me!” Van Helsing was looki…  → count=1
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
+…w courage to me!” Van Helsing was looki…  → count=1
 Partial = 1.
 \boxed{1}
 
@@ -701,7 +701,7 @@ prepared with an exact ordering of our work.
 
 “It is perhaps well,” he said, “that at our meeting after our visit to
 Carfax we decided not to do anything with the earth-boxes that lay
-      [assistant] Counting the 0 occurrences of 'Van' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
   (no occurrences of 'Van' start here)
 Partial = 0.
 \boxed{0}
@@ -780,8 +780,8 @@ retain whatever form he now  …[353 chars clipped]… to bay in some place wher
 and the destroying shall be, in time, sure.” Here I started up for I
 could not contain myself at the thought that the minutes and seconds so
 preciously laden with Mina’s life and happiness were flying
-      [assistant] Counting the 1 occurrences of 'Van' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
-- occurrence 4: …terest.  As usual Van Helsing had thoug…  → count=1
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
+…terest.  As usual Van Helsing had thoug…  → count=1
 Partial = 1.
 \boxed{1}
 
@@ -821,8 +821,8 @@ precious time!” The Professor did not move, but simply said:--
 “And how are we to get into that house in Piccadilly?”
 
 “Any way!” I cried. “We shall break in if need be
-      [assistant] Counting the 1 occurrences of 'Van' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
-- occurrence 5: …s impossible. But Van Helsing held up h…  → count=1
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
+…s impossible. But Van Helsing held up h…  → count=1
 Partial = 1.
 \boxed{1}
 
@@ -883,7 +883,7 @@ into the house, but we have no key; is it not so?” I nodded.
 “Then,” he looked at me as keenly as he spoke, “all that is in doubt is
 the conscience of the employer, and the belief of your policemen as to
 whether or no that employer has a good
-      [assistant] Counting the 0 occurrences of 'Van' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
   (no occurrences of 'Van' start here)
 Partial = 0.
 \boxed{0}
@@ -914,7 +914,7 @@ your London, or of any city in the world; and if you do it as such
 things are rightly done, and at the time such things are rightly done,
 no one will interfere. I have read of a gentleman who owned a so fine
 house
-      [assistant] Counting the 0 occurrences of 'Van' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
+      [assistant] Counting the total occurrences of 'Van' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
   (no occurrences of 'Van' start here)
 Partial = 0.
 \boxed{0}
@@ -1026,7 +1026,7 @@ opened, and the wretch whom I dreaded appeared. Shutting the door, he
 approached me and said in a smothered voice,
 
 “You have destroyed the work
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 0..312 (the trailing reads only finish an occurrence straddling 312; an occurrence starting at/after 312 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1070,7 +1070,7 @@ delight is in death and wretchedness? Begone! I am firm, and your
 words will only exasperate my rage.”
 
 The monster saw my
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 312..625 (the trailing reads only finish an occurrence straddling 625; an occurrence starting at/after 625 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1133,7 +1133,7 @@ wedding-night.”
 
 I started forward and exclaimed, “Villain! Before you sign my
 death
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 625..937 (the trailing reads only finish an occurrence straddling 937; an occurrence starting at/after 937 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1171,7 +1171,7 @@ to depart, and he had directed his course toward …[349 chars clipped]… ove m
 thought of my beloved Elizabeth, of her tears and endless sorrow, when she
 should find her lover so barbarously snatched from her, tears, the first I
 had shed for many months, streamed from my eyes, and I resolved
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 937..1250 (the trailing reads only finish an occurrence straddling 1250; an occurrence starting at/after 1250 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1249,7 +1249,7 @@ dæmon whom I  …[333 chars clipped]… d by watching and misery. The sleep
 into which I now sank refreshed me; and when I awoke, I again felt as
 if I belonged to a race of human beings like myself, and I began to
 reflect upon what had passed with greater composure; yet still the
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 1250..1562 (the trailing reads only finish an occurrence straddling 1562; an occurrence starting at/after 1562 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1287,7 +1287,7 @@ Indian enterprise. He could not any longer delay his depa …[383 chars clipped]
 Yet, before I departed, there was a task to perform, on which I shuddered
 to reflect; I must pack up my chemical instruments, and for that purpose I
 must enter the room which had been the scene of my od
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 1562..1875 (the trailing reads only finish an occurrence straddling 1875; an occurrence starting at/after 1875 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}
@@ -1345,9 +1345,9 @@ had been taken from before my eyes and that I for the first time saw
 clearly. The idea of renewing my labours did not for one instant occur
 to me; the threat I had heard weighed on my thoughts, but I did not
 reflect that a
-      [assistant] Counting the 2 occurrences of 'London' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
-- occurrence 0: …he had formed in London desired his retur…  → count=1
-- occurrence 1: …as his journey to London might be followed…  → count=2
+      [assistant] Counting the total occurrences of 'London' that START in tokens 1875..2187 (the trailing reads only finish an occurrence straddling 2187; an occurrence starting at/after 2187 belongs to the next range):
+…he had formed in London desired his retur…  → count=1
+…as his journey to London might be followed…  → count=2
 Partial = 2.
 \boxed{2}
 
@@ -1376,7 +1376,7 @@ conclusion.
 Between two and three in the morning the moon rose; and I then, putting my
 basket aboard a little skiff, sailed out about four miles from the shore.
 The scene was perfectly solitary; a few boats were returning towards
-      [assistant] Counting the 0 occurrences of 'London' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
+      [assistant] Counting the total occurrences of 'London' that START in tokens 2187..2500 (the trailing reads only finish an occurrence straddling 2500; an occurrence starting at/after 2500 belongs to the next range):
   (no occurrences of 'London' start here)
 Partial = 0.
 \boxed{0}

@@ -19,9 +19,9 @@ class RealDocOracle(ScaffoldOracle):
         self.entity = self.meta["entity"]
 
     def _acc_step(self, acc, s):
-        idx, snip = s[2], s[3]
+        snip = s[3]
         acc += 1                               # every occurrence counts +1, running tally
-        return acc, f"- occurrence {idx}: …{snip}…  → count={acc}"
+        return acc, f"…{snip}…  → count={acc}"
 
     def _unit(self):
         return f"occurrences of the word '{self.entity}'"
@@ -30,7 +30,7 @@ class RealDocOracle(ScaffoldOracle):
         return "the total count"
 
     def _partial_header(self, a, b, n) -> str:
-        return (f"Counting the {n} occurrences of '{self.entity}' that START in tokens {a}..{b} "
+        return (f"Counting the total occurrences of '{self.entity}' that START in tokens {a}..{b} "
                 f"(the trailing reads only finish an occurrence straddling {b}; an occurrence "
                 f"starting at/after {b} belongs to the next range)")
 
