@@ -166,10 +166,10 @@ class ScaffoldOracle(ModelBackend):
             f"Continue the running accumulator by {self._op_phrase()}, "
             f"over the {unit} STARTING in tokens {a}..{b}.\n"
             f"accumulator so far = {self._ser_state(acc)}\n"
-            f"Read the first ~{L} tokens and update the accumulator over the {unit} STARTING "
-            f"there, then delegate the rest of the range to one subagent with the updated "
-            f"accumulator. When the range is less than {L} tokens, process it directly and "
-            f"return the final accumulator."
+            f"Read the first {L} tokens and update the accumulator over the {unit} STARTING "
+            f"in tokens {a}..{b}, then delegate the rest of the range to one subagent with the "
+            f"updated accumulator. When the range is less than {L} tokens, process it directly "
+            f"and return the final accumulator."
         )
 
     def count_tokens(self, messages):
@@ -220,9 +220,35 @@ class ScaffoldOracle(ModelBackend):
         # The root IS the top node — it demonstrates the actual operation (binary split of
         # the whole doc, or the first left-fold step), not a wrapper that hands the whole
         # range to one child. It alone FINALIZES the combined state into the boxed answer.
+        nr, ns = self._reads_spawns(messages)
         if self.strategy == "left_fold":
-            return self._fold_node(0, self.doc_len, self._identity(), messages, is_root=True)
-        return self._binary_node(0, self.doc_len, messages, is_root=True)
+            turn = self._fold_node(0, self.doc_len, self._identity(), messages, is_root=True)
+        else:
+            turn = self._binary_node(0, self.doc_len, messages, is_root=True)
+        # On its FIRST turn the root states the plan: it alone has to read the question, turn
+        # it into the per-node subtask, and finalize the combined result — so it reasons about
+        # the whole strategy once, before acting. Internal nodes stay terse (they just execute).
+        if nr == 0 and ns == 0:
+            turn.text = f"{self._strategy_preamble()}\n{turn.text}"
+        return turn
+
+    def _strategy_preamble(self) -> str:
+        n = self.doc_len
+        if self.strategy == "left_fold":
+            return (
+                f"This document is {n} tokens — too long to read in one context. I'll work "
+                f"through it left to right with a running accumulator: read the first slice and "
+                f"update the accumulator by {self._op_phrase()}, then hand the rest of the "
+                f"document plus the accumulator to a subagent to continue the same way. Once the "
+                f"final slice is folded in, the accumulator holds the whole-document result and "
+                f"I turn it into the final answer."
+            )
+        return (
+            f"This document is {n} tokens — too long to read in one context. I'll work through "
+            f"it by splitting the range in half recursively, having a subagent compute "
+            f"{self._goal_phrase()} over each half and combining the two partials. Once I have "
+            f"it for the whole document, I turn the combined result into the final answer."
+        )
 
     def _box_text(self, state, is_root):
         """The boxed suffix. Internal nodes box the serialized STATE (so the parent can keep
@@ -234,10 +260,12 @@ class ScaffoldOracle(ModelBackend):
 
     # -- grounded iterative boundary read (generalizes to any record length) ----
 
-    def _read_phase(self, a, end, messages):
+    def _read_phase(self, a, end, messages, node_end=None):
         """Return the next read turn while the last owned record isn't fully covered yet,
         else None (reading done). Observe-then-extend, deciding to continue only from what
-        has actually been read."""
+        has actually been read. `node_end` (the full node range end) is set by the left-fold
+        node: when end < node_end this read is only the FIRST slice of a larger range that
+        will be delegated onward — so it must NOT be narrated as a self-contained leaf."""
         ov = self.LEAF_OVERLAP
         n_reads, _ = self._reads_spawns(messages)
         recs = self._recs_in(a, end)
@@ -245,12 +273,19 @@ class ScaffoldOracle(ModelBackend):
         if n_reads == 0:
             ob = min(end + ov, self.doc_len)
             calls = [ToolCall(_new_id(), "read_chunk", {"start": a, "end": end})]
+            fold_slice = node_end is not None and end < node_end
+            if fold_slice:
+                lead = f"Reading the first {end - a} tokens ({a}..{end}) of this range to fold"
+            elif ob > end:
+                lead = f"Range {a}..{end} fits; reading it"
+            else:
+                lead = f"Range {a}..{end} fits and reaches the document end; reading it"
             if ob > end:
                 calls.append(ToolCall(_new_id(), "read_chunk", {"start": end, "end": ob}))
-                txt = (f"Range {a}..{end} fits; reading it, then the next {ob - end} tokens to "
-                       f"finish the last record (its line may run past {end}).")
+                txt = (f"{lead}, then the next {ob - end} tokens to finish the last record "
+                       f"(its line may run past {end}).")
             else:
-                txt = f"Range {a}..{end} fits and reaches the document end; reading it."
+                txt = f"{lead}."
             return AssistantTurn(text=txt, tool_calls=calls)
         # first read is [a,end]; every read after it is a contiguous +ov block
         covered = min(end + (n_reads - 1) * ov, self.doc_len)
@@ -304,7 +339,7 @@ class ScaffoldOracle(ModelBackend):
 
     def _fold_node(self, a, b, acc, messages, is_root=False):
         cut = min(a + self.LEAF_TOKENS, b)
-        read_turn = self._read_phase(a, cut, messages)
+        read_turn = self._read_phase(a, cut, messages, node_end=b)
         if read_turn is not None:
             return read_turn
         recs = self._recs_in(a, cut)
