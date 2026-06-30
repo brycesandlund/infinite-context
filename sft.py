@@ -216,9 +216,13 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
             )
             batch.append(((task, seed, problem), oracle, problem))
         nodes = await asyncio.gather(*[_one_trace(o, p, tokenizer) for _, o, p in batch])
-        for (meta, _, problem), node in zip(batch, nodes):
+        for (meta, oracle, problem), node in zip(batch, nodes):
             if len(out) >= want:
                 break
+            # Explicitly drop the oracle's abstention (belt-and-suspenders vs a gold word that
+            # happens to occur in the NO_ANSWER sentinel); then require the gold gate.
+            if not node.answer or node.answer.strip() == oracle.NO_ANSWER:
+                continue
             sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
             if sc >= REJECT_ACCEPT_MIN:
                 out.append((meta, node))

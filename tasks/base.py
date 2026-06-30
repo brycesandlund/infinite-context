@@ -18,7 +18,7 @@ from typing import Literal
 
 
 GradingMode = Literal[
-    "exact", "set", "numeric", "ruler_all", "ruler_part",
+    "exact", "set", "numeric", "ruler_all", "ruler_part", "qa_part",
     "oolong_exact", "oolong_compare", "oolong_soft",
 ]
 
@@ -196,6 +196,20 @@ def grade_answer(
         # single matching gold counts. Returns {0.0, 1.0} per example.
         pred_lc = extracted.lower()
         return 1.0 if any(g.lower() in pred_lc for g in gold_answers) else 0.0
+
+    if mode == "qa_part":
+        # Like ruler_part but on WORD BOUNDARIES — raw substring false-positives on short
+        # answers (gold "no" matches "answer not found", "found" matches "confounded"),
+        # which silently passed an ABSTENTION through the bookqa rejection gate. Word
+        # boundaries fix that while still crediting the gold appearing anywhere in a free-
+        # form answer. Max over golds. NOT for RULER qa_1/qa_2 (those keep ruler_part for
+        # comparability with NVIDIA's published string_match).
+        pred = normalize_answer(extracted)
+        for g in gold_answers:
+            gn = normalize_answer(g)
+            if gn and re.search(r"\b" + re.escape(gn) + r"\b", pred):
+                return 1.0
+        return 0.0
 
     raise ValueError(f"Unknown grading mode: {mode!r}")
 

@@ -29,6 +29,7 @@ class BookQAOracle(ScaffoldOracle):
     name = "bookqa_oracle"
     _SEP = " ⟐ "
     _ANS = "ANSWER"   # sentinel: a serialized result whose first field is this carries the answer
+    NO_ANSWER = "answer not found in document"   # boxed when no leaf answered -> gate rejects it
 
     _LEAF_SYS = (
         "You are reading ONE excerpt from a longer document, to help answer a question. "
@@ -198,7 +199,7 @@ class BookQAOracle(ScaffoldOracle):
         shown = self._show(payload) if kind == "context" else "  (none)"
         return AssistantTurn(
             text=(f"No subagent isolated the answer; best available context:\n{shown}\n"
-                  f"\\boxed{{answer not found in document}}"),
+                  f"\\boxed{{{self.NO_ANSWER}}}"),
             tool_calls=[],
         )
 

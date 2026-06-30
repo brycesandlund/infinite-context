@@ -58,7 +58,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "synth_count2": "numeric", "synth_maxwhere": "numeric", "synth_count_cmp": "numeric", "synth_count_range": "numeric",
     "synth_diff": "numeric", "synth_sumby": "exact",
     "realdoc_count": "numeric",
-    "bookqa": "ruler_part",
+    "bookqa": "qa_part",
 }
 
 
@@ -78,7 +78,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "synth_count2": "numeric", "synth_maxwhere": "numeric", "synth_count_cmp": "numeric", "synth_count_range": "numeric",
     "synth_diff": "numeric", "synth_sumby": "exact",
     "realdoc_count": "numeric",
-    "bookqa": "ruler_part",
+    "bookqa": "qa_part",
 }
 
 
