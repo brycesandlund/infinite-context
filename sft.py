@@ -81,6 +81,27 @@ def _strategy_for(task: str) -> str | None:
         return None
     return None if SYNTH_STRATEGY == "mixed" else SYNTH_STRATEGY
 
+
+# BookQA's leaf judgment ("does this prose answer the question?") is reading comprehension,
+# not a mechanical reduce, so its oracle delegates the leaf to a real model (ModelBackend)
+# and we REJECTION-SAMPLE: keep a trace only if its boxed answer matches gold. This filters
+# both wrong model reads and noisy gold. Set BOOKQA_LEAF_MODEL to a litellm id to enable;
+# the model is swappable precisely because it's just a ModelBackend behind make_oracle.
+BOOKQA_LEAF_MODEL = os.environ.get("BOOKQA_LEAF_MODEL", "").strip()
+BOOKQA_LEAF_TEMP = float(os.environ.get("BOOKQA_LEAF_TEMP", "0"))
+REJECT_ACCEPT_MIN = float(os.environ.get("REJECT_ACCEPT_MIN", "1.0"))   # keep iff score >= this
+REJECT_TRY_CAP = int(os.environ.get("REJECT_TRY_CAP", "6"))            # max attempts per wanted trace
+_REJECT_SAMPLE_TASKS = {"bookqa"}
+
+
+def _make_leaf_model():
+    """The bookqa leaf model — any litellm-supported chat model, behind the ModelBackend ABC."""
+    if not BOOKQA_LEAF_MODEL:
+        return None
+    from eval.backends import APIBackend
+    return APIBackend(BOOKQA_LEAF_MODEL, temperature=BOOKQA_LEAF_TEMP)
+
+
 EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: the 2nd
                                 # epoch on 30 traces bought NLL via surface memorization
                                 # (e.g. degenerate '\'-loops at sampling). With 150
@@ -138,38 +159,88 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     return seed, make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
 
 
-async def _gen_traces(corpus_tokens, tokenizer):
-    coros, meta = [], []
-    for ti, task in enumerate(SFT_TASKS):
-        want = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
-        collected, i = 0, 0
-        while collected < want:
+async def _one_trace(oracle, problem, tokenizer):
+    return await run_agent(
+        oracle,
+        document_tokens=problem.document_tokens,
+        tokenizer=tokenizer,
+        task_context=problem.task_context,
+        question=problem.question,
+        budget=AGENT_CONTEXT,
+        max_chunk_tokens=MAX_CHUNK_TOKENS,
+        max_depth=MAX_DEPTH,
+        max_turns=MAX_TURNS,
+    )
+
+
+async def _collect_scripted(task, ti, want, corpus_tokens, tokenizer):
+    """Scripted oracles (synth / oolong / realdoc): every trace solves by construction, so
+    build `want` and run them concurrently — no grading/rejection needed."""
+    coros, meta, i, collected = [], [], 0, 0
+    while collected < want:
+        seed, problem = _make_sft_problem(task, ti, i, corpus_tokens, tokenizer)
+        i += 1
+        oracle = make_oracle(
+            problem, tokenizer,
+            budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
+            strategy=_strategy_for(task),
+        )
+        if getattr(oracle, "tmode", None) in _SKIP_TMODES:
+            continue  # un-trainable gold — skip, try the next index
+        collected += 1
+        coros.append(_one_trace(oracle, problem, tokenizer))
+        meta.append((task, seed, problem))
+    nodes = await asyncio.gather(*coros)
+    return list(zip(meta, nodes))
+
+
+async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_model):
+    """Model-driven oracle (bookqa): the leaf answer can be wrong (or the gold noisy), so
+    grade each trace against gold and KEEP only the matches. Runs in concurrent waves,
+    overshooting to absorb rejects, up to a try cap."""
+    out, i, tries = [], 0, 0
+    cap = max(want * REJECT_TRY_CAP, want + 8)
+    while len(out) < want and tries < cap:
+        batch = []   # (meta, oracle, problem)
+        for _ in range(min((want - len(out)) * 2, cap - tries)):
             seed, problem = _make_sft_problem(task, ti, i, corpus_tokens, tokenizer)
             i += 1
+            tries += 1
             oracle = make_oracle(
                 problem, tokenizer,
                 budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
-                strategy=_strategy_for(task),
+                leaf_model=leaf_model,
             )
-            if getattr(oracle, "tmode", None) in _SKIP_TMODES:
-                continue  # un-trainable gold — skip, try the next index
-            collected += 1
-            coros.append(
-                run_agent(
-                    oracle,
-                    document_tokens=problem.document_tokens,
-                    tokenizer=tokenizer,
-                    task_context=problem.task_context,
-                    question=problem.question,
-                    budget=AGENT_CONTEXT,
-                    max_chunk_tokens=MAX_CHUNK_TOKENS,
-                    max_depth=MAX_DEPTH,
-                    max_turns=MAX_TURNS,
-                )
-            )
-            meta.append((task, seed, problem))
-    nodes = await asyncio.gather(*coros)
-    return list(zip(meta, nodes))
+            batch.append(((task, seed, problem), oracle, problem))
+        nodes = await asyncio.gather(*[_one_trace(o, p, tokenizer) for _, o, p in batch])
+        for (meta, _, problem), node in zip(batch, nodes):
+            if len(out) >= want:
+                break
+            sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
+            if sc >= REJECT_ACCEPT_MIN:
+                out.append((meta, node))
+    rate = len(out) / max(tries, 1)
+    tag = "" if len(out) >= want else "  ** under target **"
+    print(f"  [{task}] kept {len(out)}/{want} in {tries} tries (accept {rate:.0%}){tag}")
+    return out
+
+
+async def _gen_traces(corpus_tokens, tokenizer):
+    leaf_model = _make_leaf_model()
+    if "bookqa" in SFT_TASKS and leaf_model is None:
+        raise SystemExit(
+            "bookqa SFT needs a leaf model — set BOOKQA_LEAF_MODEL=<litellm id> "
+            "(e.g. anthropic/claude-haiku-4-5-20251001). The scripted span leaf is NOT "
+            "faithful for free-form QA, so we refuse to train on it."
+        )
+    out = []
+    for ti, task in enumerate(SFT_TASKS):
+        want = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
+        if task in _REJECT_SAMPLE_TASKS:
+            out += await _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_model)
+        else:
+            out += await _collect_scripted(task, ti, want, corpus_tokens, tokenizer)
+    return out
 
 
 # ---------------------------------------------------------------------------

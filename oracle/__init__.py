@@ -15,17 +15,21 @@ from oracle.realdoc import RealDocOracle
 from oracle.synth import SynthOracle
 
 
-def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
+def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None, leaf_model=None):
     """Pick the scripted oracle that best decomposes this task.
 
     - bookqa / realdoc_* / synth_*: the new ScaffoldOracle-based corpus. `strategy`
       (the per-task training knob) only applies to synth_*; None = the task default.
     - oolong_* : the unified OOLONG show-your-work oracle.
     - everything else (RULER niah/vt/cwe/fwe): the split-and-delegate OracleBackend.
+
+    `leaf_model` (a ModelBackend) only applies to bookqa: it makes the leaf JUDGMENT a real
+    model call (faithful free-form QA). None keeps bookqa's scripted span fallback.
     """
     task = problem.task
     if task == "bookqa":
-        return BookQAOracle(problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens)
+        return BookQAOracle(problem, tokenizer, budget=budget,
+                            max_chunk_tokens=max_chunk_tokens, leaf_model=leaf_model)
     if task.startswith("realdoc_"):
         return RealDocOracle(problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens)
     if task.startswith("synth_"):

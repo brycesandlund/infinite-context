@@ -6,11 +6,15 @@ must come from reading the text, not pretraining memory — the genuine long-doc
 semantic-understanding target.
 
 We keep the extractive subset (gold answer appears in the context), so the oracle is
-faithful: the **leaf-op** retrieves sentences mentioning the question's entities (a
-legit operation from the question alone); the **combine** keeps the top-K most-relevant
-evidence sentences (bounded → no overflow); the **root** reads the collected evidence
-and emits the gold answer (which an entity sentence contains). Strategy: binary scan.
+faithful. The subtask names ONLY the question (never the entities): each **leaf** reads
+its range and tries to answer — if the answer sentence is in range it returns the answer
+with that sentence; otherwise it returns any relevant context, or "No relevant information
+in this range." The **combine** propagates a child's answer up (or merges the bounded
+top-K relevant context); the **root** reads the answer off the surfaced sentence. Strategy:
+binary scan.
 
+The question entities are used only HERE, to build the candidate-evidence spans and mark
+which sentence carries the answer — they never appear in any prompt the model sees.
 `metadata["record_spans"]` is one entry per candidate evidence sentence:
 `(start_tok, end_tok, idx, relevance, snippet, has_answer)`.
 """
@@ -86,7 +90,16 @@ def _build_spans(window, offs, ents, ans):
             break
         has_ans = ans in sent
         grounded = grounded or has_ans
-        snip = re.sub(r"\s+", " ", sent).strip()[:140].replace("}", ")")
+        flat = re.sub(r"\s+", " ", sent).strip()
+        if has_ans:
+            # center the 140-char snippet on the answer so the displayed evidence actually
+            # SHOWS the answer — the oracle reads the answer off this snippet, so it must be
+            # visible (otherwise the answer would appear conjured from a sentence not showing it)
+            j = flat.find(ans); lo = max(0, j - 60)
+            snip = ("…" if lo > 0 else "") + flat[lo:lo + 140]
+        else:
+            snip = flat[:140]
+        snip = snip.replace("}", ")")
         spans.append((ti, ti + 1, len(spans), len(mentioned), snip, has_ans))
     return spans, grounded
 
