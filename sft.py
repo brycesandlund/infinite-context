@@ -66,7 +66,24 @@ SFT_TASKS = os.environ.get(
 # expert, so the sparse 35B-A3B needs materially more data than a dense model to
 # absorb the same behavior; also widens prefix coverage against exposure bias.
 N_PER_TASK = int(os.environ.get("N_PER_TASK", "150"))
-N_PER_TASK_OVERRIDE: dict[str, int] = {}
+
+
+def _parse_per_task(s: str) -> dict[str, int]:
+    """Per-task trace-count overrides, e.g. "realdoc_count:50,bookqa:20". bookqa self-caps at
+    its corpus ceiling regardless of the number."""
+    out: dict[str, int] = {}
+    for part in s.split(","):
+        if ":" in part:
+            k, v = part.split(":", 1)
+            out[k.strip()] = int(v)
+    return out
+
+
+# Default bumps realdoc (real-prose counting — closest in-distribution analog to the OOLONG-
+# counting eval); synths stay on N_PER_TASK. Override the whole map via the env var.
+N_PER_TASK_OVERRIDE: dict[str, int] = _parse_per_task(
+    os.environ.get("N_PER_TASK_OVERRIDE", "realdoc_count:50")
+)
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 # Decomposition strategy for the synth_* tasks (the TRAINING knob). "mixed" = each
 # task's favored default (binary for bounded, left_fold for stateful); "binary" or
@@ -109,7 +126,8 @@ EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: th
 SFT_BATCH_SIZE = 16             # datums per optim step
 LEARNING_RATE = 1e-5
 
-SAVE_CHECKPOINT_NAME = "sft_oolong"   # OOLONG-only warm-start (distinct from combined)
+SAVE_CHECKPOINT_NAME = os.environ.get("SAVE_NAME", "sft_general")   # output checkpoint name
+# (just the save-state label — SFT always trains a FRESH LoRA from base_model, no warm-start)
 LAST_SFT_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_sft_checkpoint.txt"
 
 # Debug toggles (env-overridable):
