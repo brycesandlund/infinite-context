@@ -141,22 +141,24 @@ class SynthOracle(ScaffoldOracle):
         return sum(s for s in states if s is not None)
 
     def _op_phrase(self) -> str:
-        # Imperative description: the binary entries narrate the leaf header; the two
-        # left-fold entries (runreset/varchain) are the gerund fold-step in the subtask.
+        # GERUND fold-step description — reads correctly both in the fold subtask ("continue
+        # the accumulator by {op}") and the binary leaf header ("({op}; the trailing reads…)").
+        # Every bounded task can now render as left_fold (SYNTH_STRATEGY=both), so all entries
+        # are gerunds, not just runreset/varchain.
         return {
-            "synth_sum": "add up the 'amt' fields",
-            "synth_count": "count the records with flag=Y",
-            "synth_max": "take the maximum 'amt'",
-            "synth_min": "take the minimum 'amt'",
-            "synth_sumwhere": "sum the 'amt' of records with flag=Y",
-            "synth_mode": "tally each grp value (ignoring RST)",
-            "synth_distinct": "collect the distinct grp values (ignoring RST)",
-            "synth_sumby": "add each 'amt' to its grp's running total (ignoring RST)",
-            "synth_diff": "add each 'amt' to its flag's (Y/N) running total",
-            "synth_count2": f"count the records with flag={self.qflag} and grp={self.qgrp}",
-            "synth_maxwhere": f"take the maximum 'amt' among flag={self.qflag} records",
-            "synth_count_cmp": f"count the records with amt {self.op} {self.thresh}",
-            "synth_count_range": f"count the records with amt in [{self.lo}, {self.hi}]",
+            "synth_sum": "adding up the 'amt' fields",
+            "synth_count": "counting the records with flag=Y",
+            "synth_max": "taking the maximum 'amt'",
+            "synth_min": "taking the minimum 'amt'",
+            "synth_sumwhere": "summing the 'amt' of records with flag=Y",
+            "synth_mode": "tallying each grp value (ignoring RST)",
+            "synth_distinct": "collecting the distinct grp values (ignoring RST)",
+            "synth_sumby": "adding each 'amt' to its grp's running total (ignoring RST)",
+            "synth_diff": "adding each 'amt' to its flag's (Y/N) running total",
+            "synth_count2": f"counting the records with flag={self.qflag} and grp={self.qgrp}",
+            "synth_maxwhere": f"taking the maximum 'amt' among flag={self.qflag} records",
+            "synth_count_cmp": f"counting the records with amt {self.op} {self.thresh}",
+            "synth_count_range": f"counting the records with amt in [{self.lo}, {self.hi}]",
             "synth_runreset": "adding each 'amt' to the running total, resetting the total to 0 at each grp=RST",
             "synth_varchain": "applying each assignment in order (a `= VAR` copies that variable's current value)",
         }[self.task]
