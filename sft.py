@@ -131,6 +131,35 @@ def _make_leaf_model():
     return APIBackend(BOOKQA_LEAF_MODEL, temperature=BOOKQA_LEAF_TEMP)
 
 
+# Class-imbalance fix for the QA leaf signal. Each KEPT QA trace has ~1 answer-bearing verdict
+# on the path to the root but MANY no-answer ("none") verdicts (the chunks without the answer),
+# so uniform SFT teaches the model to over-abstain — which then tanks retrieval (RULER
+# niah/cwe/fwe collapse to "None"). Resample the VERDICT turns toward parity: keep only a
+# fraction of no-answer verdicts, duplicate answer verdicts. Scoped to QA tasks only (the
+# read/split/combine turns and all synth/realdoc turns stay uniform).
+# Base ratio in TRAINING traces is ~1:2 pos:neg (the answer often recurs across chunks, so
+# several leaves fire) — not the ~19:1 the eval abstention implied. So a MODERATE pos-lean,
+# not a heavy one. This ratio is the key knob to tune against the next eval's abstention rate:
+# too high over-fires (hurts precision via the first-answer-wins combine), too low keeps the
+# over-abstention. Default ~2:1 pos:neg after resampling.
+QA_NONE_KEEP = float(os.environ.get("QA_NONE_KEEP", "0.5"))   # fraction of no-answer verdicts kept
+QA_ANSWER_DUP = int(os.environ.get("QA_ANSWER_DUP", "2"))     # copies of each answer verdict
+
+
+def _qa_verdict_class(text: str) -> str:
+    """Classify a QA leaf/combine turn: 'neg' = abstain/no-answer, 'pos' = answer-bearing,
+    'normal' = a read/split/plumbing turn (left uniform). Only meaningful for QA tasks."""
+    t = text.lower()
+    if ("no relevant information in this range" in t
+            or "neither half had relevant information" in t
+            or "\\boxed{none}" in t):
+        return "neg"
+    if ("\\boxed{answer" in t or "found the answer" in t
+            or "located the answer" in t or "the answer is" in t):
+        return "pos"
+    return "normal"
+
+
 EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: the 2nd
                                 # epoch on 30 traces bought NLL via surface memorization
                                 # (e.g. degenerate '\'-loops at sampling). With 150
@@ -291,15 +320,17 @@ async def _gen_traces(corpus_tokens, tokenizer):
 # ---------------------------------------------------------------------------
 
 
-def _node_to_datums(node, renderer, tool_specs) -> list[tinker.Datum]:
-    """One cross-entropy Datum per assistant turn in this agent's conversation.
+def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tuple]:
+    """One (Datum, klass) per assistant turn in this agent's conversation. `klass` is the QA
+    verdict class (pos/neg/normal) used by main() to resample the imbalanced QA leaf signal;
+    it's always 'normal' for non-QA tasks.
 
     Per-turn (LAST_ASSISTANT_MESSAGE) rather than ALL_ASSISTANT_MESSAGES because
     the Qwen3 renderer lacks the extension property (it strips thinking from
     history), so each assistant turn must be rendered with its own real prefix.
     """
     cb = neutral_to_cookbook(node.messages, renderer, tool_specs)
-    datums: list[tinker.Datum] = []
+    out: list[tuple] = []   # (datum, klass) — klass drives QA verdict resampling in main()
     for i, m in enumerate(cb):
         if m.get("role") != "assistant":
             continue
@@ -308,14 +339,12 @@ def _node_to_datums(node, renderer, tool_specs) -> list[tinker.Datum]:
         )
         if float(weights.sum()) == 0.0:  # nothing trainable (shouldn't happen)
             continue
-        # One datum per assistant turn, uniformly. (The old 2x spawn-turn duplication
-        # was for the sqrt-tree where spawns were rare; in the binary tree spawns are
-        # ~half of all turns, so duplicating them over-weights the split decision
-        # relative to the leaf classification we actually need to teach.)
-        datums.append(datum_from_model_input_weights(
+        datum = datum_from_model_input_weights(
             model_input, weights, max_length=AGENT_CONTEXT, reduction="mean"
-        ))
-    return datums
+        )
+        klass = _qa_verdict_class(m.get("content") or "") if is_qa else "normal"
+        out.append((datum, klass))
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -358,14 +387,33 @@ async def main() -> None:
                 tf.write(_tree_to_text(node))
         print(f"Printed {len(traces)} oracle traces -> {TRACE_OUT}.txt")
 
-    # Convert to datums; also sanity-check oracle traces actually solved the task.
-    datums: list[tinker.Datum] = []
+    # Convert to (datum, klass); also sanity-check oracle traces actually solved the task.
+    tagged: list[tuple] = []
     n_agents = 0
     for (_task, _seed, _problem), node in traces:
+        is_qa = _task in _REJECT_SAMPLE_TASKS
         for agent in flatten(node):
             n_agents += 1
-            datums.extend(_node_to_datums(agent, renderer, tool_specs))
-    print(f"Traces: {len(traces)} | agents (root+subagents): {n_agents} | datums: {len(datums)}")
+            tagged.extend(_node_to_datums(agent, renderer, tool_specs, is_qa=is_qa))
+
+    # Resample the QA verdict imbalance: keep only a stride-fraction of no-answer verdicts,
+    # duplicate each answer verdict. Deterministic (stride) so it's reproducible.
+    datums: list[tinker.Datum] = []
+    neg_stride = max(1, round(1.0 / QA_NONE_KEEP)) if QA_NONE_KEEP > 0 else 1
+    n_pos = n_neg_keep = n_neg_drop = neg_i = 0
+    for datum, klass in tagged:
+        if klass == "pos":
+            datums.extend([datum] * QA_ANSWER_DUP); n_pos += 1
+        elif klass == "neg":
+            if neg_i % neg_stride == 0:
+                datums.append(datum); n_neg_keep += 1
+            else:
+                n_neg_drop += 1
+            neg_i += 1
+        else:
+            datums.append(datum)
+    print(f"Traces: {len(traces)} | agents: {n_agents} | datums: {len(datums)} "
+          f"(QA verdicts: pos={n_pos}x{QA_ANSWER_DUP}, neg kept {n_neg_keep}/{n_neg_keep + n_neg_drop})")
     if not datums:
         raise SystemExit("No datums produced — check oracle trace generation.")
 
