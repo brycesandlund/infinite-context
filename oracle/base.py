@@ -37,6 +37,11 @@ def _new_id() -> str:
 class ScaffoldOracle(ModelBackend):
     name = "scaffold_oracle"
     LEAF_TOKENS = int(os.environ.get("LEAF_TOKENS", "500"))
+    # Left-fold uses a SMALLER leaf: a fold node lists every record in its slice inline (the
+    # running accumulator), so a 500-token slice of a dense task like varchain (5 vars, verbose
+    # "copied X" annotations) can push the real per-agent context past a tight budget. 400
+    # keeps the heaviest fold node comfortably under 3000 incl. the tool-schema prefix.
+    FOLD_LEAF_TOKENS = int(os.environ.get("FOLD_LEAF_TOKENS", "400"))
     # One finish-read block. The leaf reads [a,b]+[b,b+overlap] and KEEPS extending by
     # another block while the last owned record still runs past what it has read — so it
     # generalizes to any record length / document type (an OOLONG example can be ~450
@@ -161,7 +166,7 @@ class ScaffoldOracle(ModelBackend):
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
-        L, unit = self.LEAF_TOKENS, self._unit()
+        L, unit = self.FOLD_LEAF_TOKENS, self._unit()
         return (
             f"Continue the running accumulator by {self._op_phrase()}, "
             f"over the {unit} STARTING in tokens {a}..{b}.\n"
@@ -338,7 +343,7 @@ class ScaffoldOracle(ModelBackend):
     # -- left-fold node: read slice (iterative) -> fold + spawn rest -> bubble ---
 
     def _fold_node(self, a, b, acc, messages, is_root=False):
-        cut = min(a + self.LEAF_TOKENS, b)
+        cut = min(a + self.FOLD_LEAF_TOKENS, b)
         read_turn = self._read_phase(a, cut, messages, node_end=b)
         if read_turn is not None:
             return read_turn

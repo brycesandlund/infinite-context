@@ -20,6 +20,7 @@ from tasks.ruler import RULER_TASKS, make_ruler_problem
 from tasks.synth import SYNTH_TASKS, make_synth_problem
 from tasks.realdoc import REALDOC_TASKS, make_realdoc_problem
 from tasks.bookqa import BOOKQA_TASKS, make_bookqa_problem
+from tasks.niah import NIAH_TASKS, make_niah_problem
 
 
 # All 13 RULER tasks resolve through the same vendored builder; per-task
@@ -37,6 +38,7 @@ _GENERATORS.update({name: _bind(make_oolong_problem, name) for name in OOLONG_TA
 _GENERATORS.update({name: _bind(make_synth_problem, name) for name in SYNTH_TASKS})
 _GENERATORS.update({name: _bind(make_realdoc_problem, name) for name in REALDOC_TASKS})
 _GENERATORS.update({name: _bind(make_bookqa_problem, name) for name in BOOKQA_TASKS})
+_GENERATORS.update({name: _bind(make_niah_problem, name) for name in NIAH_TASKS})
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -60,6 +62,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",
+    "niah_novel": "qa_part",
 }
 
 
@@ -81,6 +84,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",
+    "niah_novel": "qa_part",
 }
 
 

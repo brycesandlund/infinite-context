@@ -120,7 +120,11 @@ BOOKQA_LEAF_MODEL = os.environ.get("BOOKQA_LEAF_MODEL", "").strip()
 BOOKQA_LEAF_TEMP = float(os.environ.get("BOOKQA_LEAF_TEMP", "0"))
 REJECT_ACCEPT_MIN = float(os.environ.get("REJECT_ACCEPT_MIN", "1.0"))   # keep iff score >= this
 BOOKQA_GEN_CONCURRENCY = int(os.environ.get("BOOKQA_GEN_CONCURRENCY", "8"))  # in-flight traces
-_REJECT_SAMPLE_TASKS = {"bookqa", "narrativeqa"}
+_REJECT_SAMPLE_TASKS = {"bookqa", "narrativeqa"}   # need the model leaf + gold rejection
+# Tasks with answer/none leaf VERDICTS to rebalance (the class-imbalance fix). niah_novel is
+# scripted (not reject-sampled) but has the same 1-answer : many-none shape, and the user
+# wants the needle (answer) leaf oversampled — so it's here but not in the reject set.
+_QA_VERDICT_TASKS = {"bookqa", "narrativeqa", "niah_novel"}
 
 
 def _make_leaf_model():
@@ -391,7 +395,7 @@ async def main() -> None:
     tagged: list[tuple] = []
     n_agents = 0
     for (_task, _seed, _problem), node in traces:
-        is_qa = _task in _REJECT_SAMPLE_TASKS
+        is_qa = _task in _QA_VERDICT_TASKS
         for agent in flatten(node):
             n_agents += 1
             tagged.extend(_node_to_datums(agent, renderer, tool_specs, is_qa=is_qa))
