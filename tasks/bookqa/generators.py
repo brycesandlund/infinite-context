@@ -28,10 +28,16 @@ import re
 
 from tasks.base import Problem
 
-_CACHE = os.path.expanduser("~/.cache/infinite-context/bookqa/enqa.jsonl")
-_ROWS: list[dict] | None = None
+_CACHE_DIR = os.path.expanduser("~/.cache/infinite-context/bookqa")
+# task -> cache file. Both sources share the SAME (id, question, answer, context) schema, so
+# one oracle + grader serves both; narrativeqa just supplies far more short-extractive Qs.
+_SOURCE = {"bookqa": "enqa.jsonl", "narrativeqa": "narrativeqa.jsonl"}
+_ROWS: dict[str, list[dict]] = {}
 
-BOOKQA_TASKS: dict[str, dict] = {"bookqa": {"family": "bookqa", "strategy": "binary"}}
+BOOKQA_TASKS: dict[str, dict] = {
+    "bookqa": {"family": "bookqa", "strategy": "binary"},
+    "narrativeqa": {"family": "bookqa", "strategy": "binary"},
+}
 
 K_EVIDENCE = 12   # bounded combine: keep at most this many evidence sentences up the tree
 _STOPQ = {"Which", "What", "Who", "Whom", "When", "Where", "Why", "How", "The", "Mr",
@@ -48,15 +54,15 @@ _SKIP_Q = re.compile(r"\bamong\b|\bhow many\b|\bhow much\b|\bcompare\b|\brank\b|
                      r"|\byoungest\b|\bmost\b|\bleast\b| or .+\?", re.I)
 
 
-def _rows() -> list[dict]:
-    global _ROWS
-    if _ROWS is None:
-        if not os.path.exists(_CACHE):
+def _rows(task: str) -> list[dict]:
+    if task not in _ROWS:
+        path = os.path.join(_CACHE_DIR, _SOURCE[task])
+        if not os.path.exists(path):
             raise FileNotFoundError(
-                f"{_CACHE} missing — cache InfiniteBench En.QA first (see scripts/cache_bookqa)."
+                f"{path} missing — run scripts/cache_{'narrativeqa' if task=='narrativeqa' else 'bookqa'}.py first."
             )
-        _ROWS = [json.loads(l) for l in open(_CACHE, encoding="utf-8")]
-    return _ROWS
+        _ROWS[task] = [json.loads(l) for l in open(path, encoding="utf-8")]
+    return _ROWS[task]
 
 
 def _entities(question: str, context: str) -> list[str]:
@@ -123,19 +129,18 @@ def _best_answer_pos(context: str, ans: str, ents: list[str]) -> tuple[int, int]
     return best_pos, best_score
 
 
-_ELIGIBLE: list[tuple] | None = None
+_ELIGIBLE: dict[str, list[tuple]] = {}
 
 
-def _eligible_rows() -> list[tuple]:
-    """Usable bookqa rows as (row, answer_pos): non-comparison (`_SKIP_Q`), extractive (gold
+def _eligible_rows(task: str) -> list[tuple]:
+    """Usable rows for `task` as (row, answer_pos): non-comparison (`_SKIP_Q`), extractive (gold
     verbatim), and ANSWERABLE-by-local-retrieval (some answer occurrence sits in a sentence
     that also names a question entity — strongly correlated with the model finding it). Kept in
     a FIXED shuffled order so indexing by seed is 1:1: consecutive SFT seeds draw DISTINCT,
-    answerable questions (no duplicate funnelling, high accept rate). Computed once."""
-    global _ELIGIBLE
-    if _ELIGIBLE is None:
+    answerable questions (no duplicate funnelling, high accept rate). Computed once per source."""
+    if task not in _ELIGIBLE:
         elig = []
-        for r in _rows():
+        for r in _rows(task):
             if _SKIP_Q.search(r["question"]) or r["answer"] not in r["context"]:
                 continue
             ents = _entities(r["question"], r["context"])
@@ -145,17 +150,17 @@ def _eligible_rows() -> list[tuple]:
             if score >= 1:                      # the answer co-occurs with a question entity
                 elig.append((r, pos))
         random.Random(20240607).shuffle(elig)   # fixed permutation — deterministic across runs
-        _ELIGIBLE = elig
-    return _ELIGIBLE
+        _ELIGIBLE[task] = elig
+    return _ELIGIBLE[task]
 
 
-def bookqa_corpus_size() -> int:
-    """Distinct usable questions — the ceiling on duplicate-free bookqa traces."""
-    return len(_eligible_rows())
+def bookqa_corpus_size(task: str = "bookqa") -> int:
+    """Distinct usable questions — the ceiling on duplicate-free traces for this source."""
+    return len(_eligible_rows(task))
 
 
 def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
-    eligible = _eligible_rows()
+    eligible = _eligible_rows(task)
     row, ai = eligible[seed % len(eligible)]   # 1:1 seed -> distinct, answerable question
     span_chars = doc_size_tokens * 4
     q, ans = row["question"], row["answer"]
@@ -174,10 +179,12 @@ def make_bookqa_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -
         gold_answers=[ans],
         task=task,
         task_context=(
-            "The document is a passage from a novel (character names are anonymized). "
+            "The document is a passage from a novel or script. "
             "Answer the question using ONLY this passage."
         ),
-        grading_mode="ruler_part",   # substring match — QA answers are short free-form
+        # qa_part = word-boundary match: raw substring (ruler_part) false-positives on short
+        # answers (gold "no" inside "answer not found"), which is exactly the bookqa failure.
+        grading_mode="qa_part",
         metadata={
             "family": "bookqa",
             "strategy_default": "binary",

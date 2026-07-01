@@ -87,16 +87,28 @@ N_PER_TASK_OVERRIDE: dict[str, int] = _parse_per_task(
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 # Decomposition strategy for the synth_* tasks (the TRAINING knob). "mixed" = each
 # task's favored default (binary for bounded, left_fold for stateful); "binary" or
-# "left_fold" forces ALL synth tasks onto one strategy (the head-to-head experiment).
+# "left_fold" forces ALL synth tasks onto one strategy; "both" renders every bounded task
+# BINARY and LEFT-FOLD (fold-native tasks stay fold), teaching fold as a GENERAL technique
+# instead of only on runreset/varchain.
 SYNTH_STRATEGY = os.environ.get("SYNTH_STRATEGY", "mixed")
 
+# Synth tasks with no binary oracle (non-associative sequential state) — always left_fold.
+_FOLD_ONLY_SYNTH = {"synth_runreset", "synth_varchain"}
 
-def _strategy_for(task: str) -> str | None:
-    """Strategy to render for `task`; None lets make_oracle use the task default
-    (only synth_* tasks read this — oolong/ruler ignore the strategy arg)."""
+
+def _synth_renderings(task: str, n: int) -> list[tuple[str | None, int]]:
+    """(strategy, count) renderings for `task` given SYNTH_STRATEGY. Non-synth tasks get one
+    default rendering. "both" splits a bounded task's N across binary + fold so the model sees
+    left-fold applied to many leaf-ops, not just the two fold-native ones."""
     if not task.startswith("synth_"):
-        return None
-    return None if SYNTH_STRATEGY == "mixed" else SYNTH_STRATEGY
+        return [(None, n)]
+    if SYNTH_STRATEGY == "both":
+        if task in _FOLD_ONLY_SYNTH:
+            return [("left_fold", n)]
+        return [("binary", n // 2), ("left_fold", n - n // 2)]
+    if SYNTH_STRATEGY == "mixed":
+        return [(None, n)]                 # each task's own default
+    return [(SYNTH_STRATEGY, n)]           # forced binary / left_fold
 
 
 # BookQA's leaf judgment ("does this prose answer the question?") is reading comprehension,
@@ -108,7 +120,7 @@ BOOKQA_LEAF_MODEL = os.environ.get("BOOKQA_LEAF_MODEL", "").strip()
 BOOKQA_LEAF_TEMP = float(os.environ.get("BOOKQA_LEAF_TEMP", "0"))
 REJECT_ACCEPT_MIN = float(os.environ.get("REJECT_ACCEPT_MIN", "1.0"))   # keep iff score >= this
 BOOKQA_GEN_CONCURRENCY = int(os.environ.get("BOOKQA_GEN_CONCURRENCY", "8"))  # in-flight traces
-_REJECT_SAMPLE_TASKS = {"bookqa"}
+_REJECT_SAMPLE_TASKS = {"bookqa", "narrativeqa"}
 
 
 def _make_leaf_model():
@@ -191,17 +203,18 @@ async def _one_trace(oracle, problem, tokenizer):
     )
 
 
-async def _collect_scripted(task, ti, want, corpus_tokens, tokenizer):
+async def _collect_scripted(task, ti, strategy, want, corpus_tokens, tokenizer, start_idx=0):
     """Scripted oracles (synth / oolong / realdoc): every trace solves by construction, so
-    build `want` and run them concurrently — no grading/rejection needed."""
-    coros, meta, i, collected = [], [], 0, 0
+    build `want` and run them concurrently — no grading/rejection needed. `start_idx` lets the
+    two "both" renderings of one task draw disjoint problems."""
+    coros, meta, i, collected = [], [], start_idx, 0
     while collected < want:
         seed, problem = _make_sft_problem(task, ti, i, corpus_tokens, tokenizer)
         i += 1
         oracle = make_oracle(
             problem, tokenizer,
             budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
-            strategy=_strategy_for(task),
+            strategy=strategy,
         )
         if getattr(oracle, "tmode", None) in _SKIP_TMODES:
             continue  # un-trainable gold — skip, try the next index
@@ -218,7 +231,7 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
     walk DISTINCT questions once each (no duplicates, no wraparound) up to the corpus size, in
     concurrency-capped waves, harvesting every accepted trace."""
     from tasks.bookqa.generators import bookqa_corpus_size
-    size = bookqa_corpus_size()
+    size = bookqa_corpus_size(task)
     out, i, tries = [], 0, 0
     while len(out) < want and i < size:
         wave = min(BOOKQA_GEN_CONCURRENCY, size - i)
@@ -252,9 +265,9 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
 
 async def _gen_traces(corpus_tokens, tokenizer):
     leaf_model = _make_leaf_model()
-    if "bookqa" in SFT_TASKS and leaf_model is None:
+    if any(t in _REJECT_SAMPLE_TASKS for t in SFT_TASKS) and leaf_model is None:
         raise SystemExit(
-            "bookqa SFT needs a leaf model — set BOOKQA_LEAF_MODEL=<litellm id> "
+            "bookqa/narrativeqa SFT needs a leaf model — set BOOKQA_LEAF_MODEL=<litellm id> "
             "(e.g. anthropic/claude-haiku-4-5-20251001). The scripted span leaf is NOT "
             "faithful for free-form QA, so we refuse to train on it."
         )
@@ -263,8 +276,13 @@ async def _gen_traces(corpus_tokens, tokenizer):
         want = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
         if task in _REJECT_SAMPLE_TASKS:
             out += await _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_model)
-        else:
-            out += await _collect_scripted(task, ti, want, corpus_tokens, tokenizer)
+            continue
+        # Expand synth tasks into strategy renderings (binary / fold / both); disjoint start
+        # indices keep the two "both" renderings on different problems.
+        for k, (strat, cnt) in enumerate(_synth_renderings(task, want)):
+            out += await _collect_scripted(
+                task, ti, strat, cnt, corpus_tokens, tokenizer, start_idx=k * 100_000
+            )
     return out
 
 

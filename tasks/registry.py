@@ -59,6 +59,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "synth_diff": "numeric", "synth_sumby": "exact",
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
+    "narrativeqa": "qa_part",
 }
 
 
@@ -79,6 +80,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "synth_diff": "numeric", "synth_sumby": "exact",
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
+    "narrativeqa": "qa_part",
 }
 
 

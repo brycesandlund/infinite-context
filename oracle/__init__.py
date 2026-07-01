@@ -27,7 +27,7 @@ def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None, 
     model call (faithful free-form QA). None keeps bookqa's scripted span fallback.
     """
     task = problem.task
-    if task == "bookqa":
+    if task in ("bookqa", "narrativeqa"):
         return BookQAOracle(problem, tokenizer, budget=budget,
                             max_chunk_tokens=max_chunk_tokens, leaf_model=leaf_model)
     if task.startswith("realdoc_"):
