@@ -931,7 +931,7 @@ requires-dist = [
     { name = "marimo", specifier = ">=0.23.8" },
     { name = "matplotlib", specifier = ">=3.10.9" },
     { name = "nltk", specifier = ">=3.9" },
-    { name = "tinker", specifier = ">=0.22.3" },
+    { name = "tinker", editable = "../tinker-sdk" },
     { name = "tinker-cookbook", specifier = ">=0.4.1" },
     { name = "wandb", specifier = ">=0.27.2" },
     { name = "wonderwords", specifier = ">=2.2.0" },
@@ -3056,8 +3056,8 @@ wheels = [
 
 [[package]]
 name = "tinker"
-version = "0.22.3"
-source = { registry = "https://pypi.org/simple" }
+version = "0.27.1"
+source = { editable = "../tinker-sdk" }
 dependencies = [
     { name = "anyio" },
     { name = "click" },
@@ -3074,9 +3074,43 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ca/e5/f78993ee8be0e5b5c00481771be48b0d2a2d3ab91bbe5f19d7cf74629e09/tinker-0.22.3.tar.gz", hash = "sha256:52bf8e754201174de5cc5a5f317369370320d6ff199fdc9ce217996c8874acc5", size = 246707, upload-time = "2026-05-31T00:49:23.803Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/03/16/2f1d4ba370b64a7cfd8fdef4bcb75ec427e4894e6e805907fb04a56067bb/tinker-0.22.3-py3-none-any.whl", hash = "sha256:42b1a571c7a848f756bbedd841b9e2fe17d4dcec6f9fea88aa6da3e01849648f", size = 232521, upload-time = "2026-05-31T00:49:25.134Z" },
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", marker = "extra == 'aiohttp'" },
+    { name = "anyio", specifier = ">=3.5.0,<5" },
+    { name = "click", specifier = ">=8.0.0" },
+    { name = "distro", specifier = ">=1.7.0,<2" },
+    { name = "httpx", extras = ["http2"], specifier = ">=0.23.0,<1" },
+    { name = "httpx-aiohttp", marker = "extra == 'aiohttp'", specifier = ">=0.1.8" },
+    { name = "numpy" },
+    { name = "orjson", specifier = ">=3.10.0" },
+    { name = "protobuf", specifier = ">=4.21" },
+    { name = "pydantic", specifier = ">=1.9.0,<3" },
+    { name = "pyqwest", specifier = ">=0.4.1" },
+    { name = "rich", specifier = ">=13.0.0" },
+    { name = "sniffio" },
+    { name = "torch", marker = "extra == 'torch'" },
+    { name = "transformers" },
+    { name = "typing-extensions", specifier = ">=4.10,<5" },
+    { name = "zstandard", specifier = ">=0.24.0" },
+]
+provides-extras = ["aiohttp", "torch"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "dirty-equals", specifier = ">=0.6.0" },
+    { name = "importlib-metadata", specifier = ">=6.7.0" },
+    { name = "mypy" },
+    { name = "nest-asyncio", specifier = "==1.6.0" },
+    { name = "pyright", specifier = "==1.1.402" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "respx" },
+    { name = "rich", specifier = ">=13.7.1" },
+    { name = "ruff" },
+    { name = "time-machine" },
 ]
 
 [[package]]

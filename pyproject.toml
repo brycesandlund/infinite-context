@@ -19,3 +19,6 @@ dependencies = [
     "litellm>=1.40",
     "wandb>=0.27.2",
 ]
+
+[tool.uv.sources]
+tinker = { path = "../tinker-sdk", editable = true }

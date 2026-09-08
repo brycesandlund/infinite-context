@@ -89,16 +89,64 @@ real-prose leaves, measure zero-shot transfer to OOLONG/RULER.
 
 ---
 
-## sft_general3 (run 3) — IN PROGRESS
+## sft_general3 (run 3) — 2026-09-08
 
 **SFT config**
 - Tasks: 15 synth + `realdoc_count` + `niah_novel` + `narrativeqa`
 - `N_PER_TASK=20`, `realdoc_count:80,niah_novel:80,narrativeqa:80`; `SYNTH_STRATEGY=both`
-- `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1`, `CHUNK=200000`, `FOLD_LEAF_TOKENS=400`
-- QA rebalancing on (`QA_NONE_KEEP=0.5`, `QA_ANSWER_DUP=2`); haiku leaf; `SAVE_NAME=sft_general3`
+- `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1` (model-leaf tasks exempt), `CHUNK=200000`,
+  `FOLD_LEAF_TOKENS=400`
+- QA verdict rebalancing (`QA_NONE_KEEP=0.5`, `QA_ANSWER_DUP=2`); haiku leaf; disk trace cache on
+- Tinker SDK: local editable `~/GitHub/tinker-sdk` **0.27.1** (pinned via `uv add --editable`);
+  fixed its `auth_token()` missing `timeout`/`max_retries` kwargs (crashed `ServiceClient` init)
+- Data: **540 traces / 35,864 datums** (narrativeqa 80/80 @33% accept — all from cache, 0 API
+  calls; QA verdicts pos 1166×2, neg 2235/4469 kept). NLL **0.0249**, 2,242 batches, ~4.7 h train
+  → ckpt `tinker://2a5fa30c-…/weights/sft_general3`
+- Artifacts: `eval_results/raw/sft_general3_doc4k_b3k.{jsonl,txt,summary.txt}`, `sft_general3_chain.log`
 
-**Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`) — _results TBD_
+**Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`) — **OVERALL 0.686** (up from 0.551)
 
-**Expected** (pre-flight): varchain → ~1.0 (overflow fixed); RULER retrieval (niah/multikey) up
-(niah_novel); narrativeqa modestly up (rebalancing, capability-capped); OOLONG likely still weak
-(runaway fix is a bet, classification untouched).
+| task | g3 | g2 | tree | note |
+|---|---|---|---|---|
+| synth_varchain | **1.00** | 0.00 | 10 | overflow fix confirmed (FOLD_LEAF=400) |
+| synth (count/mode/distinct/sumby/count_cmp) | **1.00** | 1.00 | 10 | held |
+| synth_sum | 0.67 | 1.00 | 10 | one fold arithmetic miss (−57→−96), N=3 noise |
+| realdoc_count | **1.00** | 0.92 | 30 | |
+| niah_novel (new, in-dist) | **1.00** | — | 31 | |
+| narrativeqa | **0.33** | 0.00 | 31 | rebalancing worked: no_answer 0/3 (was abstaining) |
+| **cwe** (OOD) | **0.97** | 0.00 | 30 | **now decomposes** (was single-shot tree=1) |
+| **fwe** (OOD) | **0.89** | 0.67 | 31 | now decomposes |
+| niah_single_1 | 0.67 | 0.67 | 18 | now decomposes (was tree=1) |
+| niah_multikey_1 | 0.33 | 0.00 | 4 | 2/3 **overflow** — see below |
+| oolong_counting | **0.34** | 0.01 | 54 | **runaway gone** (was 677/2000-cap) |
+| oolong_temporal | 0.17 | 0.08 | 4 | |
+| oolong_user | 0.00 | 0.33 | 54 | 1 rollout hit the 150 cap; 1 degenerate gold ("numeric value") |
+| vt | 0.00 | 0.13 | 9 | 3/3 **overflow** — see below |
+
+**What the run proved**
+1. **Format/corpus hypothesis confirmed.** `niah_novel` (prose haystack, mechanical leaf) made
+   RULER `cwe`/`fwe`/`niah` start *decomposing* real-prose haystacks instead of single-shotting:
+   cwe 0.00→0.97, fwe 0.67→0.89. Teaching the corpus type transfers the scaffold.
+2. **DOC_MIX killed the degenerate-split runaway** (oolong_counting tree 677→54, no cap hits on
+   counting). Deeper training trees → robust mid-range split arithmetic.
+3. **Rebalancing fixed over-abstention** (narrativeqa 0→0.33, no_answer 0/3; cwe/fwe no_answer 0/3).
+4. varchain was purely the overflow bug — 1.00 once the fold leaf fit the budget.
+
+**Residual failure mode — OVER-READ → OVERFLOW** (replaces abstention as the RULER failure)
+- All `vt` misses and 2/3 `niah_multikey_1` misses are `term=overflow`: the model issues a single
+  huge read (e.g. `Read tokens 2000..4000` — half the doc into a 3000 budget) on these formats.
+  Training only ever shows ≤~700-token reads; on vt/multikey layouts it doesn't map the range to
+  a leaf-sized read. CHUNK is uncapped so nothing stops it (and per the no-eval-guards rule, the
+  fix is training-side).
+- `oolong_user` still has one runaway (hit MAX_NODES=150 — the cap did its job cheaply) and one
+  degenerate OOLONG gold ("numeric value").
+- OOLONG classification leaf accuracy (fuzzy NLU) still the ceiling on oolong_*.
+
+**Fixes → run 4 (candidates)**
+- **Multi-needle NIAH w/ hidden query** (mechanical) — the direct `niah_multikey`/`multiquery`
+  analog; should teach leaf-sized reads + collect-then-resolve on haystacks.
+- **vt-like synthetic** — variable-chain tracking over *prose* (varchain-on-haystack) to fix vt's
+  over-read/overflow.
+- **"OOLONG-like" classification+aggregation oracle** on a non-OOLONG labeled dataset (dbpedia)
+  for the classification leaf.
+- Monitoring: `WANDB=1` / `python -u` so batch NLL is visible mid-run (stdout is block-buffered).
