@@ -24,6 +24,8 @@ Run: uv run python sft.py
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import os
 import random
 from pathlib import Path
@@ -36,8 +38,8 @@ from tinker_cookbook.supervised import datum_from_model_input_weights
 
 import metrics  # optional W&B logging (no-op unless WANDB=1)
 import rl  # shared constants + cookbook tool specs
-from eval.agent import flatten, run_agent
-from eval.backends import neutral_to_cookbook
+from eval.agent import AgentNode, flatten, run_agent
+from eval.backends import ToolCall, neutral_to_cookbook
 from oracle import make_oracle
 from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
 from tasks import (
@@ -197,6 +199,30 @@ MAX_DEPTH = rl.MAX_DEPTH
 MAX_TURNS = rl.MAX_TURNS
 
 
+# Document-size MIX: train a FRACTION of problems at LONGER docs -> deeper trees -> more
+# mid-range split turns (the OOLONG runaway is the model mis-emitting a split on a range
+# magnitude it saw too rarely), and it teaches length generalization directly. Spec is
+# "size:weight,size:weight" — e.g. "6000:4,12000:1" ≈ 80% @6000, 20% @12000. Empty -> every
+# problem at DOC_SIZE_TOKENS. Sizes are assigned deterministically by problem index.
+def _parse_doc_mix(spec: str, default: int) -> list[int]:
+    if not spec.strip():
+        return [default]
+    cyc: list[int] = []
+    for part in spec.split(","):
+        size, _, w = part.partition(":")
+        cyc += [int(size)] * (int(w) if w.strip() else 1)
+    return cyc or [default]
+
+
+_DOC_CYCLE = _parse_doc_mix(os.environ.get("DOC_MIX", ""), DOC_SIZE_TOKENS)
+
+
+def _doc_size_for(i: int) -> int:
+    """Doc size for problem index `i` — cycles DOC_MIX so the long fraction spreads evenly and
+    reproducibly across each task's problems."""
+    return _DOC_CYCLE[i % len(_DOC_CYCLE)]
+
+
 # ---------------------------------------------------------------------------
 # Trace generation (CPU — no sampling client needed; the oracle is scripted)
 # ---------------------------------------------------------------------------
@@ -213,13 +239,17 @@ _SKIP_TMODES = {"date_most", "date_2nd"}
 def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     """Deterministic (task, idx) -> problem. OOLONG uses the shared oolong_spec (same
     problem as eval by seed); synth/ruler use make_problem with a per-task seed range."""
+    # DOC_MIX (long-doc tier) applies only to SCRIPTED tasks — for a model-leaf task
+    # (narrativeqa/bookqa) a longer doc means a bigger tree = many more paid leaf calls for no
+    # QA benefit, so pin those to the base size.
+    doc = DOC_SIZE_TOKENS if task in _REJECT_SAMPLE_TASKS else _doc_size_for(i)
     if task.startswith("oolong"):
         seed, dataset = oolong_spec(task, i, DATA_SEED)
         return seed, make_oolong_problem(
-            task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=dataset
+            task, corpus_tokens, tokenizer, doc, seed, dataset=dataset
         )
     seed = DATA_SEED + ti * 100_000 + i
-    return seed, make_problem(task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed)
+    return seed, make_problem(task, corpus_tokens, tokenizer, doc, seed)
 
 
 async def _one_trace(oracle, problem, tokenizer):
@@ -234,6 +264,72 @@ async def _one_trace(oracle, problem, tokenizer):
         max_depth=MAX_DEPTH,
         max_turns=MAX_TURNS,
     )
+
+
+# --- trace cache: reuse generated traces across runs (mainly to avoid re-paying the haiku
+# leaf calls for narrativeqa). Keyed by everything that affects a trace; bump CACHE_VERSION when
+# the QA oracle / trace format changes so stale traces are ignored. -------------------------
+TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
+_TRACE_CACHE_DIR = os.path.expanduser(
+    os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
+)
+_CACHE_VERSION = "v1"
+
+
+def _trace_key(task, seed, doc_len, strategy, leaf_model_name) -> str:
+    from oracle.base import ScaffoldOracle
+    payload = dict(
+        v=_CACHE_VERSION, task=task, seed=seed, doc=doc_len, strategy=strategy or "default",
+        ctx=AGENT_CONTEXT, leaf=ScaffoldOracle.LEAF_TOKENS, fold=ScaffoldOracle.FOLD_LEAF_TOKENS,
+        chunk=MAX_CHUNK_TOKENS, model=leaf_model_name,
+    )
+    return hashlib.sha1(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:20]
+
+
+def _ser_node(n) -> dict:
+    def tc(t): return {"id": t.id, "name": t.name, "arguments": t.arguments}
+    def msg(m):
+        m = dict(m)
+        if m.get("tool_calls"):
+            m["tool_calls"] = [tc(t) for t in m["tool_calls"]]
+        return m
+    return dict(depth=n.depth, subtask=n.subtask, answer=n.answer, n_turns=n.n_turns,
+                termination=n.termination, messages=[msg(m) for m in n.messages],
+                children=[_ser_node(c) for c in n.children])
+
+
+def _deser_node(d) -> AgentNode:
+    def msg(m):
+        m = dict(m)
+        if m.get("tool_calls"):
+            m["tool_calls"] = [ToolCall(t["id"], t["name"], t["arguments"]) for t in m["tool_calls"]]
+        return m
+    return AgentNode(depth=d["depth"], subtask=d["subtask"], answer=d["answer"],
+                     n_turns=d["n_turns"], termination=d["termination"],
+                     messages=[msg(m) for m in d["messages"]],
+                     children=[_deser_node(c) for c in d["children"]])
+
+
+async def _cached_trace(oracle, problem, tokenizer, *, task, seed, strategy, leaf_model_name):
+    """Like _one_trace but memoized to disk. Caches EVERY generated trace (accepted or not) so a
+    re-run's rejection walk reuses them without re-calling the leaf model."""
+    if not TRACE_CACHE:
+        return await _one_trace(oracle, problem, tokenizer)
+    os.makedirs(_TRACE_CACHE_DIR, exist_ok=True)
+    path = os.path.join(_TRACE_CACHE_DIR, _trace_key(
+        task, seed, len(problem.document_tokens), strategy, leaf_model_name) + ".json")
+    if os.path.exists(path):
+        try:
+            return _deser_node(json.load(open(path)))
+        except Exception:
+            pass   # corrupt/incompatible -> regenerate
+    node = await _one_trace(oracle, problem, tokenizer)
+    try:
+        with open(path, "w") as f:
+            json.dump(_ser_node(node), f)
+    except Exception:
+        pass
+    return node
 
 
 async def _collect_scripted(task, ti, strategy, want, corpus_tokens, tokenizer, start_idx=0):
@@ -279,7 +375,11 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
                 leaf_model=leaf_model,
             )
             batch.append(((task, seed, problem), oracle, problem))
-        nodes = await asyncio.gather(*[_one_trace(o, p, tokenizer) for _, o, p in batch])
+        nodes = await asyncio.gather(*[
+            _cached_trace(o, p, tokenizer, task=task, seed=m[1], strategy=None,
+                          leaf_model_name=(BOOKQA_LEAF_MODEL or "scripted"))
+            for m, o, p in batch
+        ])
         for (meta, oracle, problem), node in zip(batch, nodes):
             if len(out) >= want:
                 break
@@ -368,8 +468,9 @@ async def main() -> None:
         rl.SubagentTool.spawn_subagent.to_spec(),
     ]
 
+    _mix = ",".join(f"{s}x{_DOC_CYCLE.count(s)}" for s in sorted(set(_DOC_CYCLE)))
     print(f"SFT warm-start | tasks={len(SFT_TASKS)} x {N_PER_TASK} | "
-          f"doc={DOC_SIZE_TOKENS} budget={AGENT_CONTEXT} epochs={EPOCHS}")
+          f"doc_mix=[{_mix}] budget={AGENT_CONTEXT} epochs={EPOCHS}")
     print("Loading + tokenizing PG-essay corpus...")
     corpus_tokens = tokenizer.encode(load_pg_essays_text(), add_special_tokens=False)
 
