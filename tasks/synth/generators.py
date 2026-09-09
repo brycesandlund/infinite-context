@@ -35,6 +35,7 @@ import random
 from collections import Counter
 
 from tasks.base import Problem
+from tasks.phrasing import filtered_question
 
 # task -> (family, favored single-pass strategy). The favored strategy is the
 # "mixed" training default; sft.py can override per task (the strategy training knob).
@@ -146,15 +147,20 @@ def _param_question_gold(task: str, recs: list[dict], rng: random.Random):
     if task == "synth_count2":
         qflag, qgrp = rng.choice(["Y", "N"]), rng.choice(_GROUPS)
         gold = sum(1 for r in recs if r["flag"] == qflag and r["grp"] == qgrp)
-        q = (f"How many records have BOTH flag={qflag} AND grp={qgrp}? Give the single "
-             f"integer in \\boxed{{}}.")
+        q = rng.choice([
+            f"How many records have BOTH flag={qflag} AND grp={qgrp}? Give the single integer in \\boxed{{}}.",
+            filtered_question(rng, "records", f"flag={qflag}", f"how many have grp={qgrp}",
+                              "Give the single integer in \\boxed{}."),
+            filtered_question(rng, "records", f"grp={qgrp}", f"how many have flag={qflag}",
+                              "Give the single integer in \\boxed{}."),
+        ])
         return q, gold, {"qflag": qflag, "qgrp": qgrp}
     if task == "synth_maxwhere":
         qflag = rng.choice(["Y", "N"])
         m = [r["amt"] for r in recs if r["flag"] == qflag]
         gold = max(m) if m else 0
-        q = (f"What is the MAXIMUM 'amt' among records with flag={qflag}? Give the single "
-             f"integer in \\boxed{{}}.")
+        q = filtered_question(rng, "records", f"flag={qflag}", "what is the MAXIMUM 'amt'",
+                              "Give the single integer in \\boxed{}.")
         return q, gold, {"qflag": qflag}
     if task == "synth_count_cmp":
         op, t = rng.choice([">", "<"]), rng.randint(-12, 12)
@@ -214,9 +220,10 @@ def _month_question_gold(task: str, recs: list[dict], months: list[str], rng: ra
         agg = rng.choice(["most", "least"])
         c = Counter(r["grp"] for r in recs if r[ffield] == fval)
         gold = _argbest(c, max if agg == "most" else min, _GROUPS) if c else _GROUPS[0]
-        q = (f"Among ONLY the records with {ffield}={fval}, which grp value is the {agg.upper()} "
-             f"common? Consider only grp values that appear at least once among those records; "
-             f"break ties by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{{}}.")
+        q = filtered_question(
+            rng, "records", f"{ffield}={fval}", f"which grp value is the {agg.upper()} common",
+            "Consider only grp values that appear at least once among those records; break ties "
+            "by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{}.")
         return q, gold, "exact", {"qtype": "filter_argmax", "ffield": ffield, "fval": fval, "agg": agg}
 
     # synth_2d: joint tally cnt[month][grp]
@@ -241,8 +248,9 @@ def _month_question_gold(task: str, recs: list[dict], months: list[str], rng: ra
     if qtype == "grp_in_month":
         m = rng.choice(months)
         gold = _argbest(cnt[m], max, _GROUPS) if cnt[m] else _GROUPS[0]
-        q = (f"Among ONLY the records with mon={m}, which grp value is the MOST common? Break ties "
-             f"by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{{}}.")
+        q = filtered_question(
+            rng, "records", f"mon={m}", "which grp value is the MOST common",
+            "Break ties by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{}.")
         return q, gold, "exact", {"qtype": qtype, "qmon": m}
     g = rng.choice(_GROUPS)   # month_for_grp
     per_month = {m: cnt[m][g] for m in months}

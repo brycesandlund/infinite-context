@@ -307,3 +307,12 @@ sketch explicitly (large-vocabulary tally variant, binary-only) — pending insp
 - **`ROOT_DUP=4`**: the root's first turn (question → preamble → subtask) is the only non-self-similar
   step and the least-trained one (1 datum per trace ≈ 1.5% of datums); it is duplicated 4× at datum
   assembly, mirroring the QA-verdict rebalancing.
+- **Filtered-question paraphrases** (`tasks/phrasing.py::filtered_question`, used by `synth_filter_argmax`,
+  `synth_2d`/grp_in_month, `synth_count2`, `synth_maxwhere`, `long_records`/tag_in_src): the same
+  condition stated in 7 positions/wordings (leading "consider only…" sentence, "restrict attention to…",
+  inline "among ONLY…", trailing "considering only…", "filter … then answer", …). Why: OOLONG user
+  seed 2100000 (`trace_snippets/oolong_user_run4.txt`) — the root applied the user filter in its own
+  leaf but wrote "tallying each label" for the rest of the chain, so every downstream hop tallied all
+  users. OOLONG states the filter as a separate leading sentence; every training question had it in one
+  fixed inline position, so the root learned the position, not "restate the condition in the subtask".
+  Gold and oracle op phrases unchanged (the oracle reads metadata, not question text).

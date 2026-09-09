@@ -24,6 +24,7 @@ import re
 from collections import Counter
 
 from tasks.base import Problem
+from tasks.phrasing import filtered_question
 from tasks.niah.generators import _filler
 
 LONGREC_TASKS: dict[str, dict] = {
@@ -130,10 +131,11 @@ def _question_gold(qtype: str, recs: list[dict], word: str, rng: random.Random):
         s = rng.choice(_SRCS)
         c = Counter(r["tag"] for r in recs if r["src"] == s)
         gold = _argbest(c, max, _TAGS) if c else _TAGS[0]
-        return (f"Among ONLY the entries with src={s}, which tag is the MOST common? Consider only "
-                f"tags that appear at least once among those entries; break ties by the "
-                f"alphabetically first tag. Give the tag (e.g. K2) in \\boxed{{}}.",
-                gold, "exact", {"qsrc": s})
+        q = filtered_question(
+            rng, "entries", f"src={s}", "which tag is the MOST common",
+            "Consider only tags that appear at least once among those entries; break ties by the "
+            "alphabetically first tag. Give the tag (e.g. K2) in \\boxed{}.")
+        return q, gold, "exact", {"qsrc": s}
     if qtype == "src_tag_2d":
         t = rng.choice(_TAGS)
         per = {s: Counter(r["tag"] for r in recs if r["src"] == s) for s in _SRCS}
