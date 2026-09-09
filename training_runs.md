@@ -270,3 +270,22 @@ carry partials, not a chain); (2) add large-key-space tally variants (e.g. grp d
 rendered BINARY-only with that justification; (3) consider fold-rendering only int-state and
 fold-native tasks. Also: dense lists (many records per 400 tokens) need a smaller fold slice or
 binary — the per-record line cost dominates, not the state.
+
+---
+
+## sft_general5 (run 5) — PLANNED
+
+**Change vs run 4 (one thing):** dial back fold. First principles (see run-4 notes): fold does NOT
+reduce state pressure — it restates the FULL running accumulator ~4× per hop and every hop carries
+it, whereas binary nodes carry only local partials except the top log₂ levels; fold's only hard
+requirement is non-associative ops. `SYNTH_STRATEGY=both` now means: `runreset`/`varchain`/`vt_novel`
+fold (required); scalar int-state ops (`sum`, `count`, `max`, `min`, `sumwhere`, `count2`,
+`maxwhere`, `count_cmp`, `count_range`) get a **25 % fold share** (`SCALAR_FOLD_FRAC`) so fold stays
+general where the state is one number; every counter/dict-state task (`mode`, `distinct`, `sumby`,
+`diff`, `filter_argmax`, `2d`, `long_records`) renders **binary only**. Everything else identical
+(tasks, N, DOC_MIX, budget, leaf model, cache).
+
+**Expected:** cwe/fwe recover toward run-3 levels (binary lets leaves box a bounded top-k partial,
+which the model invented on its own in run 3 — `cwe_run3_vs_run4.txt`); OOLONG/vt/narrativeqa gains
+from run 4 hold (they came from state/record shape, not from fold). Open decision: teach the top-k
+sketch explicitly (large-vocabulary tally variant, binary-only) — pending inspection of the cwe traces.

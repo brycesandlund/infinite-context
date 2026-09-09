@@ -89,27 +89,38 @@ N_PER_TASK_OVERRIDE: dict[str, int] = _parse_per_task(
 DATA_SEED = 500_000             # distinct from train/eval seed ranges
 # Decomposition strategy for the synth_* tasks (the TRAINING knob). "mixed" = each
 # task's favored default (binary for bounded, left_fold for stateful); "binary" or
-# "left_fold" forces ALL synth tasks onto one strategy; "both" renders every bounded task
-# BINARY and LEFT-FOLD (fold-native tasks stay fold), teaching fold as a GENERAL technique
-# instead of only on runreset/varchain.
+# "left_fold" forces ALL synth tasks onto one strategy; "both" = binary by default, fold where
+# the op REQUIRES it, plus a small fold share on scalar-state ops (see below).
 SYNTH_STRATEGY = os.environ.get("SYNTH_STRATEGY", "mixed")
 
-# Synth tasks with no binary oracle (non-associative sequential state) — always left_fold.
+# Tasks with no binary oracle (non-associative sequential state) — always left_fold.
 _FOLD_ONLY_SYNTH = {"synth_runreset", "synth_varchain"}
-# Non-synth scripted tasks that also follow SYNTH_STRATEGY (bounded ops; both strategies valid).
+# Scalar (int-state) ops: fold is harmless here — the accumulator is one number and cannot grow —
+# so a minority fold share keeps fold general without teaching it for tallies. Run 4 showed why
+# tallies must NOT fold: the fold protocol restates the FULL running state 4x per hop, so a
+# per-key tally over a large vocabulary (RULER cwe/fwe) overflowed at the root, while binary
+# lets each leaf box a small local partial (cwe 0.97 in run 3 → 0.00 in run 4 after
+# fold-rendered tally tasks tipped the prior). Counter/dict-state tasks render binary only.
+_SCALAR_SYNTH = {"synth_sum", "synth_count", "synth_max", "synth_min", "synth_sumwhere",
+                 "synth_count2", "synth_maxwhere", "synth_count_cmp", "synth_count_range"}
+SCALAR_FOLD_FRAC = float(os.environ.get("SCALAR_FOLD_FRAC", "0.25"))
+# Non-synth scripted tasks that also follow SYNTH_STRATEGY (bounded; both oracles valid).
 _BOTH_STRATEGY_EXTRA = {"long_records"}
 
 
 def _synth_renderings(task: str, n: int) -> list[tuple[str | None, int]]:
     """(strategy, count) renderings for `task` given SYNTH_STRATEGY. Non-synth tasks get one
-    default rendering. "both" splits a bounded task's N across binary + fold so the model sees
-    left-fold applied to many leaf-ops, not just the two fold-native ones."""
+    default rendering. "both": fold-only ops fold; scalar ops get a SCALAR_FOLD_FRAC fold share;
+    everything with a counter/dict state renders binary only (see note above)."""
     if not (task.startswith("synth_") or task in _BOTH_STRATEGY_EXTRA):
         return [(None, n)]
     if SYNTH_STRATEGY == "both":
         if task in _FOLD_ONLY_SYNTH:
             return [("left_fold", n)]
-        return [("binary", n // 2), ("left_fold", n - n // 2)]
+        if task in _SCALAR_SYNTH:
+            k = int(round(n * SCALAR_FOLD_FRAC))
+            return [("binary", n - k), ("left_fold", k)] if k else [("binary", n)]
+        return [("binary", n)]
     if SYNTH_STRATEGY == "mixed":
         return [(None, n)]                 # each task's own default
     return [(SYNTH_STRATEGY, n)]           # forced binary / left_fold
