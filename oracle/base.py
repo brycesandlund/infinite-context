@@ -350,8 +350,12 @@ class ScaffoldOracle(ModelBackend):
         recs = self._recs_in(a, cut)
         acc_out, fold_lines = self._accumulate(recs, acc)
         lines = "\n".join(fold_lines) or self._empty_phrase()
-        body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into "
-                f"accumulator {self._ser_state(acc)} (in order):\n{lines}\n"
+        # The incoming accumulator is already in this agent's user prompt and the outgoing one is
+        # stated once below (and again in the spawn arg) — don't reprint it in the header: with
+        # large dict states (vt_novel: ~20 five-letter var names ≈ 4 tokens each) each extra
+        # reprint costs ~250 tokens and pushed fold nodes over the 3000 budget.
+        body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into the "
+                f"accumulator (in order):\n{lines}\n"
                 f"→ accumulator = {self._ser_state(acc_out)}")
         if cut >= b:                            # final slice — return the accumulator/answer
             return AssistantTurn(text=f"{body} (final).{self._box_text(acc_out, is_root)}", tool_calls=[])
@@ -359,12 +363,14 @@ class ScaffoldOracle(ModelBackend):
         if ns == 0:                             # reads done, not yet delegated — delegate the rest
             sub = self._fold_subtask(cut, b, acc_out)
             return AssistantTurn(
-                text=f"{body}. Delegating the rest {cut}..{b} with accumulator {self._ser_state(acc_out)}.",
+                text=f"{body}. Delegating the rest {cut}..{b} with the updated accumulator.",
                 tool_calls=[ToolCall(_new_id(), "spawn_subagent", {"subtask": sub})],
             )
         # child returned the chain's final accumulator (serialized); finalize iff root
         final_state = self._parse_state(self._spawn_returns(messages)[-1])
         return AssistantTurn(
-            text=f"The chain returned {self._ser_state(final_state)}.{self._box_text(final_state, is_root)}",
+            # Don't restate the returned state in prose — it's in the tool result just above and
+            # (for internal nodes) in the box below; the duplicate cost ~1x the accumulator.
+            text=f"The chain returned its final accumulator.{self._box_text(final_state, is_root)}",
             tool_calls=[],
         )

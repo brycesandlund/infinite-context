@@ -157,21 +157,34 @@ real-prose leaves, measure zero-shot transfer to OOLONG/RULER.
 
 **Target:** the run-3 residual — **over-read → overflow** on unfamiliar haystack layouts
 (vt 0.00 3/3 overflow; niah_multikey_1 2/3 overflow). Teach leaf-sized reads + the missing
-leaf-ops on those layouts with two new MECHANICAL prose tasks (tasks/niah, oracle/prose.py):
-- **`niah_multi`** — K=3–5 magic-number needles + ONE hidden lookup instruction in novel filler.
-  Collect-then-resolve on `dict` state (leaf folds `{key: value, QUERY: key_j}`, combine merges,
-  root resolves `state[state["QUERY"]]`). Binary (fold also works). RULER multikey/multiquery analog.
-- **`vt_novel`** — RULER-vt chains (`VAR A = 12345`, `VAR B = VAR A`, + a distractor chain) in novel
-  filler; left-fold threads bindings; answer = all vars holding the target value; `set`-graded.
+leaf-ops on those layouts with two new MECHANICAL haystack tasks (tasks/niah, oracle/prose.py),
+each a **broad VARIANT FAMILY drawn per seed** (goal: general capability, not fitting the eval):
+- **`niah_multi`** — the RULER-niah family generalized. Mode ∈ {**hidden** (a "the key you must
+  look up is K" sentence is itself in the doc — a real multi-hop; no RULER analog), **explicit**
+  (1–6 needles, key in the question = multikey), **multiquery** (2–4 keys asked → set),
+  **multivalue** (one key, 2–4 values → set)} × key {words, uuids} × value {numbers, uuids} ×
+  filler {novel, essay, noise}. `dict` state: leaf folds facts, combine = per-key union, root
+  resolves by mode. Binary and fold both work.
+- **`vt_novel`** — the RULER-vt family generalized: 2–3 `VAR` chains × 3–7 hops (distractor chains
+  carry other values), question ∈ {**which_vars** hold value V (set), **final_value** of VAR X
+  (exact)} × the same three fillers. Left-fold bindings dict.
+
+**Overflow fixes found while building these (all training-side):** the fold protocol restates the
+accumulator at every hop, and big dict states (uuid keys/values ≈ 20 tok each; 5-letter random
+var names ≈ 4 tok each) pushed fold nodes to 3.5–4k real tokens. Fixed by (1) per-record lines
+show only the DELTA binding, (2) base fold node no longer reprints the accumulator in its header
+/ delegation text / "The chain returned X" (saves ~3× state, benefits every fold task),
+(3) niah_multi caps needles at 3 when uuids are involved, (4) vt_novel caps total vars ≤ ~17.
 
 **SFT config** (run 3 + the two new tasks @80)
 - Tasks: 15 synth + `realdoc_count` + `niah_novel` + `niah_multi` + `vt_novel` + `narrativeqa`
 - `N_PER_TASK=20`, overrides `realdoc_count:80,niah_novel:80,niah_multi:80,vt_novel:80,narrativeqa:80`
 - `SYNTH_STRATEGY=both`, `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1`, `CHUNK=200000`,
   `FOLD_LEAF_TOKENS=400`, QA rebalancing on, trace cache on, `PYTHONUNBUFFERED=1` (mid-run log)
-- Dry run: **700 traces / 46,119 datums**, all tasks self-grade 1.00; new tasks verified 18/18 at
-  1.00 across binary/fold × doc 6k/14k, real max agent ctx 2451 (< 3000).
-- Inspection traces: `niah_multi_traces.txt`, `vt_novel_traces.txt`
+- Verification: 200/200 rollouts at 1.00 across all variants × binary/fold × doc 6k/14k (plus
+  synth-fold regression), real max agent ctx 2721 (< 3000). Dry run: **700 traces / 46,052
+  datums**, all 700 self-grade 1.00; narrativeqa 80/80 from cache.
+- Inspection traces (one per variant): `niah_multi_traces.txt`, `vt_novel_traces.txt`
 
 **Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`): in-dist spread + `niah_multi`, `vt_novel`;
 OOD `oolong_*`, `niah_single_1`, `niah_multikey_1`, `niah_multiquery`, `vt`, `cwe`, `fwe`.
