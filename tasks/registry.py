@@ -59,6 +59,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "synth_min": "numeric", "synth_sumwhere": "numeric", "synth_distinct": "numeric", "synth_varchain": "numeric", "synth_mode": "exact",
     "synth_count2": "numeric", "synth_maxwhere": "numeric", "synth_count_cmp": "numeric", "synth_count_range": "numeric",
     "synth_diff": "numeric", "synth_sumby": "exact",
+    "synth_filter_argmax": "exact", "synth_2d": "numeric",   # fallbacks; per-problem grading_mode decides
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",
@@ -83,6 +84,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "synth_min": "numeric", "synth_sumwhere": "numeric", "synth_distinct": "numeric", "synth_varchain": "numeric", "synth_mode": "exact",
     "synth_count2": "numeric", "synth_maxwhere": "numeric", "synth_count_cmp": "numeric", "synth_count_range": "numeric",
     "synth_diff": "numeric", "synth_sumby": "exact",
+    "synth_filter_argmax": "exact", "synth_2d": "numeric",   # fallbacks; per-problem grading_mode decides
     "realdoc_count": "numeric",
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",

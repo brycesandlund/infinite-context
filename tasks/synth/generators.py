@@ -56,6 +56,9 @@ SYNTH_TASKS: dict[str, dict] = {
     "synth_count_range": {"family": "bounded", "strategy": "binary"},  # how many amt in [L, H]
     "synth_runreset": {"family": "stateful", "strategy": "left_fold"},
     "synth_varchain": {"family": "stateful", "strategy": "left_fold"},
+    # month-records family (records carry a `mon` field; question variant drawn per problem):
+    "synth_filter_argmax": {"family": "bounded", "strategy": "binary"},  # filter -> per-grp tally -> argmax/argmin
+    "synth_2d":            {"family": "bounded", "strategy": "binary"},  # month x grp tally -> reduce along one axis
 }
 
 # Tasks whose question/gold are PARAMETERIZED per problem (the predicate is randomized
@@ -66,6 +69,8 @@ _GROUPS = ["K1", "K2", "K3", "K4"]
 _RST = "RST"
 _RST_RATE = 0.08          # ~8% reset markers (only matter for runreset)
 _VARS = ["A", "B", "C", "D", "E"]
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+_MONTH_TASKS = {"synth_filter_argmax", "synth_2d"}
 
 
 # ---------------------------------------------------------------------------
@@ -167,6 +172,87 @@ def _param_question_gold(task: str, recs: list[dict], rng: random.Random):
 
 
 # ---------------------------------------------------------------------------
+# Month records: [idx] id=.. mon=Aug grp=.. amt=±n flag=Y/N   (no RST)
+#
+# A second categorical field so the aggregation can be COMPOUND: filter on one field then
+# tally another (synth_filter_argmax), or keep a joint month x grp tally and reduce it
+# along one axis (synth_2d). Both are variant families — the question form is drawn per
+# problem and carried in metadata for the oracle.
+# ---------------------------------------------------------------------------
+
+
+def _one_record_m(rng: random.Random, idx: int, months: list[str]) -> dict:
+    return {
+        "idx": idx,
+        "id": rng.randint(1000, 9999),
+        "mon": rng.choice(months),
+        "grp": rng.choice(_GROUPS),
+        "amt": rng.randint(-20, 20),
+        "flag": "Y" if rng.random() < 0.5 else "N",
+    }
+
+
+def _render_m(r: dict) -> str:
+    sign = f"+{r['amt']}" if r["amt"] >= 0 else str(r["amt"])
+    return f"[{r['idx']:04d}] id={r['id']} mon={r['mon']} grp={r['grp']} amt={sign} flag={r['flag']}"
+
+
+def _argbest(counts: dict, best, order):
+    """Key with the best count (max or min) among keys PRESENT in `counts`; ties -> first in
+    `order`. Matches the oracle's finalize exactly."""
+    target = best(counts.values())
+    return min((k for k, n in counts.items() if n == target), key=order.index)
+
+
+def _month_question_gold(task: str, recs: list[dict], months: list[str], rng: random.Random):
+    """-> (question, gold, grading_mode, metadata-params) for the month-record variant families."""
+    if task == "synth_filter_argmax":
+        if rng.random() < 0.5:
+            ffield, fval = "flag", rng.choice(["Y", "N"])
+        else:
+            ffield, fval = "mon", rng.choice(months)
+        agg = rng.choice(["most", "least"])
+        c = Counter(r["grp"] for r in recs if r[ffield] == fval)
+        gold = _argbest(c, max if agg == "most" else min, _GROUPS) if c else _GROUPS[0]
+        q = (f"Among ONLY the records with {ffield}={fval}, which grp value is the {agg.upper()} "
+             f"common? Consider only grp values that appear at least once among those records; "
+             f"break ties by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{{}}.")
+        return q, gold, "exact", {"qtype": "filter_argmax", "ffield": ffield, "fval": fval, "agg": agg}
+
+    # synth_2d: joint tally cnt[month][grp]
+    cnt = {m: Counter() for m in months}
+    for r in recs:
+        cnt[r["mon"]][r["grp"]] += 1
+    qtype = rng.choice(["months_argmax", "months_argmax", "months_cmp", "grp_in_month", "month_for_grp"])
+    if qtype == "months_argmax":
+        g = rng.choice(_GROUPS)
+        gold = sum(1 for m in months
+                   if cnt[m][g] > max((n for k, n in cnt[m].items() if k != g), default=0))
+        q = (f"For how many months is grp={g} the single most common grp — i.e. that month has "
+             f"STRICTLY more grp={g} records than records of any other one grp? Give the single "
+             f"integer in \\boxed{{}}.")
+        return q, gold, "numeric", {"qtype": qtype, "qgrp": g}
+    if qtype == "months_cmp":
+        g1, g2 = rng.sample(_GROUPS, 2)
+        gold = sum(1 for m in months if cnt[m][g1] > cnt[m][g2])
+        q = (f"In how many months are there STRICTLY more grp={g1} records than grp={g2} records? "
+             f"Give the single integer in \\boxed{{}}.")
+        return q, gold, "numeric", {"qtype": qtype, "qgrp": g1, "qgrp2": g2}
+    if qtype == "grp_in_month":
+        m = rng.choice(months)
+        gold = _argbest(cnt[m], max, _GROUPS) if cnt[m] else _GROUPS[0]
+        q = (f"Among ONLY the records with mon={m}, which grp value is the MOST common? Break ties "
+             f"by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{{}}.")
+        return q, gold, "exact", {"qtype": qtype, "qmon": m}
+    g = rng.choice(_GROUPS)   # month_for_grp
+    per_month = {m: cnt[m][g] for m in months}
+    gold = _argbest(per_month, max, _MONTHS)
+    q = (f"Which month has the MOST grp={g} records? Break ties by the earliest month in "
+         f"calendar order. Give the 3-letter month (e.g. Aug) in \\boxed{{}}.")
+    return q, gold, "exact", {"qtype": qtype, "qgrp": g}
+
+
+# ---------------------------------------------------------------------------
 # Variable-tracking records: [idx] set VAR = (int | VAR)
 # ---------------------------------------------------------------------------
 
@@ -206,6 +292,11 @@ _QUESTION = {
 _CONTEXT = (
     "The document is a list of records, one per line, each formatted as:\n"
     "  [<index>] id=<int> grp=<K1|K2|K3|K4|RST> amt=<signed int> flag=<Y|N>\n"
+    "Records are 0-indexed and appear in order."
+)
+_CONTEXT_M = (
+    "The document is a list of records, one per line, each formatted as:\n"
+    "  [<index>] id=<int> mon=<3-letter month> grp=<K1|K2|K3|K4> amt=<signed int> flag=<Y|N>\n"
     "Records are 0-indexed and appear in order."
 )
 _CONTEXT_VC = (
@@ -266,6 +357,22 @@ def make_synth_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) ->
             task_context=_CONTEXT_VC, grading_mode="numeric",
             metadata={"family": "stateful", "strategy_default": "left_fold", "task": task,
                       "query_var": qvar, "n_records": len(spans), "record_spans": spans, "gold_int": gold},
+        )
+
+    if task in _MONTH_TASKS:
+        # 3-4 months per problem: the synth_2d fold state is one key per (month, grp) pair and
+        # is restated per hop; 5 months measured 2896 real tokens of the 3000 budget.
+        months = sorted(rng.sample(_MONTHS, rng.randint(3, 4)), key=_MONTHS.index)
+        recs, doc_tokens, raw_spans = _pack(rng, _render_m, lambda i: _one_record_m(rng, i, months),
+                                            doc_size_tokens, tokenizer)
+        spans = [(s, e, r["idx"], r["amt"], r["flag"], r["grp"], r["mon"]) for (s, e, r) in raw_spans]
+        question, gold, grading, qparams = _month_question_gold(task, recs, months, rng)
+        return Problem(
+            document_tokens=doc_tokens, question=question, gold_answers=[str(gold)], task=task,
+            task_context=_CONTEXT_M, grading_mode=grading,
+            metadata={"family": "bounded", "strategy_default": "binary", "task": task,
+                      "n_records": len(recs), "record_spans": spans, "gold_int": gold,
+                      "months": months, **qparams},
         )
 
     # Standard-record tasks.

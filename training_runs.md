@@ -176,8 +176,35 @@ show only the DELTA binding, (2) base fold node no longer reprints the accumulat
 / delegation text / "The chain returned X" (saves ~3× state, benefits every fold task),
 (3) niah_multi caps needles at 3 when uuids are involved, (4) vt_novel caps total vars ≤ ~17.
 
-**SFT config** (run 3 + the two new tasks @80)
-- Tasks: 15 synth + `realdoc_count` + `niah_novel` + `niah_multi` + `vt_novel` + `narrativeqa`
+**OOLONG post-mortem (run 3, 9 rollouts in `eval_results/raw/sft_general3_doc4k_b3k.txt`;
+counting @24299/24743/24858, user @28980/29500/35243, temporal @35394/35591/35835).** Four
+failure modes: (A) fuzzy per-item classification at the leaf — perfect tree, wrong TREC labels
+(counting/trec 31 vs 14; imdb sentiment 1.00) — capability-capped; (B) **wrong accumulator
+SHAPE**: temporal needs a joint month×label tally then "count months where label X wins", the
+model tracked per-month OR per-label only (all 3 temporal, user/trec); (C) long multi-line
+`Date || User || Instance` records + "in the above data" → line-number reasoning, over-reads
+(95/159 reads >800 tok), raw `<tool_call>` text instead of a call → overflow / 150-node runaway
+(user/agnews, user/imdb, counting/agnews); (D) one degenerate gold ("numeric value"). B and C are
+curriculum gaps. Training has aggregation over PRE-LABELED fields (synth) and fuzzy judgment
+WITHOUT aggregation (bookqa), never classification→tally, and never a 2-D state.
+
+**Added for B — two synth VARIANT FAMILIES on a new month-record layout**
+`[idx] id=.. mon=Aug grp=K2 amt=+7 flag=N` (tasks/synth/generators.py, oracle/synth.py):
+- **`synth_filter_argmax`** — filter (flag=Y/N or mon=M) → per-grp Counter → MOST/LEAST common
+  (exact; ties alphabetical). The oolong_user shape (filter by user → tally → argmin).
+- **`synth_2d`** — joint `mon/grp` composite-key dict tally, root reduces along one axis: qtype ∈
+  {**months_argmax** ×2 "for how many months is grp G strictly the most common", **months_cmp** "in
+  how many months G1 > G2", **grp_in_month** (argmax within a month), **month_for_grp** (argmax
+  month for a grp)}; 3–4 months per problem (5 months hit 2896 real tok in fold). Per-record lines
+  are delta-only; the root prints the per-month table before boxing. The oolong_temporal shape.
+- Verification: 320/320 at 1.00 (2 tasks × 4 variants × binary/fold × doc 6k/14k), real max ctx
+  2756 (2d fold). Traces: `month_traces.txt`. C (long-record layout + classification leaf) is NOT
+  addressed here — next: an "OOLONG-like" classify→tally oracle on a non-OOLONG labeled dataset
+  (dbpedia/emotion), different record layout, model-executed leaf under the rejection gate.
+
+**SFT config** (run 3 + the four new tasks; niah/vt @80, month synths @20 like the other synths)
+- Tasks: 17 synth (incl. `synth_filter_argmax`, `synth_2d`) + `realdoc_count` + `niah_novel` +
+  `niah_multi` + `vt_novel` + `narrativeqa`
 - `N_PER_TASK=20`, overrides `realdoc_count:80,niah_novel:80,niah_multi:80,vt_novel:80,narrativeqa:80`
 - `SYNTH_STRATEGY=both`, `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1`, `CHUNK=200000`,
   `FOLD_LEAF_TOKENS=400`, QA rebalancing on, trace cache on, `PYTHONUNBUFFERED=1` (mid-run log)
@@ -190,4 +217,5 @@ show only the DELTA binding, (2) base fold node no longer reprints the accumulat
 OOD `oolong_*`, `niah_single_1`, `niah_multikey_1`, `niah_multiquery`, `vt`, `cwe`, `fwe`.
 
 **Expected:** vt and niah_multikey_1 climb out of overflow (the direct analogs are now in-dist);
-cwe/fwe/synth hold; OOLONG classification still capability-capped (unaddressed by design).
+cwe/fwe/synth hold; oolong_temporal/user may pick the right accumulator shape now (B), but
+OOLONG's classification leaf (A) and long-record layout (C) remain unaddressed in this run.

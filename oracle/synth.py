@@ -1,12 +1,16 @@
 """SynthOracle — the abstract synthetic decomposition tasks (tasks/synth).
 
-Fifteen operations across both strategies and four combine-state kinds, all expressed as
+Seventeen operations across both strategies and four combine-state kinds, all expressed as
 hooks on ScaffoldOracle:
   bounded-associative (binary):  sum / count / max / min / sumwhere (int reduce),
                                  count2 / count_cmp / count_range / maxwhere (parameterized
                                  predicate reduce), mode (Counter -> argmax),
                                  distinct (set -> count), sumby / diff (per-key dict -> argmax/subtract)
   stateful-sequential (left-fold): runreset (running total), varchain (variable bindings)
+  month-record families:         filter_argmax (filter on flag/mon -> per-grp Counter -> argmax/argmin),
+                                 2d (joint mon/grp dict tally -> reduce along one axis: count months
+                                 where grp G wins / beats G2, argmax grp within a month, argmax month
+                                 for a grp). The question variant is drawn per problem (metadata qtype).
 The combining/temporal tasks (count2, diff, sumby, maxwhere, count_cmp, count_range) fuse
 two record labels or a numeric range into one predicate. The strategy is the per-task
 TRAINING knob (mixed default, or forced all-binary/all-fold).
@@ -32,7 +36,10 @@ class SynthOracle(ScaffoldOracle):
         "synth_count2": "int", "synth_maxwhere": "int", "synth_count_cmp": "int", "synth_count_range": "int",
         "synth_mode": "counter", "synth_distinct": "set",
         "synth_sumby": "dict", "synth_diff": "dict", "synth_varchain": "dict",
+        "synth_filter_argmax": "counter", "synth_2d": "dict",
     }
+    _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    _GROUPS = ["K1", "K2", "K3", "K4"]
 
     def __init__(self, problem, tokenizer, *, budget, max_chunk_tokens, strategy=None):
         super().__init__(problem, tokenizer, budget=budget,
@@ -42,6 +49,11 @@ class SynthOracle(ScaffoldOracle):
         self.qflag, self.qgrp = self.meta.get("qflag"), self.meta.get("qgrp")
         self.op, self.thresh = self.meta.get("op"), self.meta.get("thresh")
         self.lo, self.hi = self.meta.get("lo"), self.meta.get("hi")
+        # month-record variant families (filter_argmax / 2d)
+        self.qtype = self.meta.get("qtype")
+        self.ffield, self.fval, self.agg = self.meta.get("ffield"), self.meta.get("fval"), self.meta.get("agg")
+        self.qgrp2, self.qmon = self.meta.get("qgrp2"), self.meta.get("qmon")
+        self.months = list(self.meta.get("months", []))
         if self.strategy == "binary" and self.task in ("synth_runreset", "synth_varchain"):
             # non-associative combines; a binary tree would need a richer monoid. Not
             # rendered yet — these are left-fold tasks.
@@ -116,6 +128,19 @@ class SynthOracle(ScaffoldOracle):
             hit = self.lo <= amt <= self.hi
             if hit: acc += 1
             return acc, f"- [{idx:04d}] amt={amt:+d}  (in [{self.lo},{self.hi}]? {'yes' if hit else 'no'})  → count={acc}"
+        mon = s[6]
+        if t == "synth_filter_argmax":
+            fv = flag if self.ffield == "flag" else mon
+            if fv == self.fval:
+                acc = acc + Counter([grp])
+                return acc, f"- [{idx:04d}] {self.ffield}={fv} grp={grp}  (match)  → {self._ser_state(acc)}"
+            return acc, f"- [{idx:04d}] {self.ffield}={fv} grp={grp}  (skip)  → {self._ser_state(acc)}"
+        if t == "synth_2d":
+            # delta only: the joint tally can hold up to 4 months x 4 grps = 16 keys, and
+            # reprinting it per record would blow the fold budget (see fold-state notes).
+            key = f"{mon}/{grp}"
+            acc = {**acc, key: acc.get(key, 0) + 1}
+            return acc, f"- [{idx:04d}] mon={mon} grp={grp}  → {key}={acc[key]}"
         raise ValueError(t)
 
     def _combine(self, states):
@@ -124,7 +149,7 @@ class SynthOracle(ScaffoldOracle):
             v = [s for s in states if s is not None]; return max(v) if v else None
         if t == "synth_min":
             v = [s for s in states if s is not None]; return min(v) if v else None
-        if t == "synth_mode":
+        if t in ("synth_mode", "synth_filter_argmax"):
             tot = Counter()
             for s in states: tot += s
             return tot
@@ -132,7 +157,7 @@ class SynthOracle(ScaffoldOracle):
             out = set()
             for s in states: out |= s
             return out
-        if t in ("synth_sumby", "synth_diff"):
+        if t in ("synth_sumby", "synth_diff", "synth_2d"):
             out = {}
             for s in states:
                 for k, v in s.items(): out[k] = out.get(k, 0) + v
@@ -161,6 +186,8 @@ class SynthOracle(ScaffoldOracle):
             "synth_count_range": f"counting the records with amt in [{self.lo}, {self.hi}]",
             "synth_runreset": "adding each 'amt' to the running total, resetting the total to 0 at each grp=RST",
             "synth_varchain": "applying each assignment in order (a `= VAR` copies that variable's current value)",
+            "synth_filter_argmax": f"tallying the grp of each record with {self.ffield}={self.fval} (skipping the rest)",
+            "synth_2d": "tallying each (mon, grp) pair, i.e. how many records have each month AND grp",
         }[self.task]
 
     def _goal_phrase(self) -> str:
@@ -180,6 +207,9 @@ class SynthOracle(ScaffoldOracle):
             "synth_maxwhere": f"the MAXIMUM 'amt' among flag={self.qflag} records",
             "synth_count_cmp": f"how many have amt {self.op} {self.thresh}",
             "synth_count_range": f"how many have amt between {self.lo} and {self.hi} (inclusive)",
+            "synth_filter_argmax": f"the per-grp tally over ONLY the records with {self.ffield}={self.fval} "
+                                   f"(how many of those have each grp value)",
+            "synth_2d": "the per-(mon, grp) tally (how many records have each month AND grp combination)",
         }[self.task]
 
     def _combine_phrase(self) -> str:
@@ -190,6 +220,7 @@ class SynthOracle(ScaffoldOracle):
             "synth_maxwhere": "take the max of",
             "synth_mode": "merge", "synth_distinct": "union",
             "synth_sumby": "merge (add per-grp)", "synth_diff": "merge (add per-flag)",
+            "synth_filter_argmax": "merge", "synth_2d": "merge (add per mon/grp key)",
         }.get(self.task, "sum")
 
     def _empty_phrase(self) -> str:
@@ -209,10 +240,74 @@ class SynthOracle(ScaffoldOracle):
             return str(state.get("Y", 0) - state.get("N", 0))
         if t == "synth_varchain":
             return str(state.get(self.query_var, 0))
+        if t in ("synth_filter_argmax", "synth_2d"):
+            return self._month_resolve(state)[0]
         return "0" if state is None else str(state)
+
+    # -- month-record families: reduce the tally to the answer, showing the work ---------
+
+    @staticmethod
+    def _argbest(counts: dict, best, order):
+        target = best(counts.values())
+        return min((k for k, n in counts.items() if n == target), key=order.index)
+
+    def _by_month(self, state) -> dict:
+        """{month: {grp: n}} from the 'mon/grp' composite-key tally, in calendar order."""
+        out = {m: {} for m in self.months}
+        for k, n in (state or {}).items():
+            mon, _, grp = k.partition("/")
+            out.setdefault(mon, {})[grp] = n
+        return {m: out[m] for m in sorted(out, key=self._MONTHS.index)}
+
+    @staticmethod
+    def _fmt_tally(d: dict) -> str:
+        return ", ".join(f"{g}={n}" for g, n in sorted(d.items())) or "none"
+
+    def _month_resolve(self, state):
+        """-> (answer, note) for the root."""
+        if self.task == "synth_filter_argmax":
+            if not state:
+                return self._GROUPS[0], f"\nNo records with {self.ffield}={self.fval}; defaulting to {self._GROUPS[0]}."
+            ans = self._argbest(state, max if self.agg == "most" else min, self._GROUPS)
+            return ans, (f"\nTally over {self.ffield}={self.fval} records: {self._fmt_tally(state)}; "
+                         f"{self.agg} common is {ans} ({state[ans]}).")
+        bm = self._by_month(state)
+        if self.qtype == "months_argmax":
+            g, hits, rows = self.qgrp, [], []
+            for m, d in bm.items():
+                other = max((n for k, n in d.items() if k != g), default=0)
+                ok = d.get(g, 0) > other
+                if ok: hits.append(m)
+                rows.append(f"  {m}: {self._fmt_tally(d)} → {g}={d.get(g, 0)} vs best other {other}: {'yes' if ok else 'no'}")
+            return str(len(hits)), ("\nPer month, is " + g + " strictly the most common?\n" + "\n".join(rows)
+                                    + f"\nMonths where yes: {', '.join(hits) or 'none'} → {len(hits)}.")
+        if self.qtype == "months_cmp":
+            g1, g2, hits, rows = self.qgrp, self.qgrp2, [], []
+            for m, d in bm.items():
+                a, b = d.get(g1, 0), d.get(g2, 0)
+                if a > b: hits.append(m)
+                rows.append(f"  {m}: {g1}={a} vs {g2}={b}: {'yes' if a > b else 'no'}")
+            return str(len(hits)), (f"\nPer month, {g1} > {g2}?\n" + "\n".join(rows)
+                                    + f"\nMonths where yes: {', '.join(hits) or 'none'} → {len(hits)}.")
+        if self.qtype == "grp_in_month":
+            d = bm.get(self.qmon, {})
+            if not d:
+                return self._GROUPS[0], f"\nNo records with mon={self.qmon}; defaulting to {self._GROUPS[0]}."
+            ans = self._argbest(d, max, self._GROUPS)
+            return ans, f"\nTally for mon={self.qmon}: {self._fmt_tally(d)}; most common is {ans} ({d[ans]})."
+        # month_for_grp
+        g = self.qgrp
+        per = {m: d.get(g, 0) for m, d in bm.items()}
+        if not per:
+            return self._MONTHS[0], f"\nNo records seen; defaulting to {self._MONTHS[0]}."
+        ans = self._argbest(per, max, self._MONTHS)
+        return ans, (f"\n{g} count per month: " + ", ".join(f"{m}={n}" for m, n in per.items())
+                     + f"; the most is {ans} ({per[ans]}).")
 
     def _finalize_note(self, state) -> str:
         t = self.task
+        if t in ("synth_filter_argmax", "synth_2d"):
+            return self._month_resolve(state)[1]
         if t == "synth_mode":
             if not state:
                 return ""
