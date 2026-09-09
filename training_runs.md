@@ -153,7 +153,7 @@ real-prose leaves, measure zero-shot transfer to OOLONG/RULER.
 
 ---
 
-## sft_general4 (run 4) — PLANNED
+## sft_general4 (run 4) — 2026-09-08/09 — OVERALL 0.684 (57 rollouts)
 
 **Target:** the run-3 residual — **over-read → overflow** on unfamiliar haystack layouts
 (vt 0.00 3/3 overflow; niah_multikey_1 2/3 overflow). Teach leaf-sized reads + the missing
@@ -234,3 +234,39 @@ OOD `oolong_*`, `niah_single_1`, `niah_multikey_1`, `niah_multiquery`, `vt`, `cw
 **Expected:** vt and niah_multikey_1 climb out of overflow (the direct analogs are now in-dist);
 cwe/fwe/synth hold; oolong_temporal/user may pick the right accumulator shape now (B), but
 OOLONG's classification leaf (A) and long-record layout (C) remain unaddressed in this run.
+
+**Run 4 results** (ckpt `tinker://72155075-e0af-54b8-a1f8-e1068c35cb7e:train:0/weights/sft_general4`,
+820 traces / 54,353 datums, 3398 batches, NLL 0.0190; SFT 19:30→03:06, eval →03:33; raw in
+`eval_results/raw/sft_general4_doc4k_b3k.*`, chain log `sft_general4_chain.log`).
+
+| task | run 3 | run 4 | note |
+|---|---|---|---|
+| vt | 0.00 | **1.00** | vt_novel did its job (was 3/3 overflow) |
+| vt_novel / niah_multi (new, in-dist) | – | 0.95 / 1.00 | |
+| niah_multiquery | 0.33 | 0.67 | |
+| narrativeqa | 0.33 | 0.67 | |
+| oolong_counting | 0.34 | **0.64** | trec still mislabels (20 vs 14); agnews 18 vs 17 |
+| oolong_temporal | 0.17 | **0.48** | agnews relative_freq 1.00 with a real month/label 2-D state (`Apr 2022/World=2|…`) — the synth_2d shape transferred; trec most_common_label still 1-D (per-label only) |
+| oolong_user | 0.00 | 0.33 | agnews user-subset count 1.00; imdb/trec still ignore the user filter |
+| realdoc_count | 1.00 | 0.92 | 23 vs 22 |
+| **cwe** | 0.97 | **0.00** | REGRESSION — see below |
+| **fwe** | 0.89 | **0.00** | REGRESSION — see below |
+| niah_single_1 | 0.67 | 0.33 | 2/3 overflow: root improvised a sequential 200-token read loop ("Folding the 1 results with no midpoint") |
+| niah_multikey_1 | 0.33 | 0.00 | subtask drops the KEY ("compute the hidden number"), leaves return any number, root concatenates |
+| synth (5) | 0.93 | 1.00 | |
+
+**cwe/fwe regression = strategy choice, not capability.** All 6 rollouts picked LEFT-FOLD for a
+per-word tally over a dense list (cwe: 77 records per 400 tokens; fwe: 40). The fold turn lists
+every record (77 lines) and the accumulator has ~40 distinct keys, so the ROOT itself overflows
+(fwe root turn = 88 lines, `turns=2 termination=overflow`); the model then improvises ("The chain
+overflown — I'll restart…"). In run 3 the same tasks went binary (leaf partial tallies fit) →
+0.97/0.89. Run 4 added three more tally-shaped tasks that render fold (`synth_filter_argmax`,
+`synth_2d`, `long_records`), tipping the prior toward fold for "tally" questions. Every training
+fold has a SMALL state (≤4 grps, ≤16 composite keys) — the model has never seen the rule "fold only
+when the accumulator stays small; with an unbounded key space, split binary". Fix (training-side):
+(1) teach state-size-aware strategy selection — the root preamble should state WHY it picks fold
+(accumulator is a single number / a few keys) or binary (the tally can have many distinct keys, so
+carry partials, not a chain); (2) add large-key-space tally variants (e.g. grp drawn from ~30 words)
+rendered BINARY-only with that justification; (3) consider fold-rendering only int-state and
+fold-native tasks. Also: dense lists (many records per 400 tokens) need a smaller fold slice or
+binary — the per-record line cost dominates, not the state.
