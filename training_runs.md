@@ -289,3 +289,21 @@ general where the state is one number; every counter/dict-state task (`mode`, `d
 which the model invented on its own in run 3 — `cwe_run3_vs_run4.txt`); OOLONG/vt/narrativeqa gains
 from run 4 hold (they came from state/record shape, not from fold). Open decision: teach the top-k
 sketch explicitly (large-vocabulary tally variant, binary-only) — pending inspection of the cwe traces.
+
+**Also in run 5 (from the RULER-niah post-mortem):**
+- **Per-task verb** (`ScaffoldOracle._verb`): reductions "compute", retrieval tasks (`niah_multi`,
+  `vt_novel`) "collect". Run 4's multikey failure was a template collision — a retrieval question
+  whose answer is a number was rendered "compute the hidden number" (key dropped) and the leaves ran
+  the synth numeric template, literally ADDING the magic numbers (`25303820` = sum of other keys).
+- **Key-naming goal phrases** in `niah_multi` explicit/multiquery/multivalue: "the magic number stated
+  for {key} (collecting every stated key=magic number fact in the range)" — every subtask carries the
+  key(s) down the tree.
+- **Question paraphrase families** for `niah_novel`/`niah_multi`/`vt_novel` (`tasks/niah/generators.py`
+  `_phrase`): optional instructional preface × 4–6 question forms × 4 answer-format tails, none copying
+  RULER's wording. Why: on RULER `niah_single_1` the root failed at turn 1 — BEFORE reading anything —
+  producing a subtask with literal `START..END` placeholders (run 4 seed 2013001) or a whole-doc read
+  (run 3 seed 2013000); the "noise haystack" is not the cause, the root's question→subtask mapping is,
+  and with one template per task it learned the template rather than the mapping.
+- **`ROOT_DUP=4`**: the root's first turn (question → preamble → subtask) is the only non-self-similar
+  step and the least-trained one (1 datum per trace ≈ 1.5% of datums); it is duplicated 4× at datum
+  assembly, mirroring the QA-verdict rebalancing.

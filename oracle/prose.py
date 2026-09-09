@@ -116,7 +116,23 @@ class NiahMultiOracle(ScaffoldOracle):
     def _unit(self) -> str:
         return "hidden fact sentences"
 
+    def _verb(self) -> str:
+        return "collect"
+
     def _goal_phrase(self) -> str:
+        # Name what the question asks for, so every subtask carries the KEY(s) down the tree
+        # (run 4: the model dropped the key — "compute the hidden number" — and leaves returned
+        # whichever magic number they saw). Other keys are still collected: the leaf can't know
+        # in advance which sentence matters for a hidden-query lookup.
+        if self.mode == "explicit":
+            return (f"the magic {self.vword} stated for {self.target_keys[0]} (collecting every "
+                    f"stated key=magic {self.vword} fact in the range)")
+        if self.mode == "multiquery":
+            return (f"the magic {self.vword}s stated for {', '.join(self.target_keys)} (collecting "
+                    f"every stated key=magic {self.vword} fact in the range)")
+        if self.mode == "multivalue":
+            return (f"every magic {self.vword} stated for {self.target_keys[0]} (collecting every "
+                    f"stated key=magic {self.vword} fact in the range)")
         return f"the hidden facts (each key's magic {self.vword}, plus any lookup instruction)"
 
     def _combine_phrase(self) -> str:
@@ -167,6 +183,9 @@ class VtNovelOracle(ScaffoldOracle):
         if self.qtype == "final_value":
             return f"\nFinal value of VAR {self.query_var}: {(state or {}).get(self.query_var, 0)}."
         return f"\nVariables whose final value is {self.target}: {', '.join(self._holders(state)) or 'none'}."
+
+    def _verb(self) -> str:
+        return "collect"
 
     def _op_phrase(self) -> str:
         return "applying each VAR assignment in order (VAR A = VAR B copies B's current value)"

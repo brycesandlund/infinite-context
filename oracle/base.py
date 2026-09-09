@@ -104,6 +104,13 @@ class ScaffoldOracle(ModelBackend):
     def _goal_phrase(self) -> str:
         return "the result"     # noun phrase: what a node computes over its range
 
+    def _verb(self) -> str:
+        """Verb applied to the goal in the subtask/preamble. Reductions "compute"; retrieval
+        tasks override with "find"/"collect" — run 4 showed a retrieval question phrased as
+        "compute the hidden number" gets routed into the numeric-sum template (leaves ADDED the
+        magic numbers), so the verb has to separate the two families."""
+        return "compute"
+
     def _combine_phrase(self) -> str:
         return "combine"
 
@@ -168,12 +175,12 @@ class ScaffoldOracle(ModelBackend):
         # Self-similar directive (no conditional): the same instruction works at every
         # node — split-or-leaf is decided from the range, and the model learns the one
         # handoff shape. The midpoint isn't stated; the parent's two spawn calls show it.
-        L, goal, unit = self.LEAF_TOKENS, self._goal_phrase(), self._unit()
+        L, goal, unit, v = self.LEAF_TOKENS, self._goal_phrase(), self._unit(), self._verb()
         return (
-            f"Over the {unit} STARTING in tokens {a}..{b}, compute {goal}. Recursively split "
+            f"Over the {unit} STARTING in tokens {a}..{b}, {v} {goal}. Recursively split "
             f"the range at its midpoint, delegating each half to a subagent, until the range "
             f"is less than {L} tokens. When the range is less than {L} tokens, read it and "
-            f"compute {goal} over the {unit} STARTING in the range."
+            f"{v} {goal} over the {unit} STARTING in the range."
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
@@ -261,7 +268,7 @@ class ScaffoldOracle(ModelBackend):
             )
         return (
             f"This document is {n} tokens — too long to read in one context. I'll work through "
-            f"it by splitting the range in half recursively, having a subagent compute "
+            f"it by splitting the range in half recursively, having a subagent {self._verb()} "
             f"{self._goal_phrase()} over each half and combining the two partials. Once I have "
             f"it for the whole document, I turn the combined result into the final answer."
         )

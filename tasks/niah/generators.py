@@ -60,6 +60,69 @@ _QUESTION = (
     "What is the special magic number for {key}? A sentence somewhere in the document states "
     "it. Give the number in \\boxed{{}}."
 )
+
+# Question-phrasing diversity for the retrieval tasks. The ROOT has to map an arbitrary
+# question onto the per-node subtask; with one template per task it learns the template, not
+# the mapping (run 4: RULER's "memorize it, I will quiz you… mentioned in the provided text?"
+# phrasing produced a subtask with literal START..END placeholders). Each problem draws an
+# optional PREFACE (instructional framing, not part of the question) + one QUESTION form +
+# one ANSWER-FORMAT tail. None of these copies RULER's wording.
+_PREFACES = [
+    "", "", "",
+    "Some facts are buried in the text below. ",
+    "Read carefully — a detail in this passage matters later. ",
+    "You will be asked about a detail from this text. ",
+    "A note about this passage: it contains a few planted facts. ",
+    "Keep track of any special values you come across. ",
+]
+_ANSWER_TAILS = [
+    "Give it in \\boxed{}.",
+    "Put the answer in \\boxed{}.",
+    "Reply with just the value inside \\boxed{}.",
+    "Answer with the value, inside \\boxed{}.",
+]
+_Q_SINGLE = [
+    "What is the special magic {vword} for {key}? A sentence somewhere in the document states it.",
+    "Which special magic {vword} is given for {key}?",
+    "Find the special magic {vword} associated with {key}.",
+    "According to the text, what is the special magic {vword} for {key}?",
+    "One sentence names the special magic {vword} for {key} — what is it?",
+    "What special magic {vword} does the passage assign to {key}?",
+]
+_Q_MULTIQUERY = [
+    "What are the special magic {vword}s for {ks}? One sentence per key states it. List all of them, comma-separated.",
+    "Report the special magic {vword} for each of {ks}, comma-separated.",
+    "For each of {ks}, what is its special magic {vword}? List them all, comma-separated.",
+    "Which special magic {vword}s are given for {ks}? Give every one, comma-separated.",
+]
+_Q_MULTIVALUE = [
+    "What are all the special magic {vword}s for {key}? Several sentences each state one. List all of them, comma-separated.",
+    "List every special magic {vword} the text gives for {key}, comma-separated.",
+    "{key} is assigned more than one special magic {vword}. What are all of them? Comma-separated.",
+    "Collect all the special magic {vword}s stated for {key}, comma-separated.",
+]
+_Q_HIDDEN = [
+    "This document hides several sentences, each stating the special magic {vword} for some key, and ONE sentence saying which key you must look up. Find that instruction, then report the magic {vword} for that key.",
+    "Somewhere in the text, one sentence tells you which key to look up; other sentences give each key's special magic {vword}. What is the magic {vword} for the key you are told to look up?",
+    "The passage names a key to look up and, elsewhere, the special magic {vword} of several keys. Report the magic {vword} of the named key.",
+    "Find the lookup instruction hidden in the text, then answer it: what is the special magic {vword} for the key it names?",
+]
+_Q_VT_WHICH = [
+    "Which variables end up assigned the value {t_val}? List every such variable name, comma-separated.",
+    "After all assignments, which variables hold the value {t_val}? List them all, comma-separated.",
+    "Name every variable whose final value is {t_val}, comma-separated.",
+    "Which VARs finish with the value {t_val}? Give all of them, comma-separated.",
+]
+_Q_VT_FINAL = [
+    "What is the final value of VAR {qvar}? Give the integer.",
+    "After all the assignments are applied, what value does VAR {qvar} hold?",
+    "What does VAR {qvar} equal at the end of the text?",
+    "Trace the assignments: what is VAR {qvar}'s final value?",
+]
+
+
+def _phrase(rng, forms, **kw) -> str:
+    return rng.choice(_PREFACES) + rng.choice(forms).format(**kw) + " " + rng.choice(_ANSWER_TAILS)
 _CONTEXT = (
     "The document is a long passage of text with a single factual sentence hidden inside it. "
     "Answer the question using ONLY this passage."
@@ -179,7 +242,7 @@ def make_niah_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
     (ts, te), = _tok_spans(enc["offset_mapping"], cspans)
     spans = [(ts, te, 0, 1, needle.strip(), True)]
     return Problem(
-        document_tokens=enc["input_ids"], question=_QUESTION.format(key=key),
+        document_tokens=enc["input_ids"], question=_phrase(rng, _Q_SINGLE, vword="number", key=key),
         gold_answers=[value], task=task, task_context=_CONTEXT, grading_mode="qa_part",
         metadata={"family": "niah", "strategy_default": "binary", "task": task,
                   "answer": value, "key": key, "record_spans": spans, "k": 12},
@@ -228,25 +291,20 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
 
     # Question + gold + grading per mode.
     if mode == "hidden":
-        question = (f"This document hides several sentences, each stating the special magic {vword} "
-                    f"for some key, and ONE sentence saying which key you must look up. Find that "
-                    f"instruction, then report the magic {vword} for that key. Give it in \\boxed{{}}.")
+        question = _phrase(rng, _Q_HIDDEN, vword=vword)
         gold = [v for k, v, q in facts if not q and k == target_keys[0]]
         grading = "qa_part"
     elif mode == "explicit":
-        question = (f"What is the special magic {vword} for {target_keys[0]}? A sentence somewhere "
-                    f"in the document states it. Give it in \\boxed{{}}.")
+        question = _phrase(rng, _Q_SINGLE, vword=vword, key=target_keys[0])
         gold = [v for k, v, q in facts if k == target_keys[0]]
         grading = "qa_part"
     elif mode == "multiquery":
         ks = ", ".join(target_keys[:-1]) + f" and {target_keys[-1]}"
-        question = (f"What are the special magic {vword}s for {ks}? One sentence per key states "
-                    f"it. List all of them, comma-separated, in \\boxed{{}}.")
+        question = _phrase(rng, _Q_MULTIQUERY, vword=vword, ks=ks)
         gold = [v for k, v, q in facts]
         grading = "set"
     else:  # multivalue
-        question = (f"What are all the special magic {vword}s for {target_keys[0]}? Several "
-                    f"sentences each state one. List all of them, comma-separated, in \\boxed{{}}.")
+        question = _phrase(rng, _Q_MULTIVALUE, vword=vword, key=target_keys[0])
         gold = [v for k, v, q in facts]
         grading = "set"
     return Problem(
@@ -295,12 +353,11 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
 
     t_names, t_val = [n for n, _, _ in chains[0]], vals[0]
     if qtype == "which_vars":
-        question = (_VT_PREAMBLE + f"Which variables end up assigned the value {t_val}? List every "
-                    f"such variable name, comma-separated, in \\boxed{{}}.")
+        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, t_val=t_val)
         gold, grading, qvar = sorted(t_names), "set", None
     else:
         qvar = rng.choice(t_names)
-        question = (_VT_PREAMBLE + f"What is the final value of VAR {qvar}? Give the integer in \\boxed{{}}.")
+        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_FINAL, qvar=qvar)
         gold, grading = [str(t_val)], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",
