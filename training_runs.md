@@ -198,7 +198,7 @@ WITHOUT aggregation (bookqa), never classification→tally, and never a 2-D stat
   month for a grp)}; 3–4 months per problem (5 months hit 2896 real tok in fold). Per-record lines
   are delta-only; the root prints the per-month table before boxing. The oolong_temporal shape.
 - Verification: 320/320 at 1.00 (2 tasks × 4 variants × binary/fold × doc 6k/14k), real max ctx
-  2756 (2d fold). Traces: `month_traces.txt`.
+  2756 (2d fold). Traces: `trace_snippets/month_traces.txt`.
 
 **Added for C — `long_records`** (tasks/longrec, oracle/longrec.py): the document is a sequence of
 MULTI-LINE entries — a short header + 60–250 tokens of real prose (novel or essay), blank-line
@@ -212,7 +212,7 @@ leaves that own 0–3 entries, and empty ranges that sit inside an entry owned b
 Base oracle got wording hooks (`_finish_phrase` / `_cutoff_phrase` / `_fold_header`) with defaults
 identical to the old text, so every other task's traces are byte-for-byte unchanged (regression
 checked). Follows SYNTH_STRATEGY=both. Verification: 240/240 at 1.00 (6 qtypes × 2 layouts × 2 prose
-× binary/fold × doc 6k/14k), real max ctx 2590. Traces: `longrec_traces.txt`.
+× binary/fold × doc 6k/14k), real max ctx 2590. Traces: `trace_snippets/longrec_traces.txt`.
 A (fuzzy classification leaf) stays unaddressed — a later semantic per-entry variant ("how many
 entries are about X") can drop into this same skeleton with the haiku leaf + rejection gate.
 
@@ -226,7 +226,7 @@ entries are about X") can drop into this same skeleton with the haiku leaf + rej
   synth-fold regression), real max agent ctx 2721 (< 3000). Dry run with all five new tasks:
   **820 traces / 25,271 agents / 54,353 datums**, all 820 self-grade 1.00; narrativeqa 80/80 from
   cache (QA verdicts pos 1201×2, neg kept 3358/6715).
-- Inspection traces (one per variant): `niah_multi_traces.txt`, `vt_novel_traces.txt`
+- Inspection traces (one per variant): `trace_snippets/niah_multi_traces.txt`, `trace_snippets/vt_novel_traces.txt`
 
 **Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`): in-dist spread + `niah_multi`, `vt_novel`;
 OOD `oolong_*`, `niah_single_1`, `niah_multikey_1`, `niah_multiquery`, `vt`, `cwe`, `fwe`.
@@ -286,7 +286,7 @@ general where the state is one number; every counter/dict-state task (`mode`, `d
 (tasks, N, DOC_MIX, budget, leaf model, cache).
 
 **Expected:** cwe/fwe recover toward run-3 levels (binary lets leaves box a bounded top-k partial,
-which the model invented on its own in run 3 — `cwe_run3_vs_run4.txt`); OOLONG/vt/narrativeqa gains
+which the model invented on its own in run 3 — `trace_snippets/cwe_run3_vs_run4.txt`); OOLONG/vt/narrativeqa gains
 from run 4 hold (they came from state/record shape, not from fold). Open decision: teach the top-k
 sketch explicitly (large-vocabulary tally variant, binary-only) — pending inspection of the cwe traces.
 
