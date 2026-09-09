@@ -63,6 +63,8 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",
     "niah_novel": "qa_part",
+    "niah_multi": "qa_part",
+    "vt_novel": "set",
 }
 
 
@@ -85,6 +87,8 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "bookqa": "qa_part",
     "narrativeqa": "qa_part",
     "niah_novel": "qa_part",
+    "niah_multi": "qa_part",
+    "vt_novel": "set",
 }
 
 

@@ -150,3 +150,31 @@ real-prose leaves, measure zero-shot transfer to OOLONG/RULER.
 - **"OOLONG-like" classification+aggregation oracle** on a non-OOLONG labeled dataset (dbpedia)
   for the classification leaf.
 - Monitoring: `WANDB=1` / `python -u` so batch NLL is visible mid-run (stdout is block-buffered).
+
+---
+
+## sft_general4 (run 4) — PLANNED
+
+**Target:** the run-3 residual — **over-read → overflow** on unfamiliar haystack layouts
+(vt 0.00 3/3 overflow; niah_multikey_1 2/3 overflow). Teach leaf-sized reads + the missing
+leaf-ops on those layouts with two new MECHANICAL prose tasks (tasks/niah, oracle/prose.py):
+- **`niah_multi`** — K=3–5 magic-number needles + ONE hidden lookup instruction in novel filler.
+  Collect-then-resolve on `dict` state (leaf folds `{key: value, QUERY: key_j}`, combine merges,
+  root resolves `state[state["QUERY"]]`). Binary (fold also works). RULER multikey/multiquery analog.
+- **`vt_novel`** — RULER-vt chains (`VAR A = 12345`, `VAR B = VAR A`, + a distractor chain) in novel
+  filler; left-fold threads bindings; answer = all vars holding the target value; `set`-graded.
+
+**SFT config** (run 3 + the two new tasks @80)
+- Tasks: 15 synth + `realdoc_count` + `niah_novel` + `niah_multi` + `vt_novel` + `narrativeqa`
+- `N_PER_TASK=20`, overrides `realdoc_count:80,niah_novel:80,niah_multi:80,vt_novel:80,narrativeqa:80`
+- `SYNTH_STRATEGY=both`, `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1`, `CHUNK=200000`,
+  `FOLD_LEAF_TOKENS=400`, QA rebalancing on, trace cache on, `PYTHONUNBUFFERED=1` (mid-run log)
+- Dry run: **700 traces / 46,119 datums**, all tasks self-grade 1.00; new tasks verified 18/18 at
+  1.00 across binary/fold × doc 6k/14k, real max agent ctx 2451 (< 3000).
+- Inspection traces: `niah_multi_traces.txt`, `vt_novel_traces.txt`
+
+**Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`): in-dist spread + `niah_multi`, `vt_novel`;
+OOD `oolong_*`, `niah_single_1`, `niah_multikey_1`, `niah_multiquery`, `vt`, `cwe`, `fwe`.
+
+**Expected:** vt and niah_multikey_1 climb out of overflow (the direct analogs are now in-dist);
+cwe/fwe/synth hold; OOLONG classification still capability-capped (unaddressed by design).

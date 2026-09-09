@@ -126,7 +126,7 @@ _REJECT_SAMPLE_TASKS = {"bookqa", "narrativeqa"}   # need the model leaf + gold 
 # Tasks with answer/none leaf VERDICTS to rebalance (the class-imbalance fix). niah_novel is
 # scripted (not reject-sampled) but has the same 1-answer : many-none shape, and the user
 # wants the needle (answer) leaf oversampled — so it's here but not in the reject set.
-_QA_VERDICT_TASKS = {"bookqa", "narrativeqa", "niah_novel"}
+_QA_VERDICT_TASKS = {"bookqa", "narrativeqa", "niah_novel", "niah_multi"}
 
 
 def _make_leaf_model():

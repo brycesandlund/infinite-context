@@ -36,6 +36,13 @@ def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None, 
         # needle match. Teaches decomposing a prose haystack (the RULER-transfer target).
         return BookQAOracle(problem, tokenizer, budget=budget,
                             max_chunk_tokens=max_chunk_tokens, leaf_model=None)
+    if task in ("niah_multi", "vt_novel"):
+        # Hidden-facts-in-novel with dict state: multi-needle collect-then-resolve (binary) and
+        # RULER-vt variable chains (left-fold). Mechanical leaves, no model.
+        from oracle.prose import NiahMultiOracle, VtNovelOracle
+        cls = NiahMultiOracle if task == "niah_multi" else VtNovelOracle
+        return cls(problem, tokenizer, budget=budget,
+                   max_chunk_tokens=max_chunk_tokens, strategy=strategy)
     if task.startswith("realdoc_"):
         return RealDocOracle(problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens)
     if task.startswith("synth_"):
