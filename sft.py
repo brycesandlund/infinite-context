@@ -96,13 +96,15 @@ SYNTH_STRATEGY = os.environ.get("SYNTH_STRATEGY", "mixed")
 
 # Synth tasks with no binary oracle (non-associative sequential state) — always left_fold.
 _FOLD_ONLY_SYNTH = {"synth_runreset", "synth_varchain"}
+# Non-synth scripted tasks that also follow SYNTH_STRATEGY (bounded ops; both strategies valid).
+_BOTH_STRATEGY_EXTRA = {"long_records"}
 
 
 def _synth_renderings(task: str, n: int) -> list[tuple[str | None, int]]:
     """(strategy, count) renderings for `task` given SYNTH_STRATEGY. Non-synth tasks get one
     default rendering. "both" splits a bounded task's N across binary + fold so the model sees
     left-fold applied to many leaf-ops, not just the two fold-native ones."""
-    if not task.startswith("synth_"):
+    if not (task.startswith("synth_") or task in _BOTH_STRATEGY_EXTRA):
         return [(None, n)]
     if SYNTH_STRATEGY == "both":
         if task in _FOLD_ONLY_SYNTH:

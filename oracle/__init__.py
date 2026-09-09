@@ -43,6 +43,11 @@ def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None, 
         cls = NiahMultiOracle if task == "niah_multi" else VtNovelOracle
         return cls(problem, tokenizer, budget=budget,
                    max_chunk_tokens=max_chunk_tokens, strategy=strategy)
+    if task.startswith("long_"):
+        # Multi-line prose entries; mechanical header/body ops. Binary and fold both work.
+        from oracle.longrec import LongRecOracle
+        return LongRecOracle(problem, tokenizer, budget=budget,
+                             max_chunk_tokens=max_chunk_tokens, strategy=strategy)
     if task.startswith("realdoc_"):
         return RealDocOracle(problem, tokenizer, budget=budget, max_chunk_tokens=max_chunk_tokens)
     if task.startswith("synth_"):

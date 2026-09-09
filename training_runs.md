@@ -198,19 +198,34 @@ WITHOUT aggregation (bookqa), never classification→tally, and never a 2-D stat
   month for a grp)}; 3–4 months per problem (5 months hit 2896 real tok in fold). Per-record lines
   are delta-only; the root prints the per-month table before boxing. The oolong_temporal shape.
 - Verification: 320/320 at 1.00 (2 tasks × 4 variants × binary/fold × doc 6k/14k), real max ctx
-  2756 (2d fold). Traces: `month_traces.txt`. C (long-record layout + classification leaf) is NOT
-  addressed here — next: an "OOLONG-like" classify→tally oracle on a non-OOLONG labeled dataset
-  (dbpedia/emotion), different record layout, model-executed leaf under the rejection gate.
+  2756 (2d fold). Traces: `month_traces.txt`.
 
-**SFT config** (run 3 + the four new tasks; niah/vt @80, month synths @20 like the other synths)
-- Tasks: 17 synth (incl. `synth_filter_argmax`, `synth_2d`) + `realdoc_count` + `niah_novel` +
-  `niah_multi` + `vt_novel` + `narrativeqa`
-- `N_PER_TASK=20`, overrides `realdoc_count:80,niah_novel:80,niah_multi:80,vt_novel:80,narrativeqa:80`
+**Added for C — `long_records`** (tasks/longrec, oracle/longrec.py): the document is a sequence of
+MULTI-LINE entries — a short header + 60–250 tokens of real prose (novel or essay), blank-line
+separated — and the question aggregates over entries. Layout ∈ {`=== entry 17 | src=B | tag=K3 ===`,
+`Entry:/Source:/Tag:` key-value lines}; qtype ∈ {count_tag, src_most, tag_in_src (filter→argmax),
+src_tag_2d (2-D reduce over src×tag), mention_count (entries whose body contains word W),
+mention_most (entry with most whole-word occurrences of W; best-of monoid `best=17|n=3`)}. What it
+teaches that nothing else did: ownership by where the HEADER starts, bodies straddling the leaf /
+fold boundary (iterative reads extend across them — "The last entry's body is still cut off …"),
+leaves that own 0–3 entries, and empty ranges that sit inside an entry owned by the previous range.
+Base oracle got wording hooks (`_finish_phrase` / `_cutoff_phrase` / `_fold_header`) with defaults
+identical to the old text, so every other task's traces are byte-for-byte unchanged (regression
+checked). Follows SYNTH_STRATEGY=both. Verification: 240/240 at 1.00 (6 qtypes × 2 layouts × 2 prose
+× binary/fold × doc 6k/14k), real max ctx 2590. Traces: `longrec_traces.txt`.
+A (fuzzy classification leaf) stays unaddressed — a later semantic per-entry variant ("how many
+entries are about X") can drop into this same skeleton with the haiku leaf + rejection gate.
+
+**SFT config** (run 3 + the five new tasks; niah/vt/long @80, month synths @20 like other synths)
+- Tasks: 17 synth (incl. `synth_filter_argmax`, `synth_2d`) + `long_records` + `realdoc_count` +
+  `niah_novel` + `niah_multi` + `vt_novel` + `narrativeqa`
+- `N_PER_TASK=20`, overrides `realdoc_count:80,niah_novel:80,niah_multi:80,vt_novel:80,narrativeqa:80,long_records:80`
 - `SYNTH_STRATEGY=both`, `CTX=3000`, `DOC=6000`, `DOC_MIX=6000:3,14000:1`, `CHUNK=200000`,
   `FOLD_LEAF_TOKENS=400`, QA rebalancing on, trace cache on, `PYTHONUNBUFFERED=1` (mid-run log)
 - Verification: 200/200 rollouts at 1.00 across all variants × binary/fold × doc 6k/14k (plus
-  synth-fold regression), real max agent ctx 2721 (< 3000). Dry run: **700 traces / 46,052
-  datums**, all 700 self-grade 1.00; narrativeqa 80/80 from cache.
+  synth-fold regression), real max agent ctx 2721 (< 3000). Dry run with all five new tasks:
+  **820 traces / 25,271 agents / 54,353 datums**, all 820 self-grade 1.00; narrativeqa 80/80 from
+  cache (QA verdicts pos 1201×2, neg kept 3358/6715).
 - Inspection traces (one per variant): `niah_multi_traces.txt`, `vt_novel_traces.txt`
 
 **Eval** (DOC=4000, budget=3000, N=3, `MAX_NODES=150`): in-dist spread + `niah_multi`, `vt_novel`;

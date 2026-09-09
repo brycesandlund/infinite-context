@@ -115,6 +115,17 @@ class ScaffoldOracle(ModelBackend):
                 f"({self._op_phrase()}; the trailing reads only finish the last line, and any "
                 f"record starting at/after {b} belongs to the next range)")
 
+    def _fold_header(self, n, a, cut) -> str:
+        return f"Folding the {n} records whose line STARTS in {a}..{cut} into the accumulator (in order)"
+
+    # Boundary-read wording. Records are one line by default; a task whose record is a
+    # multi-line block (longrec) overrides these so the read narration matches its layout.
+    def _finish_phrase(self, end) -> str:
+        return f"to finish the last record (its line may run past {end})"
+
+    def _cutoff_phrase(self, covered) -> str:
+        return f"The last record's line is still cut off at {covered} (no end-of-line yet)"
+
     # -- typed state <-> string (carried through \boxed{} and the fold subtask) --
 
     def _ser_state(self, state) -> str:
@@ -287,8 +298,7 @@ class ScaffoldOracle(ModelBackend):
                 lead = f"Range {a}..{end} fits and reaches the document end; reading it"
             if ob > end:
                 calls.append(ToolCall(_new_id(), "read_chunk", {"start": end, "end": ob}))
-                txt = (f"{lead}, then the next {ob - end} tokens to finish the last record "
-                       f"(its line may run past {end}).")
+                txt = f"{lead}, then the next {ob - end} tokens {self._finish_phrase(end)}."
             else:
                 txt = f"{lead}."
             return AssistantTurn(text=txt, tool_calls=calls)
@@ -297,7 +307,7 @@ class ScaffoldOracle(ModelBackend):
         if covered < last_end:
             nxt = min(covered + ov, self.doc_len)
             return AssistantTurn(
-                text=f"The last record's line is still cut off at {covered} (no end-of-line yet), "
+                text=f"{self._cutoff_phrase(covered)}, "
                      f"so I read the next {nxt - covered} tokens ({covered}..{nxt}) to finish it.",
                 tool_calls=[ToolCall(_new_id(), "read_chunk", {"start": covered, "end": nxt})],
             )
@@ -354,8 +364,7 @@ class ScaffoldOracle(ModelBackend):
         # stated once below (and again in the spawn arg) — don't reprint it in the header: with
         # large dict states (vt_novel: ~20 five-letter var names ≈ 4 tokens each) each extra
         # reprint costs ~250 tokens and pushed fold nodes over the 3000 budget.
-        body = (f"Folding the {len(recs)} records whose line STARTS in {a}..{cut} into the "
-                f"accumulator (in order):\n{lines}\n"
+        body = (f"{self._fold_header(len(recs), a, cut)}:\n{lines}\n"
                 f"→ accumulator = {self._ser_state(acc_out)}")
         if cut >= b:                            # final slice — return the accumulator/answer
             return AssistantTurn(text=f"{body} (final).{self._box_text(acc_out, is_root)}", tool_calls=[])
