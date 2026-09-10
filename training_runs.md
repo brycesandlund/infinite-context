@@ -316,3 +316,77 @@ sketch explicitly (large-vocabulary tally variant, binary-only) — pending insp
   users. OOLONG states the filter as a separate leading sentence; every training question had it in one
   fixed inline position, so the root learned the position, not "restate the condition in the subtask".
   Gold and oracle op phrases unchanged (the oracle reads metadata, not question text).
+
+**Run 5 results — 2026-09-09/10 — OVERALL 0.755 (57 rollouts)** (ckpt
+`tinker://909847f4-bf8d-5406-b682-19d41f801f33:train:0/weights/sft_general5`, 820 traces / 59,939
+datums, 3747 batches, NLL 0.0178; SFT 15:59→23:11 (survived a 17-min network drop via the new
+per-call retry), eval →01:32; raw in `eval_results/raw/sft_general5_doc4k_b3k.*`. Training mix: 165
+fold roots / 495 binary roots (was ~50/50); launch script now tracked: `scripts/run_sft5_eval.sh`.)
+
+| task | run 3 | run 4 | run 5 | note |
+|---|---|---|---|---|
+| niah_single_1 | 0.67 | 0.33 | **1.00** | root now writes a proper retrieval subtask on RULER phrasing (was START..END) |
+| niah_multikey_1 | 0.33 | 0.00 | **1.00** | key carried in every subtask (was summed) |
+| niah_multiquery | 0.33 | 0.67 | 0.83 | |
+| cwe | 0.97 | 0.00 | **0.93** | binary again (top-10 per leaf) |
+| fwe | 0.89 | 0.00 | 0.78 | |
+| niah_multi / vt_novel / niah_novel | – | 1.00/0.95/1.00 | 1.00/0.98/1.00 | |
+| synth (5) | 0.93 | 1.00 | 1.00 | |
+| **vt** | 0.00 | 1.00 | **0.20** | REGRESSION: root chose BINARY "collect every assignment statement" (the niah_multi template), merged the statements as a set, then resolved only the literal-assigned var. Run 4 folded (`vt_novel`-style) and got 1.00. The retrieval-shaped question + "collect" verb pulled vt toward the collect template; vt_novel is fold-only so "collect + binary" never appears with VAR data in training. |
+| **realdoc_count** | 1.00 | 0.92 | **0.55** | one leaf (3250..3500, 4 occurrences) OVERFLOWED at turn 2 — a generation loop while enumerating occurrences — and its parent lost the partial (6 vs 11). Other leaves audited correct against the unclipped reads. Seed 2 19 vs 22 similar. |
+| oolong_counting | 0.34 | 0.64 | 0.34 | agnews: children over-read → overflow → node cap; trec 28 vs 14 (labels) |
+| oolong_temporal | 0.17 | 0.48 | 0.39 | trec: 2-D state with INCONSISTENT key formats (`Apr=…`, `Apr 2023:entity=1`, `Apr 2025/…`) → merge blew the budget; imdb 1.00; agnews 0 vs 6 |
+| oolong_user | 0.00 | 0.33 | **0.00** | agnews: root improvised a 3-way split AND dropped the user filter again (tally over all 37 articles → 17 vs 1); imdb 7–7 tie → 'none'; trec wrong label |
+| narrativeqa | 0.33 | 0.67 | 0.33 | both misses are `none`/`none` at the root (abstention back) |
+
+**Reading:** the three targeted fixes did what they were for — every RULER retrieval task recovered
+(single 0.33→1.00, multikey 0.00→1.00, cwe/fwe back to ~0.9/0.8). But two in-distribution-adjacent
+tasks fell: vt (strategy choice flipped to binary-collect) and realdoc (a leaf generation loop),
+and OOLONG gave back most of run 4's gains. Net +0.07 OVERALL, but the OOLONG/vt part says the
+fixes shifted priors rather than adding capability: fewer folds + a strong "collect" template for
+retrieval-looking questions moved vt off the fold it had learned. N=3 caveat applies to every row.
+
+---
+
+## sft_general6 (run 6) — PLANNED
+
+**Target:** the run-5 post-mortem — strategy drift (vt → binary-collect), a realdoc leaf loop, OOLONG
+2-D key-format inconsistency and dropped filters — plus the user's read that paraphrased questions
+leave the root without an exact template, so *more data / more examples* is the lever.
+
+**Changes (all training-side)**
+1. **Strategy is a PROPERTY OF THE TASK, not a knob.** Sequential (order-dependent) tasks left-fold,
+   everything else splits binary; `SYNTH_STRATEGY=both`/`SCALAR_FOLD_FRAC` are gone (`sft.py`
+   `_synth_renderings` just returns each task's `strategy_default`). The root preamble now STATES
+   the reason: fold — *"This task is order-dependent: {reason} — so I process the document left to
+   right with a running accumulator…"*; binary — *"The result over a range does not depend on the
+   order of the records, so I split the range in half recursively…"* (`_sequential_reason` hook).
+2. **Four new sequential synth tasks** (all dict state, fold): `synth_peak` (max the running total
+   ever reaches), `synth_streak` (longest run of consecutive flag=Y), `synth_adjacent` (records whose
+   amt > previous record's), `synth_first_exceed` (first index where the running total exceeds T;
+   sometimes unreachable → `none`). Plus a sequential `long_records` variant **`first_reach`** (first
+   entry at which the cumulative tag count reaches N) — fold on long prose records. Fold tasks: 3 → 8.
+3. **`vt_novel` reassignments** (60% of problems re-bind 1–2 vars later): with each var assigned
+   once, collect-then-resolve was technically valid (and is what the run-5 root did); re-binding makes
+   fold REQUIRED, and gold is threaded over the final record order.
+4. **realdoc frequent entities**: half the problems pick an entity with ≥ ~3 hits per 500-token leaf,
+   so leaves practice enumerating many near-identical occurrences and stopping (run 5's leaf loop).
+5. **Root dictates the state format** (`_state_format` hook): every binary subtask ends with
+   *"Return the partial tally as `<mon>/<grp>=<count>` entries joined by `|` in \boxed{}"* (per kind:
+   single integer / `<key>:<count>` / `|`-joined values / `<key>=<value>`; niah_multi and 2-D tasks
+   override). Siblings serialize identically by construction; the merge is mechanical.
+6. **2-D diversification.** `synth_2d`/`synth_filter_argmax` draw a field SCHEME per problem — mon×grp,
+   period("Mar 2024")×label("Business|Sci/Tech|Sports|World"), region×product, dept×status,
+   site×code — with 3–8 outer values (joint key space capped at 18: 40 keys measured 3.4k real
+   tokens at the root, 24 → 2.96k, 18 → ≤2.5k). Keys split at the FIRST `/` so inner values may
+   contain `/`. `long_records` header schemes likewise: src×tag (3×4, 5×3), region×topic,
+   team×status, author×genre; the context lists the outer vocabulary in natural order (tie rule).
+7. Data scale-up: synth 20→40, `synth_2d` 80, `synth_filter_argmax` 60, `vt_novel` 200,
+   `realdoc_count` 160, `long_records` 160, `niah_multi` 120, `niah_novel` 100, narrativeqa 80 (cache).
+   `ROOT_DUP=4` kept. Launch script: `scripts/run_sft6_eval.sh` (eval adds synth_peak, synth_2d,
+   long_records to the in-dist list).
+
+**Verification:** every task × its strategy × doc 6k/14k at 1.00 — sequential 7 tasks 280/280
+(max ctx 2759, varchain), binary 8 tasks 320/320, diversified synth_2d 120/120 (max 2520),
+synth_filter_argmax 80/80, long_records 120/120 (incl. first_reach 16, max 2302), regression on the
+untouched synth tasks + niah_novel. Traces: `trace_snippets/longrec_first_reach_traces.txt`.

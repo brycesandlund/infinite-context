@@ -80,6 +80,13 @@ def make_realdoc_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     for m in _WORD.finditer(text):
         counts[m.group()] = counts.get(m.group(), 0) + 1
     cands = sorted(w for w, c in counts.items() if 4 <= c <= 80 and w not in _STOP)
+    # Half the problems take a FREQUENT entity (>= ~3 hits per 500-token leaf), so leaves practice
+    # enumerating many near-identical occurrences with a running count and then stopping — run 5's
+    # realdoc miss was a leaf that looped mid-enumeration on 4 hits it had rarely seen in training.
+    dense_min = max(12, 3 * len(ids) // 500)
+    dense = [w for w in cands if counts[w] >= dense_min]
+    if dense and rng.random() < 0.5:
+        cands = dense
     if not cands:  # rare (tiny slice) — fall back to the most common NON-stopword
         nonstop = {w: c for w, c in counts.items() if w not in _STOP}
         cands = sorted(nonstop or counts, key=(nonstop or counts).get)[-1:] or ["the"]

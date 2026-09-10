@@ -345,20 +345,38 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
         ns = names[pos:pos + L]; pos += L
         chains.append([(ns[0], str(v), False)] + [(ns[i], ns[i - 1], True) for i in range(1, L)])
     recs = _interleave(rng, chains)
+    # REASSIGNMENTS: with each var assigned once, collect-then-resolve would also work (RULER vt
+    # is like that), and in run 5 the root did exactly that (binary "collect every assignment")
+    # and resolved wrong. Re-binding a var later makes order genuinely matter: a copy made BEFORE
+    # the re-binding keeps the old value. Gold is computed by threading the final record order.
+    if rng.random() < 0.6:
+        for _ in range(rng.randint(1, 2)):
+            j = rng.randint(len(recs) // 2, len(recs) - 1)          # somewhere in the second half
+            earlier = [n for n, _, _ in recs[:j]]
+            name = rng.choice(earlier)
+            if rng.random() < 0.5:
+                recs.insert(j, (name, str(rng.randint(10_000, 99_999)), False))
+            else:
+                src = rng.choice([n for n in earlier if n != name] or earlier)
+                recs.insert(j, (name, src, True))
+    binding: dict[str, int] = {}
+    for n, r, ref in recs:
+        binding[n] = binding.get(r, 0) if ref else int(r)
     sentences = [(_VT_REF.format(name=n, rhs=r) if ref else _VT_LIT.format(name=n, value=r)) for n, r, ref in recs]
     doc_text, cspans = _insert(filler, _boundaries(filler, len(sentences), rng), sentences)
     enc = tokenizer(doc_text, return_offsets_mapping=True, add_special_tokens=False)
     spans = [(ts, te, i, n, r, ref)
              for i, ((ts, te), (n, r, ref)) in enumerate(zip(_tok_spans(enc["offset_mapping"], cspans), recs))]
 
-    t_names, t_val = [n for n, _, _ in chains[0]], vals[0]
+    t_val = vals[0]
+    holders = sorted(n for n, v in binding.items() if v == t_val)
     if qtype == "which_vars":
         question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, t_val=t_val)
-        gold, grading, qvar = sorted(t_names), "set", None
+        gold, grading, qvar = (holders or ["none"]), "set", None
     else:
-        qvar = rng.choice(t_names)
+        qvar = rng.choice([n for n, _, _ in chains[0]])
         question = _VT_PREAMBLE + _phrase(rng, _Q_VT_FINAL, qvar=qvar)
-        gold, grading = [str(t_val)], "exact"
+        gold, grading = [str(binding[qvar])], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",
         task_context=_VT_CONTEXT, grading_mode=grading,

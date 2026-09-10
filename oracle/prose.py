@@ -119,6 +119,10 @@ class NiahMultiOracle(ScaffoldOracle):
     def _verb(self) -> str:
         return "collect"
 
+    def _state_format(self) -> str:
+        return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|` "
+                f"(a lookup instruction as `QUERY=<key>`; `none` if the range has no fact)")
+
     def _goal_phrase(self) -> str:
         # Name what the question asks for, so every subtask carries the KEY(s) down the tree
         # (run 4: the model dropped the key — "compute the hidden number" — and leaves returned
@@ -186,6 +190,10 @@ class VtNovelOracle(ScaffoldOracle):
 
     def _verb(self) -> str:
         return "collect"
+
+    def _sequential_reason(self) -> str:
+        return ("a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be "
+                "reassigned later, so the bindings must be applied in document order")
 
     def _op_phrase(self) -> str:
         return "applying each VAR assignment in order (VAR A = VAR B copies B's current value)"

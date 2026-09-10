@@ -111,6 +111,22 @@ class ScaffoldOracle(ModelBackend):
         magic numbers), so the verb has to separate the two families."""
         return "compute"
 
+    def _sequential_reason(self) -> str:
+        """Why this task is order-dependent (fold tasks only) — one clause, read in the preamble
+        after 'This task is order-dependent:'."""
+        return "each record's effect depends on the state left by the records before it"
+
+    def _state_format(self) -> str:
+        """The exact shape a node must box its partial in. Stated by the ROOT in every binary
+        subtask, so all siblings serialize the same way and the parent's merge is mechanical
+        (run 5: OOLONG temporal children invented three different month/label key formats and the
+        merge overflowed). Default by state kind; tasks with structured keys override."""
+        k = self._kind()
+        if k == "int":     return "the partial as a single integer"
+        if k == "counter": return "the partial tally as `<key>:<count>` entries joined by `|`"
+        if k == "set":     return "the collected values joined by `|`"
+        return "the partial as `<key>=<value>` entries joined by `|`"
+
     def _combine_phrase(self) -> str:
         return "combine"
 
@@ -180,7 +196,8 @@ class ScaffoldOracle(ModelBackend):
             f"Over the {unit} STARTING in tokens {a}..{b}, {v} {goal}. Recursively split "
             f"the range at its midpoint, delegating each half to a subagent, until the range "
             f"is less than {L} tokens. When the range is less than {L} tokens, read it and "
-            f"{v} {goal} over the {unit} STARTING in the range."
+            f"{v} {goal} over the {unit} STARTING in the range. Return {self._state_format()} "
+            f"in \\boxed{{}}."
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
@@ -257,20 +274,25 @@ class ScaffoldOracle(ModelBackend):
 
     def _strategy_preamble(self) -> str:
         n = self.doc_len
+        # The strategy is a property of the task, and the root SAYS WHY it picks one: sequential
+        # (order-dependent) tasks fold, order-independent tasks split. Stating the reason is what
+        # turns the correlation into a rule the model can apply to an unseen question.
         if self.strategy == "left_fold":
             return (
-                f"This document is {n} tokens — too long to read in one context. I'll work "
-                f"through it left to right with a running accumulator: read the first slice and "
-                f"update the accumulator by {self._op_phrase()}, then hand the rest of the "
-                f"document plus the accumulator to a subagent to continue the same way. Once the "
-                f"final slice is folded in, the accumulator holds the whole-document result and "
-                f"I turn it into the final answer."
+                f"This document is {n} tokens — too long to read in one context. This task is "
+                f"order-dependent: {self._sequential_reason()} — so I process the document left "
+                f"to right with a running accumulator: read the first slice and update the "
+                f"accumulator by {self._op_phrase()}, then hand the rest of the document plus the "
+                f"accumulator to a subagent to continue the same way. Once the final slice is "
+                f"folded in, the accumulator holds the whole-document result and I turn it into "
+                f"the final answer."
             )
         return (
-            f"This document is {n} tokens — too long to read in one context. I'll work through "
-            f"it by splitting the range in half recursively, having a subagent {self._verb()} "
-            f"{self._goal_phrase()} over each half and combining the two partials. Once I have "
-            f"it for the whole document, I turn the combined result into the final answer."
+            f"This document is {n} tokens — too long to read in one context. The result over a "
+            f"range does not depend on the order of the {self._unit()}, so I split the range in "
+            f"half recursively, having a subagent {self._verb()} {self._goal_phrase()} over each "
+            f"half and combining the two partials. Once I have it for the whole document, I turn "
+            f"the combined result into the final answer."
         )
 
     def _box_text(self, state, is_root):

@@ -93,37 +93,18 @@ DATA_SEED = 500_000             # distinct from train/eval seed ranges
 # the op REQUIRES it, plus a small fold share on scalar-state ops (see below).
 SYNTH_STRATEGY = os.environ.get("SYNTH_STRATEGY", "mixed")
 
-# Tasks with no binary oracle (non-associative sequential state) — always left_fold.
-_FOLD_ONLY_SYNTH = {"synth_runreset", "synth_varchain"}
-# Scalar (int-state) ops: fold is harmless here — the accumulator is one number and cannot grow —
-# so a minority fold share keeps fold general without teaching it for tallies. Run 4 showed why
-# tallies must NOT fold: the fold protocol restates the FULL running state 4x per hop, so a
-# per-key tally over a large vocabulary (RULER cwe/fwe) overflowed at the root, while binary
-# lets each leaf box a small local partial (cwe 0.97 in run 3 → 0.00 in run 4 after
-# fold-rendered tally tasks tipped the prior). Counter/dict-state tasks render binary only.
-_SCALAR_SYNTH = {"synth_sum", "synth_count", "synth_max", "synth_min", "synth_sumwhere",
-                 "synth_count2", "synth_maxwhere", "synth_count_cmp", "synth_count_range"}
-SCALAR_FOLD_FRAC = float(os.environ.get("SCALAR_FOLD_FRAC", "0.25"))
-# Non-synth scripted tasks that also follow SYNTH_STRATEGY (bounded; both oracles valid).
-_BOTH_STRATEGY_EXTRA = {"long_records"}
-
 
 def _synth_renderings(task: str, n: int) -> list[tuple[str | None, int]]:
-    """(strategy, count) renderings for `task` given SYNTH_STRATEGY. Non-synth tasks get one
-    default rendering. "both": fold-only ops fold; scalar ops get a SCALAR_FOLD_FRAC fold share;
-    everything with a counter/dict state renders binary only (see note above)."""
-    if not (task.startswith("synth_") or task in _BOTH_STRATEGY_EXTRA):
-        return [(None, n)]
-    if SYNTH_STRATEGY == "both":
-        if task in _FOLD_ONLY_SYNTH:
-            return [("left_fold", n)]
-        if task in _SCALAR_SYNTH:
-            k = int(round(n * SCALAR_FOLD_FRAC))
-            return [("binary", n - k), ("left_fold", k)] if k else [("binary", n)]
-        return [("binary", n)]
-    if SYNTH_STRATEGY == "mixed":
-        return [(None, n)]                 # each task's own default
-    return [(SYNTH_STRATEGY, n)]           # forced binary / left_fold
+    """(strategy, count) renderings for `task`. The strategy is a PROPERTY OF THE TASK, not a
+    training knob: order-dependent (sequential) tasks left-fold, everything else splits binary
+    (run 5 post-mortem — rendering order-independent ops as fold taught "fold and binary are
+    interchangeable", and the root then drifted both ways: fold on a big tally (cwe, run 4) and
+    binary-collect on variable tracking (vt, run 5)). Each oracle's `strategy_default` carries the
+    task's strategy and the root preamble states the reason. SYNTH_STRATEGY=binary|left_fold
+    still force-renders synth tasks for experiments; "mixed" (default) = the task's own strategy."""
+    if task.startswith("synth_") and SYNTH_STRATEGY in ("binary", "left_fold"):
+        return [(SYNTH_STRATEGY, n)]
+    return [(None, n)]
 
 
 # BookQA's leaf judgment ("does this prose answer the question?") is reading comprehension,
@@ -480,6 +461,28 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
 # ---------------------------------------------------------------------------
 
 
+async def _retry(label: str, fn, attempts: int = 12):
+    """Re-run `fn()` (an awaitable factory) across transient Tinker/network failures — a laptop
+    network blip mid-run killed sft_general5 attempt 1 after 48 min. Each call is retried on its
+    own (never the forward_backward+optim_step pair together, which would double-apply a batch);
+    result_async on an already-submitted future is idempotent server-side. Backoff 15s→2min,
+    ~15 min total, then give up."""
+    delay = 15.0
+    for i in range(attempts):
+        try:
+            return await fn()
+        except (tinker.APIConnectionError, TimeoutError, asyncio.TimeoutError, OSError) as e:
+            if i == attempts - 1:
+                raise
+            print(f"  [retry] {label}: {type(e).__name__} — attempt {i + 1}/{attempts}, "
+                  f"sleeping {delay:.0f}s", flush=True)
+            await asyncio.sleep(delay)
+            delay = min(delay * 1.6, 120.0)
+
+
+LOG_EVERY = int(os.environ.get("SFT_LOG_EVERY", "100"))   # batches between progress lines
+
+
 async def main() -> None:
     unknown = [t for t in SFT_TASKS if t not in list_tasks()]
     if unknown:
@@ -581,10 +584,10 @@ async def main() -> None:
         n_logged = 0
         for b in range(n_batches):
             batch = datums[b * SFT_BATCH_SIZE : (b + 1) * SFT_BATCH_SIZE]
-            fwd_bwd = await training_client.forward_backward_async(batch, loss_fn="cross_entropy")
-            optim = await training_client.optim_step_async(adam_params)
-            fb_result = await fwd_bwd.result_async()
-            await optim.result_async()
+            fwd_bwd = await _retry("forward_backward", lambda: training_client.forward_backward_async(batch, loss_fn="cross_entropy"))
+            optim = await _retry("optim_step", lambda: training_client.optim_step_async(adam_params))
+            fb_result = await _retry("forward_backward.result", fwd_bwd.result_async)
+            await _retry("optim_step.result", optim.result_async)
             # weighted-mean NLL for logging (best-effort; never block training on it)
             try:
                 lp = [o["logprobs"] for o in fb_result.loss_fn_outputs]
@@ -596,6 +599,8 @@ async def main() -> None:
                     epoch_nll += batch_nll
                     n_logged += 1
                     metrics.log({"sft/batch_nll": batch_nll, "sft/epoch": epoch}, step=global_batch)
+                    if LOG_EVERY and (b + 1) % LOG_EVERY == 0:
+                        print(f"  batch {b + 1}/{n_batches} | running mean NLL {epoch_nll / n_logged:.4f}", flush=True)
             except Exception:
                 pass
             global_batch += 1

@@ -57,6 +57,11 @@ SYNTH_TASKS: dict[str, dict] = {
     "synth_count_range": {"family": "bounded", "strategy": "binary"},  # how many amt in [L, H]
     "synth_runreset": {"family": "stateful", "strategy": "left_fold"},
     "synth_varchain": {"family": "stateful", "strategy": "left_fold"},
+    # more ORDER-DEPENDENT ops (left_fold is a property of these tasks, not a training knob):
+    "synth_peak":     {"family": "stateful", "strategy": "left_fold"},   # max value the running total ever reaches
+    "synth_streak":   {"family": "stateful", "strategy": "left_fold"},   # longest run of consecutive flag=Y
+    "synth_adjacent": {"family": "stateful", "strategy": "left_fold"},   # records whose amt > previous record's amt
+    "synth_first_exceed": {"family": "stateful", "strategy": "left_fold"},  # first index where running total > T
     # month-records family (records carry a `mon` field; question variant drawn per problem):
     "synth_filter_argmax": {"family": "bounded", "strategy": "binary"},  # filter -> per-grp tally -> argmax/argmin
     "synth_2d":            {"family": "bounded", "strategy": "binary"},  # month x grp tally -> reduce along one axis
@@ -64,7 +69,7 @@ SYNTH_TASKS: dict[str, dict] = {
 
 # Tasks whose question/gold are PARAMETERIZED per problem (the predicate is randomized
 # and stored in metadata so the oracle can apply it). The rest use gold_for + _QUESTION.
-_PARAM_TASKS = {"synth_count2", "synth_maxwhere", "synth_count_cmp", "synth_count_range"}
+_PARAM_TASKS = {"synth_count2", "synth_maxwhere", "synth_count_cmp", "synth_count_range", "synth_first_exceed"}
 
 _GROUPS = ["K1", "K2", "K3", "K4"]
 _RST = "RST"
@@ -138,6 +143,23 @@ def gold_for(task: str, recs: list[dict]):
         for r in recs:
             tot = 0 if r["grp"] == _RST else tot + r["amt"]
         return tot
+    if task == "synth_peak":
+        tot, peak = 0, 0
+        for r in recs:
+            tot += r["amt"]; peak = max(peak, tot)
+        return peak
+    if task == "synth_streak":
+        cur = best = 0
+        for r in recs:
+            cur = cur + 1 if r["flag"] == "Y" else 0
+            best = max(best, cur)
+        return best
+    if task == "synth_adjacent":
+        n, prev = 0, None
+        for r in recs:
+            if prev is not None and r["amt"] > prev: n += 1
+            prev = r["amt"]
+        return n
     raise ValueError(f"Unknown synth task: {task!r}")
 
 
@@ -168,6 +190,21 @@ def _param_question_gold(task: str, recs: list[dict], rng: random.Random):
         word = "greater than" if op == ">" else "less than"
         q = f"How many records have 'amt' {word} {t}? Give the single integer in \\boxed{{}}."
         return q, gold, {"op": op, "thresh": t}
+    if task == "synth_first_exceed":
+        tot, run = 0, []
+        for r in recs:
+            tot += r["amt"]; run.append(tot)
+        peak = max(run) if run else 0
+        if peak >= 3 and rng.random() < 0.85:
+            t = rng.randint(1, peak - 1)          # reachable
+            gold = next(i for i, v in enumerate(run) if v > t)
+            grading = "numeric"
+        else:                                     # occasionally unreachable -> 'none'
+            t = peak + rng.randint(1, 10); gold, grading = "none", "exact"
+        q = (f"Process the records in order, keeping a running total of 'amt'. What is the INDEX of "
+             f"the FIRST record at which the running total exceeds {t} (is strictly greater than {t})? "
+             f"If it never does, answer none. Give the index (or none) in \\boxed{{}}.")
+        return q, gold, {"thresh": t, "_grading": grading}
     if task == "synth_count_range":
         lo, hi = rng.randint(-15, -2), rng.randint(2, 15)
         gold = sum(1 for r in recs if lo <= r["amt"] <= hi)
@@ -187,20 +224,58 @@ def _param_question_gold(task: str, recs: list[dict], rng: random.Random):
 # ---------------------------------------------------------------------------
 
 
-def _one_record_m(rng: random.Random, idx: int, months: list[str]) -> dict:
+# 2-D field SCHEMES (outer field, ordered outer vocabulary, inner field, sorted inner vocabulary).
+# Drawn per problem so the joint-tally shape is learned across names, vocab sizes, multi-token
+# values ("Mar 2024") and values containing the key separator ("Sci/Tech"): run 5's OOLONG
+# temporal children invented three key formats for month×label because training had exactly one
+# (mon/grp over a 4x4 vocabulary). Inner vocabularies are alphabetical so "alphabetically first"
+# is the tie rule; outer vocabularies have a natural order (calendar / listed order) that the
+# task context states, and ties on the outer axis break by that order.
+_SCHEMES = [
+    ("mon", _MONTHS, "grp", ["K1", "K2", "K3", "K4"]),
+    ("period", [f"{m} {y}" for y in (2023, 2024) for m in _MONTHS], "label",
+     ["Business", "Sci/Tech", "Sports", "World"]),
+    ("region", ["north", "south", "east", "west", "central"], "product", ["gadget", "gizmo", "widget"]),
+    ("dept", ["eng", "finance", "hr", "legal", "ops", "sales"], "status", ["closed", "escalated", "open", "pending"]),
+    ("site", ["BER", "LON", "NYC", "SFO", "SYD", "TYO"], "code", ["A1", "B2", "C3", "D4", "E5"]),
+]
+
+
+def _pick_scheme(rng: random.Random):
+    """-> (f_out, out_vals (3-8, natural order), f_in, in_vals)."""
+    f_out, ovocab, f_in, ivocab = rng.choice(_SCHEMES)
+    # Cap the joint key space at ~18: the binary root holds two children's tallies plus the merge
+    # plus the per-outer reduction table; 40 keys measured 3.4k real tokens and 24 keys 2.96k
+    # (multi-token values like "Mar 2024" / "Sci/Tech" make each key ~9 tokens). 18 -> ~2.6k.
+    k = rng.randint(3, min(8, len(ovocab), max(3, 18 // len(ivocab))))
+    out_vals = sorted(rng.sample(ovocab, k), key=ovocab.index)
+    return f_out, out_vals, f_in, list(ivocab)
+
+
+def _one_record_m(rng: random.Random, idx: int, out_vals: list[str], in_vals: list[str]) -> dict:
     return {
         "idx": idx,
         "id": rng.randint(1000, 9999),
-        "mon": rng.choice(months),
-        "grp": rng.choice(_GROUPS),
+        "out": rng.choice(out_vals),
+        "in": rng.choice(in_vals),
         "amt": rng.randint(-20, 20),
         "flag": "Y" if rng.random() < 0.5 else "N",
     }
 
 
-def _render_m(r: dict) -> str:
+def _render_m(r: dict, f_out: str, f_in: str) -> str:
     sign = f"+{r['amt']}" if r["amt"] >= 0 else str(r["amt"])
-    return f"[{r['idx']:04d}] id={r['id']} mon={r['mon']} grp={r['grp']} amt={sign} flag={r['flag']}"
+    return f"[{r['idx']:04d}] id={r['id']} {f_out}={r['out']} {f_in}={r['in']} amt={sign} flag={r['flag']}"
+
+
+def _context_m(f_out, out_vals, f_in, in_vals) -> str:
+    return (
+        "The document is a list of records, one per line, each formatted as:\n"
+        f"  [<index>] id=<int> {f_out}=<{'|'.join(out_vals)}> {f_in}=<{'|'.join(in_vals)}> "
+        "amt=<signed int> flag=<Y|N>\n"
+        f"Records are 0-indexed and appear in order. The {f_out} values are listed above in their "
+        "natural order."
+    )
 
 
 def _argbest(counts: dict, best, order):
@@ -210,53 +285,57 @@ def _argbest(counts: dict, best, order):
     return min((k for k, n in counts.items() if n == target), key=order.index)
 
 
-def _month_question_gold(task: str, recs: list[dict], months: list[str], rng: random.Random):
-    """-> (question, gold, grading_mode, metadata-params) for the month-record variant families."""
+def _month_question_gold(task: str, recs: list[dict], sch, rng: random.Random):
+    """-> (question, gold, grading_mode, metadata-params) for the 2-D record variant families.
+    `sch` = (f_out, out_vals, f_in, in_vals)."""
+    f_out, out_vals, f_in, in_vals = sch
+    ex_in = in_vals[1]
     if task == "synth_filter_argmax":
         if rng.random() < 0.5:
             ffield, fval = "flag", rng.choice(["Y", "N"])
         else:
-            ffield, fval = "mon", rng.choice(months)
+            ffield, fval = f_out, rng.choice(out_vals)
         agg = rng.choice(["most", "least"])
-        c = Counter(r["grp"] for r in recs if r[ffield] == fval)
-        gold = _argbest(c, max if agg == "most" else min, _GROUPS) if c else _GROUPS[0]
+        c = Counter(r["in"] for r in recs if (r["flag"] if ffield == "flag" else r["out"]) == fval)
+        gold = _argbest(c, max if agg == "most" else min, in_vals) if c else in_vals[0]
         q = filtered_question(
-            rng, "records", f"{ffield}={fval}", f"which grp value is the {agg.upper()} common",
-            "Consider only grp values that appear at least once among those records; break ties "
-            "by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{}.")
+            rng, "records", f"{ffield}={fval}", f"which {f_in} value is the {agg.upper()} common",
+            f"Consider only {f_in} values that appear at least once among those records; break ties "
+            f"by the alphabetically first {f_in}. Give the {f_in} (e.g. {ex_in}) in \\boxed{{}}.")
         return q, gold, "exact", {"qtype": "filter_argmax", "ffield": ffield, "fval": fval, "agg": agg}
 
-    # synth_2d: joint tally cnt[month][grp]
-    cnt = {m: Counter() for m in months}
+    # synth_2d: joint tally cnt[outer][inner]
+    cnt = {m: Counter() for m in out_vals}
     for r in recs:
-        cnt[r["mon"]][r["grp"]] += 1
+        cnt[r["out"]][r["in"]] += 1
     qtype = rng.choice(["months_argmax", "months_argmax", "months_cmp", "grp_in_month", "month_for_grp"])
     if qtype == "months_argmax":
-        g = rng.choice(_GROUPS)
-        gold = sum(1 for m in months
+        g = rng.choice(in_vals)
+        gold = sum(1 for m in out_vals
                    if cnt[m][g] > max((n for k, n in cnt[m].items() if k != g), default=0))
-        q = (f"For how many months is grp={g} the single most common grp — i.e. that month has "
-             f"STRICTLY more grp={g} records than records of any other one grp? Give the single "
-             f"integer in \\boxed{{}}.")
+        q = (f"For how many {f_out} values is {f_in}={g} the single most common {f_in} — i.e. that "
+             f"{f_out} has STRICTLY more {f_in}={g} records than records of any other one {f_in} "
+             f"value? Give the single integer in \\boxed{{}}.")
         return q, gold, "numeric", {"qtype": qtype, "qgrp": g}
     if qtype == "months_cmp":
-        g1, g2 = rng.sample(_GROUPS, 2)
-        gold = sum(1 for m in months if cnt[m][g1] > cnt[m][g2])
-        q = (f"In how many months are there STRICTLY more grp={g1} records than grp={g2} records? "
-             f"Give the single integer in \\boxed{{}}.")
+        g1, g2 = rng.sample(in_vals, 2)
+        gold = sum(1 for m in out_vals if cnt[m][g1] > cnt[m][g2])
+        q = (f"For how many {f_out} values are there STRICTLY more {f_in}={g1} records than "
+             f"{f_in}={g2} records? Give the single integer in \\boxed{{}}.")
         return q, gold, "numeric", {"qtype": qtype, "qgrp": g1, "qgrp2": g2}
     if qtype == "grp_in_month":
-        m = rng.choice(months)
-        gold = _argbest(cnt[m], max, _GROUPS) if cnt[m] else _GROUPS[0]
+        m = rng.choice(out_vals)
+        gold = _argbest(cnt[m], max, in_vals) if cnt[m] else in_vals[0]
         q = filtered_question(
-            rng, "records", f"mon={m}", "which grp value is the MOST common",
-            "Break ties by the alphabetically first grp. Give the grp (e.g. K2) in \\boxed{}.")
+            rng, "records", f"{f_out}={m}", f"which {f_in} value is the MOST common",
+            f"Break ties by the alphabetically first {f_in}. Give the {f_in} (e.g. {ex_in}) in \\boxed{{}}.")
         return q, gold, "exact", {"qtype": qtype, "qmon": m}
-    g = rng.choice(_GROUPS)   # month_for_grp
-    per_month = {m: cnt[m][g] for m in months}
-    gold = _argbest(per_month, max, _MONTHS)
-    q = (f"Which month has the MOST grp={g} records? Break ties by the earliest month in "
-         f"calendar order. Give the 3-letter month (e.g. Aug) in \\boxed{{}}.")
+    g = rng.choice(in_vals)   # month_for_grp
+    per = {m: cnt[m][g] for m in out_vals}
+    gold = _argbest(per, max, out_vals)
+    q = (f"Which {f_out} has the MOST {f_in}={g} records? Break ties by the {f_out} that comes "
+         f"earliest in the natural order given in the document description. Give the {f_out} value "
+         f"(e.g. {out_vals[0]}) in \\boxed{{}}.")
     return q, gold, "exact", {"qtype": qtype, "qgrp": g}
 
 
@@ -294,17 +373,20 @@ _QUESTION = {
                       "Whenever a record has grp=RST, reset the running total to 0 (that "
                       "record's amt is NOT added). What is the final running total after the "
                       "last record? Give the single integer in \\boxed{}.",
+    "synth_peak": "Process the records in order, keeping a running total of 'amt' (starting at 0). "
+                  "What is the HIGHEST value the running total ever reaches (0 if it never goes "
+                  "positive)? Give the single integer in \\boxed{}.",
+    "synth_streak": "Process the records in order. What is the length of the LONGEST run of "
+                    "CONSECUTIVE records with flag=Y? Give the single integer in \\boxed{}.",
+    "synth_adjacent": "Process the records in order. How many records have an 'amt' STRICTLY "
+                      "GREATER than the 'amt' of the record immediately before them? (The first "
+                      "record has no predecessor.) Give the single integer in \\boxed{}.",
     # varchain question is filled per-problem (needs the queried variable).
 }
 
 _CONTEXT = (
     "The document is a list of records, one per line, each formatted as:\n"
     "  [<index>] id=<int> grp=<K1|K2|K3|K4|RST> amt=<signed int> flag=<Y|N>\n"
-    "Records are 0-indexed and appear in order."
-)
-_CONTEXT_M = (
-    "The document is a list of records, one per line, each formatted as:\n"
-    "  [<index>] id=<int> mon=<3-letter month> grp=<K1|K2|K3|K4> amt=<signed int> flag=<Y|N>\n"
     "Records are 0-indexed and appear in order."
 )
 _CONTEXT_VC = (
@@ -368,19 +450,20 @@ def make_synth_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) ->
         )
 
     if task in _MONTH_TASKS:
-        # 3-4 months per problem: the synth_2d fold state is one key per (month, grp) pair and
-        # is restated per hop; 5 months measured 2896 real tokens of the 3000 budget.
-        months = sorted(rng.sample(_MONTHS, rng.randint(3, 4)), key=_MONTHS.index)
-        recs, doc_tokens, raw_spans = _pack(rng, _render_m, lambda i: _one_record_m(rng, i, months),
+        sch = _pick_scheme(rng)
+        f_out, out_vals, f_in, in_vals = sch
+        recs, doc_tokens, raw_spans = _pack(rng, lambda r: _render_m(r, f_out, f_in),
+                                            lambda i: _one_record_m(rng, i, out_vals, in_vals),
                                             doc_size_tokens, tokenizer)
-        spans = [(s, e, r["idx"], r["amt"], r["flag"], r["grp"], r["mon"]) for (s, e, r) in raw_spans]
-        question, gold, grading, qparams = _month_question_gold(task, recs, months, rng)
+        spans = [(s_, e, r["idx"], r["amt"], r["flag"], r["in"], r["out"]) for (s_, e, r) in raw_spans]
+        question, gold, grading, qparams = _month_question_gold(task, recs, sch, rng)
         return Problem(
             document_tokens=doc_tokens, question=question, gold_answers=[str(gold)], task=task,
-            task_context=_CONTEXT_M, grading_mode=grading,
+            task_context=_context_m(f_out, out_vals, f_in, in_vals), grading_mode=grading,
             metadata={"family": "bounded", "strategy_default": "binary", "task": task,
                       "n_records": len(recs), "record_spans": spans, "gold_int": gold,
-                      "months": months, **qparams},
+                      "f_out": f_out, "out_vals": out_vals, "f_in": f_in, "in_vals": in_vals,
+                      "months": out_vals, **qparams},
         )
 
     # Standard-record tasks.
@@ -390,7 +473,7 @@ def make_synth_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) ->
         question, gold, qparams = _param_question_gold(task, recs, rng)
     else:
         question, gold, qparams = _QUESTION[task], gold_for(task, recs), {}
-    grading = "exact" if task in ("synth_mode", "synth_sumby") else "numeric"  # grp answers
+    grading = qparams.pop("_grading", "exact" if task in ("synth_mode", "synth_sumby") else "numeric")
     return Problem(
         document_tokens=doc_tokens, question=question, gold_answers=[str(gold)], task=task,
         task_context=_CONTEXT, grading_mode=grading,
