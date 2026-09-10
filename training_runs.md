@@ -404,3 +404,18 @@ untouched synth tasks + niah_novel. Traces: `trace_snippets/longrec_first_reach_
    single seeds. 5. Eval format stays general; never guarded or tuned to the model.
 Run-6 eval: 63 rollouts (was 66) with a headline that excludes the in-dist 1.00s that inflated
 OVERALL (run 5: 0.755 overall vs ~0.55 on the held-out rows).
+
+**Outage robustness (added before run 6; Xfinity).** Two layers:
+- In-process: every per-batch Tinker call retries with backoff for up to `SFT_RETRY_MINUTES` (30).
+- Across processes: every `SFT_SAVE_EVERY` (300) batches sft.py saves trainer state (weights + Adam) to
+  `<SAVE_NAME>_resume` with a **48 h TTL** (`SFT_RESUME_TTL_HOURS`) and writes a local cursor
+  `~/.cache/infinite-context/sft_resume_<SAVE_NAME>.json`. On restart with the same config it
+  reloads that state into a fresh training client (`load_state_with_optimizer`) and skips the
+  completed batches; data regeneration is deterministic (seeds, trace cache, seeded shuffle), checked
+  via `n_datums`. On completion the intermediate checkpoint is deleted (`delete_checkpoint_from_tinker_path`)
+  and the cursor removed; the final checkpoint never expires. `scripts/run_sft6_eval.sh` loops the SFT
+  stage (up to 200 attempts, 5 min apart → resumes) and the eval stage (20 attempts, rerun from scratch).
+  Live-tested: killed a tiny run after its 2nd checkpoint, relaunched → "RESUMING … at batch 4 /
+  skipping 4 completed batches" → completed, deleted the intermediate, cleared the cursor.
+  Note: a restart creates a NEW Tinker training run id, so an intermediate checkpoint from a killed
+  attempt is only expired by its TTL, not deleted (the final run deletes its own).

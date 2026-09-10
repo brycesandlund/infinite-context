@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import random
+import time
 from pathlib import Path
 
 import tinker
@@ -461,23 +462,42 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
 # ---------------------------------------------------------------------------
 
 
-async def _retry(label: str, fn, attempts: int = 12):
-    """Re-run `fn()` (an awaitable factory) across transient Tinker/network failures — a laptop
-    network blip mid-run killed sft_general5 attempt 1 after 48 min. Each call is retried on its
-    own (never the forward_backward+optim_step pair together, which would double-apply a batch);
-    result_async on an already-submitted future is idempotent server-side. Backoff 15s→2min,
-    ~15 min total, then give up."""
-    delay = 15.0
-    for i in range(attempts):
+RETRY_MINUTES = float(os.environ.get("SFT_RETRY_MINUTES", "30"))   # in-process retry window per call
+
+
+async def _retry(label: str, fn):
+    """Re-run `fn()` (an awaitable factory) across transient Tinker/network failures for up to
+    RETRY_MINUTES (backoff 15s→2min). Each call is retried on its own (never the
+    forward_backward+optim_step pair together, which would double-apply a batch); result_async on
+    an already-submitted future is idempotent server-side. Outages longer than the window raise;
+    the launch script then RESTARTS sft.py, which resumes from the last periodic checkpoint (see
+    SAVE_EVERY / RESUME) — that is the path for multi-hour outages."""
+    delay, t0, i = 15.0, time.monotonic(), 0
+    while True:
         try:
             return await fn()
         except (tinker.APIConnectionError, TimeoutError, asyncio.TimeoutError, OSError) as e:
-            if i == attempts - 1:
+            i += 1
+            if time.monotonic() - t0 > RETRY_MINUTES * 60:
+                print(f"  [retry] {label}: giving up after {i} attempts / {RETRY_MINUTES:.0f} min", flush=True)
                 raise
-            print(f"  [retry] {label}: {type(e).__name__} — attempt {i + 1}/{attempts}, "
-                  f"sleeping {delay:.0f}s", flush=True)
+            print(f"  [retry] {label}: {type(e).__name__} — attempt {i}, sleeping {delay:.0f}s", flush=True)
             await asyncio.sleep(delay)
             delay = min(delay * 1.6, 120.0)
+
+
+# Periodic checkpoint + resume. Every SAVE_EVERY batches the trainer state (weights + Adam) is
+# saved to Tinker under "<SAVE_NAME>_resume" and the batch cursor is written locally; on restart
+# with the same config, sft.py reloads that state into a FRESH training client and skips the
+# completed batches. Data is regenerated deterministically (fixed seeds, disk trace cache, seeded
+# shuffle), so the datum order is identical — checked via n_datums.
+SAVE_EVERY = int(os.environ.get("SFT_SAVE_EVERY", "300"))          # ~40 min at run-5 pace
+# Intermediate checkpoints cost storage: they carry a TTL (long enough to ride out a multi-hour
+# outage and the restart) and the last one is deleted when the run completes. The FINAL
+# checkpoint never expires.
+RESUME_TTL_HOURS = float(os.environ.get("SFT_RESUME_TTL_HOURS", "48"))
+RESUME = os.environ.get("SFT_RESUME", "1") == "1"
+RESUME_FILE = Path.home() / ".cache" / "infinite-context" / f"sft_resume_{SAVE_CHECKPOINT_NAME}.json"
 
 
 LOG_EVERY = int(os.environ.get("SFT_LOG_EVERY", "100"))   # batches between progress lines
@@ -557,12 +577,36 @@ async def main() -> None:
               f"{'Traces at ' + TRACE_OUT + '.txt' if PRINT_TRACES else 'Set PRINT_TRACES=1 to inspect traces.'}")
         return
 
-    # Training client.
-    service_client = tinker.ServiceClient()
-    training_client = await service_client.create_lora_training_client_async(
+    # Training client (+ resume from a periodic checkpoint if one matches this config).
+    start_batch = 0
+    resume = None
+    if RESUME and RESUME_FILE.exists():
+        try:
+            resume = json.loads(RESUME_FILE.read_text())
+        except Exception:
+            resume = None
+        if resume and resume.get("n_datums") != len(datums):
+            print(f"  resume file {RESUME_FILE} has n_datums={resume.get('n_datums')} != {len(datums)}; "
+                  f"ignoring it (config changed?)")
+            resume = None
+    service_client = await _retry("ServiceClient", lambda: asyncio.to_thread(tinker.ServiceClient))
+    training_client = await _retry("create_training_client", lambda: service_client.create_lora_training_client_async(
         base_model=MODEL_NAME, rank=LORA_RANK
-    )
+    ))
+    if resume:
+        print(f"  RESUMING from {resume['path']} at batch {resume['next_batch']}")
+        fut = await _retry("load_state_with_optimizer", lambda: training_client.load_state_with_optimizer_async(resume["path"]))
+        await _retry("load_state_with_optimizer.result", fut.result_async)
+        start_batch = int(resume["next_batch"])
     adam_params = tinker.AdamParams(learning_rate=LEARNING_RATE, beta1=0.9, beta2=0.95)
+
+    async def _save_resume(next_batch: int):
+        fut = await _retry("save_state(resume)", lambda: training_client.save_state_async(
+            f"{SAVE_CHECKPOINT_NAME}_resume", overwrite=True, ttl_seconds=int(RESUME_TTL_HOURS * 3600)))
+        resp = await _retry("save_state(resume).result", fut.result_async)
+        RESUME_FILE.parent.mkdir(parents=True, exist_ok=True)
+        RESUME_FILE.write_text(json.dumps({"path": resp.path, "next_batch": next_batch, "n_datums": len(datums)}))
+        print(f"  [ckpt] batch {next_batch}: {resp.path}", flush=True)
 
     metrics.init(
         project="infinite-context",
@@ -582,7 +626,10 @@ async def main() -> None:
         n_batches = (len(datums) + SFT_BATCH_SIZE - 1) // SFT_BATCH_SIZE
         epoch_nll = 0.0
         n_logged = 0
-        for b in range(n_batches):
+        first = start_batch if epoch == 0 else 0
+        if first:
+            print(f"  skipping {first} completed batches")
+        for b in range(first, n_batches):
             batch = datums[b * SFT_BATCH_SIZE : (b + 1) * SFT_BATCH_SIZE]
             fwd_bwd = await _retry("forward_backward", lambda: training_client.forward_backward_async(batch, loss_fn="cross_entropy"))
             optim = await _retry("optim_step", lambda: training_client.optim_step_async(adam_params))
@@ -604,6 +651,8 @@ async def main() -> None:
             except Exception:
                 pass
             global_batch += 1
+            if SAVE_EVERY and (b + 1) % SAVE_EVERY == 0 and (b + 1) < n_batches:
+                await _save_resume(b + 1)
         nll_str = f"{epoch_nll / n_logged:.4f}" if n_logged else "n/a"
         print(f"Epoch {epoch}: batches {n_batches} | mean batch NLL {nll_str}")
         if n_logged:
@@ -614,11 +663,22 @@ async def main() -> None:
         # never cost a full redo — last_sft_checkpoint.txt always points at the
         # latest completed epoch's weights, which are usable for RL warm-start.
         print(f"  saving checkpoint '{SAVE_CHECKPOINT_NAME}' (after epoch {epoch})...")
-        save_future = await training_client.save_state_async(SAVE_CHECKPOINT_NAME, overwrite=True)
-        save_resp = await save_future.result_async()
+        save_future = await _retry("save_state(final)", lambda: training_client.save_state_async(SAVE_CHECKPOINT_NAME, overwrite=True))
+        save_resp = await _retry("save_state(final).result", save_future.result_async)
         LAST_SFT_CHECKPOINT_FILE.parent.mkdir(parents=True, exist_ok=True)
         LAST_SFT_CHECKPOINT_FILE.write_text(save_resp.path)
         print(f"  saved: {save_resp.path}  (path -> {LAST_SFT_CHECKPOINT_FILE})")
+    if RESUME_FILE.exists():
+        # finished: delete the intermediate checkpoint (it costs storage) and the local cursor so
+        # a later run with the same SAVE_NAME starts fresh. Best-effort — the TTL is the backstop.
+        try:
+            rpath = json.loads(RESUME_FILE.read_text()).get("path")
+            if rpath:
+                await service_client.create_rest_client().delete_checkpoint_from_tinker_path_async(rpath)
+                print(f"  deleted intermediate checkpoint {rpath}")
+        except Exception as e:
+            print(f"  (could not delete intermediate checkpoint: {type(e).__name__}: {e}; TTL will expire it)")
+        RESUME_FILE.unlink()
     print("\nTo warm-start RL: set rl.py LOAD_CHECKPOINT_PATH to the path above "
           "and RESUME_OPTIMIZER=False.")
     metrics.finish()
