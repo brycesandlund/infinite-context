@@ -390,3 +390,17 @@ leave the root without an exact template, so *more data / more examples* is the 
 (max ctx 2759, varchain), binary 8 tasks 320/320, diversified synth_2d 120/120 (max 2520),
 synth_filter_argmax 80/80, long_records 120/120 (incl. first_reach 16, max 2302), regression on the
 untouched synth tasks + niah_novel. Traces: `trace_snippets/longrec_first_reach_traces.txt`.
+
+**Eval protocol (from run 6 on).** Decision criteria made explicit:
+1. **Held-out rows are the SCORE** — `SCORE_TASKS` = oolong_counting/user/temporal, niah_single_1,
+   niah_multikey_1, niah_multiquery, vt, cwe, fwe (never trained on, fixed seeds) at **N=5** each
+   (45 rollouts). `eval/run.py` prints `SCORE (held-out …)` separately from OVERALL.
+2. **In-dist rows are DIAGNOSTICS**, one per mechanism so a failure localizes, at N=2: synth_sum
+   (scalar reduce), synth_mode (tally), synth_2d (2-D), synth_peak (sequential), long_records (long
+   records), realdoc_count (prose count), vt_novel (fold on prose), niah_multi (retrieval),
+   narrativeqa (model leaf). Reported as `DIAGNOSTIC (in-dist)`, excluded from the score.
+3. A new task gets a diagnostic slot for the run it's introduced, then rotates out unless it IS the
+   mechanism's diagnostic. 4. N=3 was a smoke test, not a measurement — run-5 decisions swung on
+   single seeds. 5. Eval format stays general; never guarded or tuned to the model.
+Run-6 eval: 63 rollouts (was 66) with a headline that excludes the in-dist 1.00s that inflated
+OVERALL (run 5: 0.755 overall vs ~0.55 on the held-out rows).

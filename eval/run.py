@@ -64,6 +64,14 @@ EVAL_TASKS = os.environ.get(
     "EVAL_TASKS", "oolong_counting,oolong_user,oolong_temporal"
 ).split(",")
 N_PER_TASK = int(os.environ.get("N_PER_TASK", "5"))
+# Per-task N override ("task:n,task:n"): the OOD rows are the SCORE and get more seeds; in-dist
+# rows are diagnostics (one per mechanism) and get fewer.
+N_PER_TASK_OVERRIDE = {
+    k.strip(): int(v) for k, v in (kv.split(":") for kv in os.environ.get("N_PER_TASK_OVERRIDE", "").split(",") if kv.strip())
+}
+# SCORE_TASKS: the held-out (never-trained-on) tasks whose mean is the headline number. Everything
+# else in EVAL_TASKS is reported as DIAGNOSTIC and excluded from the score.
+SCORE_TASKS = set(filter(None, os.environ.get("SCORE_TASKS", "").split(",")))
 SEED_OFFSET = 2_000_000          # RULER held-out seeds (OOLONG uses OOLONG_BASE below)
 # OOLONG problems are indexed by the SHARED oolong_spec(task, idx, base). Eval
 # defaults to a held-out base; set OOLONG_BASE to SFT's DATA_SEED (500000) to run
@@ -177,15 +185,16 @@ async def main() -> None:
     work: list[tuple[str, int, object]] = []
     for ti, task in enumerate(EVAL_TASKS):
         collected, idx = 0, 0
-        while collected < N_PER_TASK and idx < 100_000:
+        n_task = N_PER_TASK_OVERRIDE.get(task, N_PER_TASK)
+        while collected < n_task and idx < 100_000:
             seed, problem = _make(task, ti, idx)
             idx += 1
             if QTYPE and problem.metadata.get("task_type") not in QTYPE:
                 continue
             work.append((task, seed, problem))
             collected += 1
-        if collected < N_PER_TASK:
-            print(f"WARNING: only found {collected}/{N_PER_TASK} {task} problems "
+        if collected < n_task:
+            print(f"WARNING: only found {collected}/{n_task} {task} problems "
                   f"matching QTYPE={QTYPE} in {idx} tries")
 
     sem = asyncio.Semaphore(CONCURRENCY)
@@ -295,6 +304,14 @@ async def main() -> None:
     allg = [s for ss in grounded_by_task.values() for s in ss]
     print(f"\nOVERALL: {sum(alls)/len(alls):.3f}  (grounded {sum(allg)/len(allg):.3f} | "
           f"{len(alls)} rollouts)")
+    if SCORE_TASKS:
+        sc = [s for t, ss in scores_by_task.items() if t in SCORE_TASKS for s in ss]
+        dg = [s for t, ss in scores_by_task.items() if t not in SCORE_TASKS for s in ss]
+        if sc:
+            print(f"SCORE (held-out {sorted(t for t in scores_by_task if t in SCORE_TASKS)}): "
+                  f"{sum(sc)/len(sc):.3f}  ({len(sc)} rollouts)")
+        if dg:
+            print(f"DIAGNOSTIC (in-dist): {sum(dg)/len(dg):.3f}  ({len(dg)} rollouts)")
     print(f"All {len(alls)} rollouts saved -> {OUT}.jsonl + {OUT}.txt")
 
 

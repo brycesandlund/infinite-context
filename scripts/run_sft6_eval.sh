@@ -16,8 +16,12 @@ PYTHONPATH=. uv run python sft.py
 
 echo "===== SFT DONE, EVAL STARTING $(date +%H:%M:%S) ====="
 CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt) \
-EVAL_TASKS=synth_sum,synth_count,synth_mode,synth_varchain,synth_count_cmp,synth_peak,synth_2d,long_records,realdoc_count,niah_novel,niah_multi,vt_novel,narrativeqa,oolong_counting,oolong_user,oolong_temporal,niah_single_1,niah_multikey_1,niah_multiquery,vt,cwe,fwe \
-BACKEND=tinker MODE=decompose N_PER_TASK=3 DOC_SIZE_TOKENS=4000 AGENT_CONTEXT=3000 MAX_CHUNK_TOKENS=200000 TEMP=0.2 MAX_NODES=150 \
+# Task ORDER is load-bearing: eval/run.py seeds a task by its position in EVAL_TASKS, so the first 19
+# entries keep the run-3/4/5 order (identical problems for seeds 0-2); dropped in-dist tasks get N=0.
+EVAL_TASKS=synth_sum,synth_count,synth_mode,synth_varchain,synth_count_cmp,realdoc_count,niah_novel,niah_multi,vt_novel,narrativeqa,oolong_counting,oolong_user,oolong_temporal,niah_single_1,niah_multikey_1,niah_multiquery,vt,cwe,fwe,synth_2d,synth_peak,long_records \
+SCORE_TASKS=oolong_counting,oolong_user,oolong_temporal,niah_single_1,niah_multikey_1,niah_multiquery,vt,cwe,fwe \
+N_PER_TASK=2 N_PER_TASK_OVERRIDE=oolong_counting:5,oolong_user:5,oolong_temporal:5,niah_single_1:5,niah_multikey_1:5,niah_multiquery:5,vt:5,cwe:5,fwe:5,synth_count:0,synth_varchain:0,synth_count_cmp:0,niah_novel:0 \
+BACKEND=tinker MODE=decompose DOC_SIZE_TOKENS=4000 AGENT_CONTEXT=3000 MAX_CHUNK_TOKENS=200000 TEMP=0.2 MAX_NODES=150 \
 OUT=/tmp/eval_general6 \
 PYTHONPATH=. uv run python -m eval.run
 echo "===== ALL DONE $(date +%H:%M:%S) ====="
