@@ -331,12 +331,15 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
     interleaved but each in order; the question targets one chain."""
     rng = random.Random(seed)
     qtype = rng.choice(["which_vars", "which_vars", "final_value"])
-    fkind = _pick_filler_kind(rng)
+    # vt haystacks lean NOISE (RULER vt is noise-filled) and chains are often SPARSE (one chain of
+    # 4-7 lines in 6k tokens), so most 400-token fold slices are empty — the regime where run 6's
+    # fold chains broke (self-loop / early `none`). Still 2-3 chains half the time.
+    fkind = rng.choice(["noise", "noise", "novel", "essay"])
     filler = _filler(rng, tokenizer, doc_size_tokens, fkind, corpus_tokens)
     # Keep the total bindings dict <= ~17 vars: 5-letter random names tokenize to ~4 tokens each,
     # and the fold accumulator is carried in the subtask + stated per node, so this bounds the
     # per-agent context under the 3000 budget (measured max ~2.5k).
-    n_chains = rng.randint(2, 3)
+    n_chains = rng.choice([1, 1, 2, 3])
     lens = [rng.randint(3, 6) + 1] + [rng.randint(2, 4) + 1 for _ in range(n_chains - 1)]  # vars per chain
     names = _var_names(rng, sum(lens))
     vals = rng.sample(range(10_000, 99_999), n_chains)

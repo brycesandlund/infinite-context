@@ -348,7 +348,7 @@ retrieval-looking questions moved vt off the fold it had learned. N=3 caveat app
 
 ---
 
-## sft_general6 (run 6) — PLANNED
+## sft_general6 (run 6) — 2026-09-10/11 — held-out SCORE 0.675 (45 rollouts, N=5), diagnostics 0.946
 
 **Target:** the run-5 post-mortem — strategy drift (vt → binary-collect), a realdoc leaf loop, OOLONG
 2-D key-format inconsistency and dropped filters — plus the user's read that paraphrased questions
@@ -419,3 +419,57 @@ OVERALL (run 5: 0.755 overall vs ~0.55 on the held-out rows).
   skipping 4 completed batches" → completed, deleted the intermediate, cleared the cursor.
   Note: a restart creates a NEW Tinker training run id, so an intermediate checkpoint from a killed
   attempt is only expired by its TTL, not deleted (the final run deletes its own).
+
+**Run 6 results** (ckpt `tinker://7161d592-9d8a-5583-9ff1-13a273154e96:train:0/weights/sft_general6`, 1,720
+traces / 127,557 datums, 7,973 batches, NLL 0.0088; SFT 14:38→06:55 incl. a ~10-min network drop that
+recovered in place; eval 06:55→07:15; raw in `eval_results/raw/sft_general6_doc4k_b3k.*`). First run with
+the restructured eval: held-out 9 tasks × 5 seeds = SCORE; in-dist 9 × 2 = diagnostics. Seeds 3–4 are new
+and add two OOLONG datasets (negation, yahoo), so SCORE is not comparable to run 5's 0.755; seeds 0–2 are.
+
+| held-out task | run 5 (s0–2) | run 6 (s0–2) | run 6 (N=5) | note |
+|---|---|---|---|---|
+| niah_single_1 | 1.00 | 1.00 | **1.00** | |
+| niah_multikey_1 | 1.00 | 1.00 | 0.80 | s4: children boxed garbage (`QUERY=1323691|1323691=1323691…`) → none |
+| niah_multiquery | 0.67 | 0.67 | 0.80 | s0: both halves `none` (leaves missed all 4 needles) |
+| cwe | 0.93 | ~0.93 | **0.96** | |
+| fwe | 0.78 | ~0.89 | **0.93** | |
+| vt | 0.20 | 0.40 | 0.44 | see below |
+| oolong_counting | 0.34 | 0.14 | **0.09** | see below |
+| oolong_temporal | 0.39 | 0.69 | 0.46 | agnews 1.00, imdb 0.75; negation "dates represented exactly once": children returned INCONSISTENT states (one `10`, one the full per-date tally) |
+| oolong_user | 0.00 | 0.33 | **0.60** | the two NEW datasets (negation, yahoo — user argmax / relative-freq) both 1.00; imdb = sentiment, trec = degenerate gold |
+| diagnostics (9 in-dist × 2) | — | — | 0.946 | all 1.00 except long_records `mention_most` (leaf undercounted 'have': best=1|n=3 vs gold entry 13) |
+
+**vt (0.44): the RULE now fires, the fold EXECUTION on RULER's noise haystack is what fails.** 4/5 roots
+chose fold with an (invented but sensible) order-dependence reason; 2 of those ran the chain correctly
+(1.00). s0: the root folded its first slice, then instead of delegating kept folding the NEXT slice itself
+("Folding the 0 records whose line STARTS in 400..800") → self-loop → overflow. s3: the root's first slice
+was all noise → accumulator `none` → the depth-1 child folded and RETURNED `none` without delegating the
+rest → chain truncated. s1: root mis-classified vt as order-independent ("collect every variable assigned
+to 94850") → binary → 1 var. So: strategy prior fixed (run-5 problem), but the fold protocol is fragile
+when slices contain 0 records — every training fold slice has records (synth dense; vt_novel/longrec
+sparse but rarely empty at 400 tokens). Fix: train fold on documents where whole slices are empty (noise
+filler share ↑ for vt_novel; explicit "(no VAR assignment starts here) → accumulator unchanged, delegating
+the rest" hops), so "empty slice ⇒ still delegate" is demonstrated.
+
+**oolong_counting (0.09): leaf classification + one format miss.** agnews: correct tree, tally `World=16`
+(gold 17), root wrote "Answer: 16" but NO `\boxed{}` → `stopped_no_answer` (would have scored ~0.9).
+imdb: tally negative 5 / positive 6 on ~11 reviews, gold says negative — per-item sentiment. negation: the
+leaves INVENTED labels (`none`, `unrelated`, `not relevant`, `label=not in context`) instead of the
+True/False label space → 4 vs 23. yahoo relative_freq: wrong direction; trec 17 vs 14. Every miss but one
+is the fuzzy-classification leaf (failure mode A) — the only lever left there is a classification leaf task.
+
+**Reading.** RULER retrieval/tally is now stable at ~0.9–1.0 across 5 seeds. The run-5 strategy drift is
+fixed as a *rule* (fold chosen for vt), and the 2-D/filter machinery transfers (oolong_user 0.60, temporal
+agnews 1.00). What remains: (1) fold robustness to EMPTY slices (vt s0/s3); (2) the OOLONG classification
+leaf (counting 0.09 is almost entirely this); (3) a "print the boxed answer" slip at one OOLONG root;
+(4) leaf enumeration accuracy on very common words (long_records mention_most).
+
+**Empty-slice fold fix (after run 6, for run 7).** (1) Base fold node: an empty slice is narrated as a
+normal step that continues the chain — *"No VAR assignment lines start in 2000..2400 — the accumulator is
+unchanged. → accumulator = … Delegating the rest 2400..6155 with the unchanged accumulator."* (was
+"Folding the 0 records … (no VAR assignment starts here)"). Applies to every fold task. (2) `vt_novel`:
+filler ∈ {noise ×2, novel, essay} (RULER vt is noise-filled; was noise ×1 of 4) and chains ∈ {1 ×2, 2, 3}
+(was 2–3), so most 400-token slices are empty, as in RULER vt at 4k. Verified vt_novel 60/60,
+synth_runreset 60/60, long_records 60/60 (incl. first_reach) at 1.00, max ctx unchanged (2626).
+Run-6 training already had 26% empty fold hops; the failures were specific to noise haystacks where
+nearly every hop is empty and the model had to keep delegating anyway.

@@ -393,15 +393,24 @@ class ScaffoldOracle(ModelBackend):
         # stated once below (and again in the spawn arg) — don't reprint it in the header: with
         # large dict states (vt_novel: ~20 five-letter var names ≈ 4 tokens each) each extra
         # reprint costs ~250 tokens and pushed fold nodes over the 3000 budget.
-        body = (f"{self._fold_header(len(recs), a, cut)}:\n{lines}\n"
-                f"→ accumulator = {self._ser_state(acc_out)}")
+        if recs:
+            body = (f"{self._fold_header(len(recs), a, cut)}:\n{lines}\n"
+                    f"→ accumulator = {self._ser_state(acc_out)}")
+        else:
+            # An EMPTY slice is a normal fold step, not a stopping condition: say so explicitly
+            # and keep the accumulator. Run 6 (RULER vt on a noise haystack, where most 400-token
+            # slices hold no VAR line): one root re-read the next slice itself instead of
+            # delegating; one child returned `none` after an empty slice instead of continuing.
+            body = (f"No {self._unit()} start in {a}..{cut} — the accumulator is unchanged.\n"
+                    f"→ accumulator = {self._ser_state(acc_out)}")
         if cut >= b:                            # final slice — return the accumulator/answer
             return AssistantTurn(text=f"{body} (final).{self._box_text(acc_out, is_root)}", tool_calls=[])
         _, ns = self._reads_spawns(messages)
         if ns == 0:                             # reads done, not yet delegated — delegate the rest
             sub = self._fold_subtask(cut, b, acc_out)
             return AssistantTurn(
-                text=f"{body}. Delegating the rest {cut}..{b} with the updated accumulator.",
+                text=f"{body}. Delegating the rest {cut}..{b} with the "
+                     f"{'unchanged' if not recs else 'updated'} accumulator.",
                 tool_calls=[ToolCall(_new_id(), "spawn_subagent", {"subtask": sub})],
             )
         # child returned the chain's final accumulator (serialized); finalize iff root
