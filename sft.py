@@ -462,12 +462,16 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
             return out
         datum = datum_from_model_input_weights(model_input, weights, max_length=AGENT_CONTEXT, reduction="mean")
         last = next((m.get("content") or "" for m in reversed(cb) if m.get("role") == "assistant"), "")
+        # Order matters: QA verdicts FIRST. Most pos/neg verdicts are ANCESTORS of QA leaves
+        # ("a subagent located the answer" / "neither half had relevant information") — spawn-only
+        # agents that would otherwise fall into `internal` and lose the rebalancing (narrativeqa:
+        # 56 of 76 pos verdicts are ancestors). Only verdict-less spawn-only agents are `internal`.
         if is_root:
             klass = "root"
-        elif not reads:
-            klass = "internal"          # pure split/combine node
         else:
             klass = _qa_verdict_class(last) if is_qa else "normal"
+            if klass == "normal" and not reads:
+                klass = "internal"      # pure split/combine node
         return [(datum, klass)]
     first_assistant = True
     for i, m in enumerate(cb):
