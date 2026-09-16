@@ -476,7 +476,7 @@ nearly every hop is empty and the model had to keep delegating anyway.
 
 ---
 
-## sft_general7 (run 7) — PLANNED
+## sft_general7 (run 7) — 7w WARM START 2026-09-15: held-out 0.657, diagnostics 0.953 (from-base run 7 not yet run)
 
 **Target:** the run-6 post-mortem. (a) fold chains on nearly-empty haystacks (vt s0/s3) — DONE above
 (empty-slice narration + sparse/noisy vt_novel). (b) Leaves that JUDGE items collapsing to one line
@@ -517,3 +517,30 @@ nearly every hop is empty and the model had to keep delegating anyway.
   sft_general6 gave NLL 0.0000 on synth_sum from the first batch (a fresh LoRA starts ~0.25).
   Policy: warm-start for iterating on new tasks (`scripts/run_sft7_warm.sh`: rule_label 160, vt_novel 120,
   ~20% replay of the rest, LR 5e-6); full from-base runs (`run_sft7_eval.sh`) remain the reference.
+
+**Run 7w results — warm start from sft_general6** (ckpt `tinker://47c4be41-3212-5e02-8b9b-71f8ebe54d41:train:0/weights/sft_general7w`;
+598 traces / 16,738 agent-datums / 30.5M tokens, 1,047 batches, LR 5e-6, NLL 0.0032; SFT 1 h 20 m, eval 8 min;
+≈15% of a from-base run's cost. Raw: `eval_results/raw/sft_general7w_doc4k_b3k.*`.)
+
+| held-out | run 6 | 7w | what the traces show |
+|---|---|---|---|
+| niah_single_1 | 1.00 | 1.00 | |
+| niah_multikey_1 | 0.80 | **1.00** | |
+| niah_multiquery | 0.80 | **0.90** | |
+| oolong_user | 0.60 | **0.75** | imdb now correct (negative 5 / positive 3) |
+| oolong_counting | 0.09 | **0.32** | negation: root now DICTATES the key space ("`<label>` is exactly one of `True, False`") and the leaves ENUMERATE per item ("line 0 … → label=False → False:1") — the procedure landed — but judged every claim False (67 vs 23): the classification ceiling, cleanly exposed |
+| cwe | 0.96 | 0.68 | still top-10-per-leaf, but partials now admit junk keys (e-book:2, earth:1) that crowd out rarer common words; answer boxed as a tally |
+| fwe | 0.93 | 0.73 | s3: children returned `0` / `none` to an open-key-space contract → format drift |
+| oolong_temporal | 0.46 | 0.17 | agnews: root chose a 1-D per-label tally ("how many months have each label") — lost run 6's month×label 2-D state |
+| vt | 0.44 | 0.36 | 4/5 roots went BINARY-collect again ("does not depend on the order of the assignments… collect every variable assigned to 94316"); run 6 had 4/5 fold. vt_novel diagnostic itself 1.00 (fold) |
+| diagnostics (10 × 2) | 0.946 | 0.953 | rule_label 1.00; one synth_sum child arithmetic slip (62 + −109 vs gold) |
+
+**Reading.** The two targeted changes did what they were built for — the root dictates label spaces
+and leaves judge-then-enumerate (visible on OOLONG negation), and rule_label is learned. But the
+warm start also DRIFTED on behaviours the 20% replay under-covered: 2-D shape selection (temporal),
+the fold-for-vt rule, and the open-key-space partial format (cwe/fwe). Fold share in the warm mix was
+the same ~30% as run 6, so this is optimisation dynamics (1,047 steps at 5e-6 on a 598-trace mix),
+not curriculum. Consequence for the process: a warm-start iteration answers "did the new task/format
+land?" reliably (yes) but its held-out SCORE is confounded by drift, so it should not be read as the
+run-to-run scoreboard. Options: heavier replay (≥40%) / lower LR (2e-6) for warm starts, or treat only
+from-base runs as the reference. The from-base run 7 now costs ≈$110 with agent-datums.
