@@ -42,11 +42,11 @@ class LabeledOracle(ScaffoldOracle):
         if q == "author_most":
             if au == self.qauthor:
                 acc = acc + Counter([label])
-                return acc, f"{head} (author matches) → {self._ser_state(acc)}"
-            return acc, f"{head} (other author, skip) → {self._ser_state(acc)}"
+                return acc, f"{head} (author matches) → {label}: {acc[label]}"
+            return acc, f"{head} (other author, skip)"
         if q in ("most_common", "relative"):
             acc = acc + Counter([label])
-            return acc, f"{head} → {self._ser_state(acc)}"
+            return acc, f"{head} → {label}: {acc[label]}"
         key = f"{sec}/{label}"
         acc = {**acc, key: acc.get(key, 0) + 1}
         return acc, f"{head} → {key}={acc[key]}"

@@ -12,7 +12,7 @@ for attempt in $(seq 1 200); do
   if INIT_CHECKPOINT=$INIT LR=5e-6 \
 SFT_TASKS=synth_sum,synth_count,synth_max,synth_min,synth_sumwhere,synth_mode,synth_distinct,synth_sumby,synth_count2,synth_diff,synth_maxwhere,synth_count_cmp,synth_count_range,synth_runreset,synth_varchain,synth_peak,synth_streak,synth_adjacent,synth_first_exceed,synth_filter_argmax,synth_2d,long_records,rule_label,labeled_records,realdoc_count,niah_novel,niah_multi,vt_novel,narrativeqa \
 N_PER_TASK=8 N_PER_TASK_OVERRIDE=rule_label:160,labeled_records:160,vt_novel:120,synth_2d:16,synth_filter_argmax:12,long_records:32,realdoc_count:32,niah_novel:20,niah_multi:24,narrativeqa:30 \
-CTX=3000 DOC=6000 DOC_MIX=6000:3,14000:1 CHUNK=200000 FOLD_LEAF_TOKENS=400 ROOT_DUP=4 DATUM_MODE=agent INTERNAL_KEEP=0.3 \
+CTX=3000 DOC=6000 DOC_MIX=6000:2,8400:1,14000:1 CHUNK=200000 FOLD_LEAF_TOKENS=400 ROOT_DUP=4 DATUM_MODE=agent INTERNAL_KEEP=1.0 SFT_BATCH_SIZE=8 \
 BOOKQA_LEAF_MODEL=anthropic/claude-haiku-4-5-20251001 SAVE_NAME=sft_general7w \
 PRINT_TRACES=1 TRACE_OUT=/tmp/sft_general7w_traces \
 PYTHONPATH=. uv run python sft.py; then break; fi

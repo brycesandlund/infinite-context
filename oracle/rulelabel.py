@@ -50,7 +50,7 @@ class RuleLabelOracle(ScaffoldOracle):
             return acc, f"- {sec} \"{snip}\" → {check} {'(counts)' if hit else '(no)'} → count={acc}"
         if q in ("most_common", "relative"):
             acc = acc + Counter([label])
-            return acc, f"- {sec} \"{snip}\" → {check} → {self._ser_state(acc)}"
+            return acc, f"- {sec} \"{snip}\" → {check} → {label}: {acc[label]}"
         key = f"{sec}/{label}"
         acc = {**acc, key: acc.get(key, 0) + 1}
         return acc, f"- {sec} \"{snip}\" → {check} → {key}={acc[key]}"

@@ -207,11 +207,11 @@ class BookQAOracle(ScaffoldOracle):
 
     async def _node(self, a, b, messages):
         nr, ns = self._reads_spawns(messages)
-        if (b - a) > self.LEAF_TOKENS:
+        if (b - a) >= self.LEAF_TOKENS:
             if ns == 0:
                 m = (a + b) // 2
                 return AssistantTurn(
-                    text=f"Range {a}..{b} > {self.LEAF_TOKENS}; splitting at midpoint {m} to "
+                    text=f"Range {a}..{b} is not below {self.LEAF_TOKENS}; splitting at midpoint {m} to "
                          f"search each half for the answer.",
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(a, m)}),

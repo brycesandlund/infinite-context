@@ -476,7 +476,7 @@ nearly every hop is empty and the model had to keep delegating anyway.
 
 ---
 
-## sft_general7 (run 7) — 7w WARM START 2026-09-15: held-out 0.657, diagnostics 0.953 (from-base run 7 not yet run)
+## sft_general7 (run 7) — 7w warm 0.657 (09-15); from-base 7 held-out 0.573, diagnostics 0.888 (09-16) — INVALID as a curriculum read, see below
 
 **Target:** the run-6 post-mortem. (a) fold chains on nearly-empty haystacks (vt s0/s3) — DONE above
 (empty-slice narration + sparse/noisy vt_novel). (b) Leaves that JUDGE items collapsing to one line
@@ -557,3 +557,37 @@ Questions: count / most_common / relative / sections_cmp / section_most (2-D) / 
 real ctx 2681. Traces: `trace_snippets/labeled_records_traces.txt`, `…_dbpedia.txt`. Added to both
 run-7 scripts at 160 (from-base) / 160 (warm). RL is off the table for now (earlier attempts were
 unstable and degraded the SFT policy); gold-label SFT is the path for leaf judgment.
+
+**Run 7 (from base) results — 2026-09-16 — held-out 0.573, diagnostics 0.888 — NOT a valid read of the
+curriculum.** (ckpt `…/weights/sft_general7`; 2,040 traces / 57,597 agent-datums / 103M tokens, 3,600
+batches, NLL 0.0140; SFT 5 h 20 m, eval 9 min; raw `eval_results/raw/sft_general7_doc4k_b3k.*`.)
+Held-out: single 0.80, multikey 0.60, multiquery 1.00, cwe 0.58, fwe 0.53, vt 0.24 (3 overflow),
+counting 0.28, temporal 0.32, user 0.80. Diagnostics: narrativeqa 0.50, long_records 0.52, labeled 0.75.
+
+**Root cause: the two "free" cost changes changed the optimisation, not just the token bill.**
+1. `INTERNAL_KEEP=0.3` removed 70% of split-only agents — and those carry the LEAF-BOUNDARY rule.
+   At exactly-500-wide ranges run 6 split 144× / read 15×; run 7 split 20× / read 153×. Leaves went from
+   250 to 500 tokens (321 vs 153 first reads), so dense leaves (fwe word lists, multikey, vt fold slices
+   read at 500 instead of 400) overflowed. Training docs (6k/14k) never halve to exactly 500, so the
+   boundary case was learned only from the general split examples — the ones I thinned.
+2. `DATUM_MODE=agent` at batch 16 = 2.2× fewer optimizer steps (3,600 vs 7,973). Per-step NLL matched
+   run 6 (0.0140 at 3,600 vs run 6's 0.0179 there) but the run stopped half-fit (run 6 ended 0.0088).
+   Token-level equivalence ≠ optimisation equivalence.
+3. The vt roots also turned the new empty-slice wording into a self-loop ("No record starts in
+   700..900 — the chain is unchanged" then read the NEXT slice itself instead of delegating) —
+   plausibly a symptom of the under-fit fold protocol rather than the wording.
+
+**Fixes (in): `INTERNAL_KEEP=1.0` default; `SFT_BATCH_SIZE` env (scripts use 8 in agent mode → step
+count restored at the same token cost); `DOC_MIX=6000:2,8000:1,14000:1` so training halves land on
+exactly 500 (8000→4000→2000→1000→500→250) and the boundary rule is demonstrated, not inferred.**
+Agent-datum saving stands at ~1.7× (116M vs 196M tokens for this mix). The curriculum changes since
+run 6 (rule_label, labeled_records, key-space contracts, empty-slice fold, vt reassignments) remain
+untested by a clean from-base run.
+- **Leaf-boundary rule made consistent and demonstrated.** The oracle split on `range > 500` while every
+  subtask says "until the range is less than 500" — they disagreed at exactly 500, which is what a
+  4000-token eval doc halves to (run 6's model split there 144:15 on its own; run 7's read 153:20).
+  Now both oracles (base, BookQA) split on `range >= LEAF` with the text "Range a..b is not below 500;
+  splitting…". An 8000 tier would have halved to 499-token LEAVES (packing stops just under the tier),
+  teaching the opposite; the tier is **8400** (→ 525 → split → ~262-token leaves): verified 400
+  just-above-500 splits and zero ≥500-token leaf reads across 8 task types. Trace cache bumped to v2
+  (narrativeqa regenerates once, ~$10 of haiku).

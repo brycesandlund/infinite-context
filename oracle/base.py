@@ -354,11 +354,14 @@ class ScaffoldOracle(ModelBackend):
 
     def _binary_node(self, a, b, messages, is_root=False):
         nr, ns = self._reads_spawns(messages)
-        if (b - a) > self.LEAF_TOKENS:
+        # Split while the range is NOT less than LEAF_TOKENS — the same rule the subtask states
+        # ("until the range is less than 500 tokens"). The old `>` disagreed with the text at exactly
+        # 500, which is what a 4000-token eval doc halves to (4000→2000→1000→500).
+        if (b - a) >= self.LEAF_TOKENS:
             if ns == 0:
                 m = (a + b) // 2
                 return AssistantTurn(
-                    text=f"Range {a}..{b} > {self.LEAF_TOKENS}; splitting at midpoint {m}.",
+                    text=f"Range {a}..{b} is not below {self.LEAF_TOKENS}; splitting at midpoint {m}.",
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(a, m)}),
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._binary_subtask(m, b)}),

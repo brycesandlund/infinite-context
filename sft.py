@@ -162,7 +162,11 @@ ROOT_DUP = int(os.environ.get("ROOT_DUP", "4"))                # copies of each 
 #   near-identical to each other ("Range a..b > 500; splitting at midpoint m" / "Sum my children");
 #   roots and every reading agent (leaves, fold hops) are always kept.
 DATUM_MODE = os.environ.get("DATUM_MODE", "agent")
-INTERNAL_KEEP = float(os.environ.get("INTERNAL_KEEP", "0.3"))
+# Run 7 (from base) showed INTERNAL_KEEP=0.3 is NOT free: the split-only agents carry the boundary
+# rule ("Range 1000..1500 > 500; splitting" vs "Range 1000..1500 fits") and with 70% of them gone
+# the model read 500-token leaves at eval (run 6: split at exactly-500 ranges 144:15; run 7: 20:153)
+# -> dense leaves overflowed (fwe/vt/multikey). Default back to keep everything.
+INTERNAL_KEEP = float(os.environ.get("INTERNAL_KEEP", "1.0"))
 
 
 def _qa_verdict_class(text: str) -> str:
@@ -183,7 +187,11 @@ EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: th
                                 # epoch on 30 traces bought NLL via surface memorization
                                 # (e.g. degenerate '\'-loops at sampling). With 150
                                 # traces a single pass captures the pattern.
-SFT_BATCH_SIZE = 16             # datums per optim step
+# Datums per optim step. With DATUM_MODE=agent a datum holds a whole conversation, so at the same
+# batch size the run takes ~2.5x fewer optimizer steps than per-turn mode (run 7: 3,600 vs 7,973) and
+# ended less fit (NLL 0.0140 vs 0.0088). Tokens per step, not steps, drive cost, so use a smaller batch
+# in agent mode to restore the step count.
+SFT_BATCH_SIZE = int(os.environ.get("SFT_BATCH_SIZE", "16"))
 LEARNING_RATE = float(os.environ.get("LR", "1e-5"))
 # Warm start: load these weights (not the optimizer) into the fresh LoRA client before training —
 # for iterating on NEW tasks train on them + a small replay of the rest from the last full run,
@@ -290,7 +298,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v1"
+_CACHE_VERSION = "v2"   # v2: split rule >= LEAF + "is not below" wording (2026-09-16)
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name) -> str:
