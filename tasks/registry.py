@@ -23,6 +23,7 @@ from tasks.bookqa import BOOKQA_TASKS, make_bookqa_problem
 from tasks.niah import NIAH_TASKS, make_niah_problem
 from tasks.longrec import LONGREC_TASKS, make_longrec_problem
 from tasks.rulelabel import RULELABEL_TASKS, make_rulelabel_problem
+from tasks.labeled import LABELED_TASKS, make_labeled_problem
 
 
 # All 13 RULER tasks resolve through the same vendored builder; per-task
@@ -43,6 +44,7 @@ _GENERATORS.update({name: _bind(make_bookqa_problem, name) for name in BOOKQA_TA
 _GENERATORS.update({name: _bind(make_niah_problem, name) for name in NIAH_TASKS})
 _GENERATORS.update({name: _bind(make_longrec_problem, name) for name in LONGREC_TASKS})
 _GENERATORS.update({name: _bind(make_rulelabel_problem, name) for name in RULELABEL_TASKS})
+_GENERATORS.update({name: _bind(make_labeled_problem, name) for name in LABELED_TASKS})
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -73,6 +75,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "vt_novel": "set",
     "long_records": "numeric",   # fallback; per-problem grading_mode decides
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides
+    "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
 }
 
 
@@ -101,6 +104,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "vt_novel": "set",
     "long_records": "numeric",   # fallback; per-problem grading_mode decides
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides
+    "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
 }
 
 

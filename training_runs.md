@@ -544,3 +544,16 @@ not curriculum. Consequence for the process: a warm-start iteration answers "did
 land?" reliably (yes) but its held-out SCORE is confounded by drift, so it should not be read as the
 run-to-run scoreboard. Options: heavier replay (≥40%) / lower LR (2e-6) for warm starts, or treat only
 from-base runs as the reference. The from-base run 7 now costs ≈$110 with agent-datums.
+
+**`labeled_records` (added 2026-09-15, for run 7 proper).** The proven OOLONG-SFT recipe, generalized:
+real labeled text with the DATASET's gold label per item (no model calls). Datasets with taxonomies
+disjoint from OOLONG's: DBpedia-14 (4–6 classes sampled per problem), dair-ai/emotion (6), Yelp polarity
+(2); cached by `scripts/cache_labeled.py`. Layout `[S<n>] [by <author>] <text>` (not OOLONG's
+`Date || User || Instance`); the task context states the label set and what a label means; the
+root's contract enumerates the labels. Leaf line = the judgment per item:
+`- S1 [by Han] "i have stopped feeling surprised" → label: surprise (counts) → count=1`.
+Questions: count / most_common / relative / sections_cmp / section_most (2-D) / author_most
+(filter → argmax, the oolong_user shape). Verified 80/80 (6 qtypes × 3 datasets, doc 6k/14k), max
+real ctx 2681. Traces: `trace_snippets/labeled_records_traces.txt`, `…_dbpedia.txt`. Added to both
+run-7 scripts at 160 (from-base) / 160 (warm). RL is off the table for now (earlier attempts were
+unstable and degraded the SFT policy); gold-label SFT is the path for leaf judgment.
