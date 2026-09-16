@@ -123,9 +123,17 @@ class ScaffoldOracle(ModelBackend):
         merge overflowed). Default by state kind; tasks with structured keys override."""
         k = self._kind()
         if k == "int":     return "the partial as a single integer"
-        if k == "counter": return "the partial tally as `<key>:<count>` entries joined by `|`"
+        if k == "counter": return f"the partial tally as `<key>:<count>` entries joined by `|`{self._key_space()}"
         if k == "set":     return "the collected values joined by `|`"
-        return "the partial as `<key>=<value>` entries joined by `|`"
+        return f"the partial as `<key>=<value>` entries joined by `|`{self._key_space()}"
+
+    def _key_space(self) -> str:
+        """Appended to the format contract: the allowed KEYS. Closed label sets are enumerated
+        ("where `<key>` is exactly one of K1, K2, K3, K4"); open sets state what a key is ("each
+        `<key>` is the word exactly as written in the text"). Run 6 (OOLONG negation): the root
+        fixed the shape but not the keys, and sibling leaves invented `none`, `unrelated`,
+        `not relevant` — the merge summed incompatible vocabularies. Default: no clause."""
+        return ""
 
     def _combine_phrase(self) -> str:
         return "combine"

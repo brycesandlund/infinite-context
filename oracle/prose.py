@@ -120,8 +120,9 @@ class NiahMultiOracle(ScaffoldOracle):
         return "collect"
 
     def _state_format(self) -> str:
-        return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|` "
-                f"(a lookup instruction as `QUERY=<key>`; `none` if the range has no fact)")
+        return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|`, where each "
+                f"`<key>` is the key name exactly as written in the text (a lookup instruction as "
+                f"`QUERY=<key>`; `none` if the range has no fact)")
 
     def _goal_phrase(self) -> str:
         # Name what the question asks for, so every subtask carries the KEY(s) down the tree

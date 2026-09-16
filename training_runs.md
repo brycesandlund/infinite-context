@@ -473,3 +473,32 @@ filler ∈ {noise ×2, novel, essay} (RULER vt is noise-filled; was noise ×1 of
 synth_runreset 60/60, long_records 60/60 (incl. first_reach) at 1.00, max ctx unchanged (2626).
 Run-6 training already had 26% empty fold hops; the failures were specific to noise haystacks where
 nearly every hop is empty and the model had to keep delegating anyway.
+
+---
+
+## sft_general7 (run 7) — PLANNED
+
+**Target:** the run-6 post-mortem. (a) fold chains on nearly-empty haystacks (vt s0/s3) — DONE above
+(empty-slice narration + sparse/noisy vt_novel). (b) Leaves that JUDGE items collapsing to one line
+(`label=true count=10`) and INVENTING label names on OOLONG negation.
+
+**Changes**
+1. **Key space in the format contract** (`_key_space` hook): the root now dictates the allowed KEYS, not
+   just the shape. Closed sets enumerate — *"…where `<key>` is exactly one of K1, K2, K3, K4"*, *"`<period>`
+   is one of Nov 2023, Jan 2024, … and `<label>` is one of Business, Sci/Tech, Sports, World"* (synth mode /
+   distinct / sumby / diff / filter_argmax / 2d, long_records src_most / tag_in_src / 2d, rule_label);
+   open sets state what a key is — *"each `<key>` is the key name exactly as written in the text"*
+   (niah_multi). Both forms are in training so the root learns to pick one.
+2. **`rule_label`** (tasks/rulelabel, oracle/rulelabel.py): classification-SHAPED aggregation over real
+   prose with an exactly checkable label. One sentence per line, tagged `[S<n>]` by section; the question
+   states a rule the reader must apply per sentence — dialogue/narration (contains a quotation mark),
+   question/statement (ends with ?), numeric/plain (contains a digit), named/unnamed (capitalized
+   non-initial word) — and asks count / most_common / relative ("more common than…") / sections_cmp (2-D)
+   / section_most (2-D). The leaf line SHOWS the judgment per item:
+   `- S2 "…she said, 'come in.'" → contains a quotation mark? yes → dialogue → S2/dialogue=3`.
+   Teaches the procedure classification needs — judge each item, write the check, tally — while the
+   decision stays mechanical; the label is NOT in the text. Not OOLONG's data, labels, or layout.
+   Verified 80/80 (4 rules × 5 qtypes, doc 6k/14k), max real ctx 2585.
+3. Data: run-6 mix + `rule_label:160`; eval adds `rule_label` to diagnostics (N=2). Launch:
+   `scripts/run_sft7_eval.sh`. Bet stated plainly: this teaches per-item enumeration under *mechanical*
+   judgment and hopes it transfers to fuzzy judgment; it will not raise TREC/imdb label accuracy itself.

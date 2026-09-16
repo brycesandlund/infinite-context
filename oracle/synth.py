@@ -259,10 +259,21 @@ class SynthOracle(ScaffoldOracle):
 
     def _state_format(self) -> str:
         if self.task == "synth_2d":
-            return f"the partial tally as `<{self.f_out}>/<{self.f_in}>=<count>` entries joined by `|`"
-        if self.task in ("synth_sumby", "synth_diff"):
-            return "the partial as `<key>=<total>` entries joined by `|`"
+            return (f"the partial tally as `<{self.f_out}>/<{self.f_in}>=<count>` entries joined by `|`, "
+                    f"where `<{self.f_out}>` is one of {', '.join(self.out_vals)} and `<{self.f_in}>` is one of "
+                    f"{', '.join(self.in_vals)}")
+        if self.task == "synth_sumby":
+            return "the partial as `<grp>=<total>` entries joined by `|`, where `<grp>` is one of K1, K2, K3, K4"
+        if self.task == "synth_diff":
+            return "the partial as `<flag>=<total>` entries joined by `|`, where `<flag>` is Y or N"
         return super()._state_format()
+
+    def _key_space(self) -> str:
+        if self.task == "synth_filter_argmax":
+            return f", where `<key>` is exactly one of {', '.join(self.in_vals)}"
+        if self.task in ("synth_mode", "synth_distinct"):
+            return ", where `<key>` is exactly one of K1, K2, K3, K4 (never RST)"
+        return ""
 
     def _combine_phrase(self) -> str:
         # Must read naturally in BOTH "then {phrase} their two results" (subtask) and

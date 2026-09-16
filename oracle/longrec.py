@@ -195,10 +195,18 @@ class LongRecOracle(ScaffoldOracle):
 
     def _state_format(self) -> str:
         if self.qtype == "src_tag_2d":
-            return f"the partial tally as `<{self.fa}>/<{self.fb}>=<count>` entries joined by `|`"
+            return (f"the partial tally as `<{self.fa}>/<{self.fb}>=<count>` entries joined by `|`, where "
+                    f"`<{self.fa}>` is one of {', '.join(self.a_vals)} and `<{self.fb}>` is one of {', '.join(self.b_vals)}")
         if self.qtype == "mention_most":
             return "the best entry so far as `best=<entry number>|n=<occurrences>`"
         return super()._state_format()
+
+    def _key_space(self) -> str:
+        if self.qtype == "src_most":
+            return f", where `<key>` is exactly one of {', '.join(self.a_vals)}"
+        if self.qtype == "tag_in_src":
+            return f", where `<key>` is exactly one of {', '.join(self.b_vals)}"
+        return ""
 
     def _empty_phrase(self) -> str:
         return "  (no entry header starts here — this range is inside an entry owned by the range before it)"
