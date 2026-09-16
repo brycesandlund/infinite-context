@@ -502,3 +502,18 @@ nearly every hop is empty and the model had to keep delegating anyway.
 3. Data: run-6 mix + `rule_label:160`; eval adds `rule_label` to diagnostics (N=2). Launch:
    `scripts/run_sft7_eval.sh`. Bet stated plainly: this teaches per-item enumeration under *mechanical*
    judgment and hopes it transfers to fuzzy judgment; it will not raise TREC/imdb label accuracy itself.
+
+**Cost reduction (2026-09-15; from-base runs had reached ~$240).**
+- **`DATUM_MODE=agent`** (default): one datum per agent conversation with every assistant turn weighted
+  (`ALL_ASSISTANT_MESSAGES`), instead of one datum per turn each re-paying the system prompt + tool
+  schema + earlier turns. Verified exactly equivalent on our thinking-free traces — every per-turn datum
+  is a strict prefix of the full render and the weight masks coincide (275/275 turns, 123/123 agents) —
+  so the supervision is identical at 1.9× fewer tokens. The cookbook's generic "extension property"
+  warning is silenced for this renderer; `DATUM_MODE=turn` restores the old behaviour.
+- **`INTERNAL_KEEP=0.3`**: pure split/combine agents (depth>0, no read_chunk) are near-identical to each
+  other; keep 30%. Roots and every reading agent (leaves, fold hops) are always kept.
+- **Warm start** (`INIT_CHECKPOINT=tinker://…`, `LR`): load a previous run's weights into the fresh LoRA
+  client (fresh optimizer) and train on new/changed tasks + a small replay. Live-tested: loading
+  sft_general6 gave NLL 0.0000 on synth_sum from the first batch (a fresh LoRA starts ~0.25).
+  Policy: warm-start for iterating on new tasks (`scripts/run_sft7_warm.sh`: rule_label 160, vt_novel 120,
+  ~20% replay of the rest, LR 5e-6); full from-base runs (`run_sft7_eval.sh`) remain the reference.

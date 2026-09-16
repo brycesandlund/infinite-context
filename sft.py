@@ -37,6 +37,8 @@ from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.renderers import TrainOnWhat, get_renderer
 from tinker_cookbook.supervised import datum_from_model_input_weights
 
+import logging
+logging.getLogger("tinker_cookbook.renderers.base").setLevel(logging.ERROR)   # ALL_ASSISTANT_MESSAGES warning; see DATUM_MODE
 import metrics  # optional W&B logging (no-op unless WANDB=1)
 import rl  # shared constants + cookbook tool specs
 from eval.agent import AgentNode, flatten, run_agent
@@ -150,7 +152,17 @@ QA_ANSWER_DUP = int(os.environ.get("QA_ANSWER_DUP", "2"))     # copies of each a
 # run-4 RULER failures broke at (a retrieval question rendered as "compute the hidden number";
 # a subtask with literal START..END placeholders). It is also the LEAST-trained turn: one per
 # trace vs ~30 leaf/split turns, i.e. ~1.5% of datums. Upweight it.
-ROOT_DUP = int(os.environ.get("ROOT_DUP", "4"))                # copies of each root first turn
+ROOT_DUP = int(os.environ.get("ROOT_DUP", "4"))                # copies of each root (agent or first turn)
+# Cost knobs (2026-09-15, runs cost ~$240 from base):
+# DATUM_MODE=agent — ONE datum per agent conversation with every assistant turn weighted, instead of
+#   one datum per turn each repaying the system prompt + tool schema + earlier turns. Verified exactly
+#   equivalent on our (thinking-free) traces: every per-turn datum is a strict prefix of the full
+#   render and the weight masks coincide (275/275 turns, 123/123 agents); 1.9x fewer tokens.
+# INTERNAL_KEEP — fraction of pure split/combine agents (depth>0, no read_chunk) kept. They are
+#   near-identical to each other ("Range a..b > 500; splitting at midpoint m" / "Sum my children");
+#   roots and every reading agent (leaves, fold hops) are always kept.
+DATUM_MODE = os.environ.get("DATUM_MODE", "agent")
+INTERNAL_KEEP = float(os.environ.get("INTERNAL_KEEP", "0.3"))
 
 
 def _qa_verdict_class(text: str) -> str:
@@ -172,7 +184,11 @@ EPOCHS = 1                      # 1 epoch over MORE data beats 2 over little: th
                                 # (e.g. degenerate '\'-loops at sampling). With 150
                                 # traces a single pass captures the pattern.
 SFT_BATCH_SIZE = 16             # datums per optim step
-LEARNING_RATE = 1e-5
+LEARNING_RATE = float(os.environ.get("LR", "1e-5"))
+# Warm start: load these weights (not the optimizer) into the fresh LoRA client before training —
+# for iterating on NEW tasks train on them + a small replay of the rest from the last full run,
+# instead of everything from base (~4x cheaper). Full from-base runs stay the reference.
+INIT_CHECKPOINT = os.environ.get("INIT_CHECKPOINT", "").strip() or None
 
 SAVE_CHECKPOINT_NAME = os.environ.get("SAVE_NAME", "sft_general")   # output checkpoint name
 # (just the save-state label — SFT always trains a FRESH LoRA from base_model, no warm-start)
@@ -436,11 +452,28 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
     """
     cb = neutral_to_cookbook(node.messages, renderer, tool_specs)
     out: list[tuple] = []   # (datum, klass) — klass drives resampling in main()
+    is_root = getattr(node, "depth", 1) == 0
+    reads = any(m.get("role") == "tool" and m.get("name") == "read_chunk" for m in node.messages)
+    if DATUM_MODE == "agent":
+        model_input, weights = renderer.build_supervised_example(
+            cb, train_on_what=TrainOnWhat.ALL_ASSISTANT_MESSAGES
+        )
+        if float(weights.sum()) == 0.0:
+            return out
+        datum = datum_from_model_input_weights(model_input, weights, max_length=AGENT_CONTEXT, reduction="mean")
+        last = next((m.get("content") or "" for m in reversed(cb) if m.get("role") == "assistant"), "")
+        if is_root:
+            klass = "root"
+        elif not reads:
+            klass = "internal"          # pure split/combine node
+        else:
+            klass = _qa_verdict_class(last) if is_qa else "normal"
+        return [(datum, klass)]
     first_assistant = True
     for i, m in enumerate(cb):
         if m.get("role") != "assistant":
             continue
-        is_root_turn = first_assistant and getattr(node, "depth", 1) == 0
+        is_root_turn = first_assistant and is_root
         first_assistant = False
         model_input, weights = renderer.build_supervised_example(
             cb[: i + 1], train_on_what=TrainOnWhat.LAST_ASSISTANT_MESSAGE
@@ -552,10 +585,17 @@ async def main() -> None:
     # duplicate each answer verdict. Deterministic (stride) so it's reproducible.
     datums: list[tinker.Datum] = []
     neg_stride = max(1, round(1.0 / QA_NONE_KEEP)) if QA_NONE_KEEP > 0 else 1
-    n_pos = n_neg_keep = n_neg_drop = neg_i = n_root = 0
+    n_pos = n_neg_keep = n_neg_drop = neg_i = n_root = n_int_keep = n_int_drop = int_i = 0
+    int_stride = max(1, round(1.0 / INTERNAL_KEEP)) if INTERNAL_KEEP > 0 else 1
     for datum, klass in tagged:
         if klass == "root":
             datums.extend([datum] * ROOT_DUP); n_root += 1
+        elif klass == "internal":
+            if int_i % int_stride == 0:
+                datums.append(datum); n_int_keep += 1
+            else:
+                n_int_drop += 1
+            int_i += 1
         elif klass == "pos":
             datums.extend([datum] * QA_ANSWER_DUP); n_pos += 1
         elif klass == "neg":
@@ -568,7 +608,9 @@ async def main() -> None:
             datums.append(datum)
     print(f"Traces: {len(traces)} | agents: {n_agents} | datums: {len(datums)} "
           f"(QA verdicts: pos={n_pos}x{QA_ANSWER_DUP}, neg kept {n_neg_keep}/{n_neg_keep + n_neg_drop}; "
-          f"root turns {n_root}x{ROOT_DUP})")
+          f"root turns {n_root}x{ROOT_DUP}; internal split agents kept {n_int_keep}/{n_int_keep + n_int_drop})")
+    n_tok = sum(len(d.model_input.to_ints()) for d in datums)
+    print(f"Datum mode: {DATUM_MODE} | training tokens: {n_tok:,} ({n_tok / max(1, len(datums)):.0f}/datum)")
     if not datums:
         raise SystemExit("No datums produced — check oracle trace generation.")
 
@@ -593,6 +635,10 @@ async def main() -> None:
     training_client = await _retry("create_training_client", lambda: service_client.create_lora_training_client_async(
         base_model=MODEL_NAME, rank=LORA_RANK
     ))
+    if INIT_CHECKPOINT and not resume:
+        print(f"  WARM START: loading weights from {INIT_CHECKPOINT} (fresh optimizer, LR {LEARNING_RATE:g})")
+        fut = await _retry("load_state(init)", lambda: training_client.load_state_async(INIT_CHECKPOINT))
+        await _retry("load_state(init).result", fut.result_async)
     if resume:
         print(f"  RESUMING from {resume['path']} at batch {resume['next_batch']}")
         fut = await _retry("load_state_with_optimizer", lambda: training_client.load_state_with_optimizer_async(resume["path"]))
@@ -616,6 +662,7 @@ async def main() -> None:
             "sft_batch_size": SFT_BATCH_SIZE, "n_datums": len(datums),
             "tasks": SFT_TASKS, "n_per_task": N_PER_TASK,
             "n_per_task_override": N_PER_TASK_OVERRIDE,
+            "init_checkpoint": INIT_CHECKPOINT, "datum_mode": DATUM_MODE, "internal_keep": INTERNAL_KEEP,
         },
     )
 
