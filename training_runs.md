@@ -591,3 +591,30 @@ untested by a clean from-base run.
   teaching the opposite; the tier is **8400** (→ 525 → split → ~262-token leaves): verified 400
   just-above-500 splits and zero ≥500-token leaf reads across 8 task types. Trace cache bumped to v2
   (narrativeqa regenerates once, ~$10 of haiku).
+
+**Run 7w2 results — 2026-09-16 — warm start from sft_general6 (same start as 7w) + labeled_records +
+boundary fixes + batch 8.** (ckpt `tinker://b85e0baa-5cad-5441-b9c4-ed6f47c0d466:train:0/weights/sft_general7w2`;
+758 traces / 32,509 agent-datums / 54.8M tokens, 4,064 batches, NLL 0.0027; SFT ~9 h wall (batch 8 doubles
+steps without halving step time), eval 10 min; ≈$67 vs ≈$170 from base. Raw `eval_results/raw/sft_general7w2_*`.)
+**Held-out 0.666, diagnostics 0.989.**
+
+| held-out | run 6 | 7w | 7w2 | note |
+|---|---|---|---|---|
+| **oolong_counting** | 0.09 | 0.32 | **0.71** | imdb / agnews / yahoo 1.00; trec 12 vs 14 (0.56); negation still all-False (46 vs 23) |
+| niah_single_1 | 1.00 | 1.00 | 1.00 | |
+| niah_multikey_1 | 0.80 | 1.00 | 1.00 | |
+| **cwe** | 0.96 | 0.68 | **0.92** | leaf boundary restored: at 500-wide ranges 211 splits : 1 read; leaves 250 again |
+| niah_multiquery | 0.80 | 0.90 | 0.80 | |
+| vt | 0.44 | 0.36 | 0.48 | 2 fold overflows, one partial |
+| fwe | 0.93 | 0.73 | 0.53 | 3 partials (a junk 3rd word), one `none`, one `hcuuzt:255` |
+| oolong_user | 0.60 | 0.75 | 0.40 | imdb `stopped_no_answer`; negation picked user 33202 (gold 49255); trec degenerate |
+| oolong_temporal | 0.46 | 0.17 | 0.15 | trec 22 vs 8; agnews 1 vs 6; negation overflow |
+| diagnostics (11 × 2) | 0.95 | 0.95 | **0.99** | labeled_records 0.875 (yelp 25 vs 26); everything else 1.00 |
+
+**Reading.** The gold-label leaf task did what the OOLONG-only SFT did: counting 0.32 → 0.71 with the
+leaves now labelling each item ("→ label: description and abstract concept → …: 2") against the dictated
+label set — trec is within 2 of gold, imdb/agnews/yahoo exact. The boundary fixes verifiably restored
+250-token leaves (cwe back to 0.92). Warm-start drift persists on the tasks that had little replay
+(temporal 2-D shape, fwe partial format, user filter), same as 7w — expected, and why the from-base run
+remains the reference. Negation is the one OOLONG set where the leaf's judgment itself is wrong
+(every claim "False"); labeled_records has no claim-verification analogue.
