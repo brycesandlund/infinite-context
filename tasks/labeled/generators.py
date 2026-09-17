@@ -8,7 +8,13 @@ must judge each item's label — there is no rule to check, the label is a judgm
 shows the gold label per item before tallying:  - S2 "Absolutely loved the brunch…" → label: positive → positive:3
 Datasets (cached by scripts/cache_labeled.py): dbpedia (14 ontology classes), emotion (6), yelp (2).
 Questions: count / most_common / relative / sections_cmp (2-D) / section_most (2-D) / author_most
-(filter by author -> most common label).  `record_spans` = (ts, te, idx, label, section, author, snippet).
+(filter by author -> most common label) / author_top (which author has the most items of label L —
+argmax over the OUTER key) / dates_rep_k (how many distinct dates appear exactly k times — a
+histogram-of-counts reduction).
+KEY MODES: half the problems tag items with a section `[S3]`; the other half with a full DATE
+`[Jul 28, 2022]`, and the 2-D questions are per MONTH — the outer key must be DERIVED (Jul 28, 2022 →
+Jul 2022), which no other training task requires and OOLONG temporal does.
+`record_spans` = (ts, te, idx, label, outer_key, author, snippet, date_or_None).
 """
 
 from __future__ import annotations
@@ -32,7 +38,8 @@ _DESC = {
     "yelp": "Each item is a customer review of a business; its label is the review's overall SENTIMENT.",
 }
 _AUTHORS = ["Cho", "Diaz", "Han", "Ivanov", "Kim", "Lee", "Okafor", "Park", "Rossi", "Sato"]
-_QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most"]
+_QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top"]
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _ROWS: dict[str, list[dict]] = {}
 
 
@@ -43,13 +50,20 @@ def _rows(name: str) -> list[dict]:
     return _ROWS[name]
 
 
-def _context(name: str, labels: list[str]) -> str:
+def _context(name: str, labels: list[str], key_mode: str) -> str:
+    tag = ("a section tag `[S<n>]` (sections are numbered from 1 and appear in order)" if key_mode == "section"
+           else "the item's date `[Mon DD, YYYY]`; questions about MONTHS refer to the month and year of that "
+                "date (e.g. `Jul 28, 2022` is in month `Jul 2022`)")
     return (
-        "The document is a list of text items, ONE per line. Each line starts with a section tag "
-        "`[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, "
-        f"followed by the item's text. {_DESC[name]} The label is NOT written in the text — you must "
-        f"judge each item yourself. The label set is exactly: {', '.join(labels)}."
+        f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
+        f"`[by <name>]`, followed by the item's text. {_DESC[name]} The label is NOT written in the text — you "
+        f"must judge each item yourself. The label set is exactly: {', '.join(labels)}."
     )
+
+
+def _month_key(date: str) -> str:
+    mon, _, year = date.replace(",", "").split()
+    return f"{mon} {year}"
 
 
 def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
@@ -64,31 +78,52 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     if name == "dbpedia":
         labels = sorted(rng.sample(labels, rng.randint(4, 6)))
         rows = [r for r in rows if r["label"] in labels]
-    n_sections = rng.randint(3, 6)
+    key_mode = rng.choice(["section", "date"])
+    # Joint outer x label key space capped at ~18 (the binary combine holds two children's tallies plus
+    # the merge; 6 months x 6 emotions = 36 multi-token keys measured 3.6k real tokens at internal nodes).
+    n_sections = rng.randint(3, min(6, max(3, 18 // len(labels))))
     authors = sorted(rng.sample(_AUTHORS, rng.randint(3, 5)))
     per_sec = max(1, (doc_size_tokens // 45) // n_sections)     # ~45 tok/item
+    if key_mode == "date":
+        # 3-6 months (calendar order, may span years); each month gets a pool of ~5-9 specific dates so
+        # dates REPEAT (for dates_rep_k) and every month has several items.
+        ym = sorted(rng.sample([(y, m) for y in (2022, 2023, 2024, 2025) for m in range(12)], n_sections))
+        months = [f"{_MONTHS[m]} {y}" for y, m in ym]
+        date_pool = {mk: [f"{mk.split()[0]} {d:02d}, {mk.split()[1]}" for d in sorted(rng.sample(range(1, 29), rng.randint(8, 14)))]  # many dates per month, each carried by ~1-4 items (for dates_rep_k)
+                     for mk in months}
 
     order = rng.sample(range(len(rows)), min(len(rows), 600))
     doc_tokens, recs = [], []
     for i, ri in enumerate(order):
         r = rows[ri]
-        sec = min(n_sections, i // per_sec + 1)
         au = rng.choice(authors)
-        line = f"[S{sec}] [by {au}] {r['text']}\n"
+        if key_mode == "section":
+            outer, date = f"S{min(n_sections, i // per_sec + 1)}", None
+            tag = f"[{outer}]"
+        else:
+            outer = rng.choice(months)
+            date = rng.choice(date_pool[outer])
+            tag = f"[{date}]"
+        line = f"{tag} [by {au}] {r['text']}\n"
         toks = tokenizer.encode(line, add_special_tokens=False)
         if doc_tokens and len(doc_tokens) + len(toks) > doc_size_tokens:
             break
         start = len(doc_tokens)
         doc_tokens.extend(toks)
         t = r["text"]
-        recs.append({"idx": i, "sec": f"S{sec}", "au": au, "label": r["label"],
-                     "snip": (t[:42] + "…") if len(t) > 45 else t, "start": start, "end": len(doc_tokens)})
-    sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
-    spans = [(r["start"], r["end"], r["idx"], r["label"], r["sec"], r["au"], r["snip"]) for r in recs]
+        recs.append({"idx": i, "sec": outer, "au": au, "label": r["label"], "date": date,
+                     "snip": (t[:32] + "…") if len(t) > 35 else t, "start": start, "end": len(doc_tokens)})
+    if key_mode == "section":
+        sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
+    else:
+        sections = [m for m in months if any(r["sec"] == m for r in recs)]
+    spans = [(r["start"], r["end"], r["idx"], r["label"], r["sec"], r["au"], r["snip"], r["date"]) for r in recs]
+    unit_word = "section" if key_mode == "section" else "month"
 
     tally = Counter(r["label"] for r in recs)
-    per = {s: Counter(r["label"] for r in recs if r["sec"] == s) for s in sections}
-    qtype = rng.choice(_QTYPES)
+    per = {s_: Counter(r["label"] for r in recs if r["sec"] == s_) for s_ in sections}
+    qtypes = _QTYPES + (["dates_rep_k", "dates_rep_k"] if key_mode == "date" else [])
+    qtype = rng.choice(qtypes)
     head = f"Judge each item's label (one of: {', '.join(labels)}). "
     ex = labels[0]
     if qtype == "count":
@@ -107,15 +142,34 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
                     f"one of: more common than / less common than / equally common as, in \\boxed{{}}.")
     elif qtype == "sections_cmp":
         a, b = rng.sample(labels, 2)
-        gold = sum(1 for s in sections if per[s][a] > per[s][b])
+        gold = sum(1 for s_ in sections if per[s_][a] > per[s_][b])
         grading, params = "numeric", {"qa": a, "qb": b}
-        q = head + f"In how many sections are there STRICTLY more `{a}` items than `{b}` items? Give the single integer in \\boxed{{}}."
+        q = head + f"In how many {unit_word}s are there STRICTLY more `{a}` items than `{b}` items? Give the single integer in \\boxed{{}}."
     elif qtype == "section_most":
         L = rng.choice(labels)
-        best = max(per[s][L] for s in sections)
-        gold = next(s for s in sections if per[s][L] == best)
+        best = max(per[s_][L] for s_ in sections)
+        gold = next(s_ for s_ in sections if per[s_][L] == best)
         grading, params = "exact", {"qlabel": L}
-        q = head + f"Which section has the MOST `{L}` items? Break ties by the earlier section. Give the section tag (e.g. {sections[0]}) in \\boxed{{}}."
+        q = head + (f"Which {unit_word} has the MOST `{L}` items? Break ties by the earlier {unit_word}. Give the "
+                    f"{unit_word} (e.g. {sections[0]}) in \\boxed{{}}.")
+    elif qtype == "author_top":
+        L = rng.choice(labels)
+        c = Counter(r["au"] for r in recs if r["label"] == L)
+        best = max((c[a] for a in authors), default=0)
+        gold = next(a for a in authors if c[a] == best)           # authors sorted -> alphabetical tie
+        grading, params = "exact", {"qlabel": L}
+        q = head + (f"Which author has the MOST `{L}` items? Break ties by the alphabetically first author. Give "
+                    f"the author name (e.g. {authors[0]}) in \\boxed{{}}.")
+    elif qtype == "dates_rep_k":
+        # Scoped to ONE month so the per-date tally stays <= ~14 keys (a whole-document per-date dict
+        # overflowed the root); the leaf must derive each item's month to decide whether it counts.
+        mon = rng.choice(sections)
+        dc = Counter(r["date"] for r in recs if r["sec"] == mon)
+        k = rng.choice([1, 1, 2, 3])
+        gold, grading, params = sum(1 for v in dc.values() if v == k), "numeric", {"qk": k, "qmon": mon}
+        q = (f"Considering only items dated in {mon}: how many distinct dates are represented exactly {k} "
+             f"time{'s' if k != 1 else ''} (i.e. exactly {k} item{'s' if k != 1 else ''} carry that exact date)? "
+             f"Give the single integer in \\boxed{{}}.")
     else:  # author_most
         au = rng.choice(authors)
         c = Counter(r["label"] for r in recs if r["au"] == au)
@@ -125,8 +179,9 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
-        task_context=_context(name, labels), grading_mode=grading,
+        task_context=_context(name, labels, key_mode), grading_mode=grading,
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype,
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
+                  "key_mode": key_mode,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},
     )

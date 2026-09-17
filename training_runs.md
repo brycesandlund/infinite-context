@@ -618,3 +618,20 @@ label set — trec is within 2 of gold, imdb/agnews/yahoo exact. The boundary fi
 (temporal 2-D shape, fwe partial format, user filter), same as 7w — expected, and why the from-base run
 remains the reference. Negation is the one OOLONG set where the leaf's judgment itself is wrong
 (every claim "False"); labeled_records has no claim-verification analogue.
+
+**Three additions for OOLONG temporal/user shapes (2026-09-16, after 7w2), all in `labeled_records`:**
+1. **Derived keys.** Half the problems tag items with a full DATE (`[Jul 28, 2022]`) instead of a section;
+   the 2-D questions are per MONTH, so the outer key must be derived — the leaf line shows it:
+   `- [Apr 15, 2025 → Apr 2025] "i am feeling generous and…" → label: joy → Apr 2025/joy=1`. Context and
+   contract say "the month and year of the item's date, one of `Nov 2022`, `Sep 2023`, …". Every other
+   training key was copied verbatim; OOLONG temporal's month key is derived from `Date: Jul 28, 2022`.
+2. **`dates_rep_k`** — "considering only items dated in Nov 2025, how many distinct dates are represented
+   exactly k times" — a per-date tally then COUNT-OF-KEYS-WITH-COUNT-k reduction (OOLONG temporal's
+   `represented_n_times`, 0.00 in every run). Month-scoped so the dict stays ≤ ~14 keys.
+3. **`author_top`** — "which author has the most `joy` items": argmax over the OUTER key of a label count
+   (OOLONG user's "which user has the most X"); the existing `author_most` is the reverse (filter → label).
+Budget work to fit the 14k tier: joint key space capped at ~18 (months × labels), combine turns no
+longer re-list both children's tallies for counter/dict states (they are in the tool results above —
+this halves internal-node state cost for EVERY tally task), author tag only on author questions,
+snippets 32 chars, label list not repeated inside the goal phrase. Verified 120/120 (9 qtypes × 2
+key modes × 3 datasets, doc 6k/14k). `labeled_records` count 160 → 200 in the from-base script.

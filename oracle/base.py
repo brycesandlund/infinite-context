@@ -369,12 +369,18 @@ class ScaffoldOracle(ModelBackend):
                 )
             states = [self._parse_state(c) for c in self._spawn_returns(messages)]
             res = self._combine(states)
-            shown = ", ".join(self._ser_state(s) for s in states)
-            return AssistantTurn(
-                text=f"{self._combine_phrase().capitalize()} my children [{shown}] -> "
-                     f"{self._ser_state(res)}.{self._box_text(res, is_root)}",
-                tool_calls=[],
-            )
+            # Scalar/set states are restated (cheap; shows the arithmetic). Counter/dict tallies are
+            # NOT re-listed — they sit in the two tool results just above, and re-printing both plus
+            # the merge tripled the state cost at every internal node (labeled_records date-mode 2-D
+            # combines measured 3.6k real tokens; OOLONG's run-5 merge overflow was the same shape).
+            if self._kind() in ("counter", "dict"):
+                text = (f"{self._combine_phrase().capitalize()} my two children's tallies (above) -> "
+                        f"{self._ser_state(res)}.{self._box_text(res, is_root)}")
+            else:
+                shown = ", ".join(self._ser_state(s) for s in states)
+                text = (f"{self._combine_phrase().capitalize()} my children [{shown}] -> "
+                        f"{self._ser_state(res)}.{self._box_text(res, is_root)}")
+            return AssistantTurn(text=text, tool_calls=[])
         # leaf: read (iteratively, until the last owned record is covered), then accumulate
         # the records ONE AT A TIME, showing the running partial after each (never a total
         # computed in one shot).
