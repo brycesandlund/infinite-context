@@ -72,7 +72,9 @@ N_PER_TASK_OVERRIDE = {
 # SCORE_TASKS: the held-out (never-trained-on) tasks whose mean is the headline number. Everything
 # else in EVAL_TASKS is reported as DIAGNOSTIC and excluded from the score.
 SCORE_TASKS = set(filter(None, os.environ.get("SCORE_TASKS", "").split(",")))
-SEED_OFFSET = 2_000_000          # RULER held-out seeds (OOLONG uses OOLONG_BASE below)
+# Seed block for the non-OOLONG tasks (OOLONG uses OOLONG_BASE below). 2_000_000 = the DEV block we
+# have read rollouts from since run 3; use a fresh block (e.g. 3_000_000) for numbers we report.
+SEED_OFFSET = int(os.environ.get("SEED_OFFSET", "2000000"))
 # OOLONG problems are indexed by the SHARED oolong_spec(task, idx, base). Eval
 # defaults to a held-out base; set OOLONG_BASE to SFT's DATA_SEED (500000) to run
 # the EXACT same problems SFT trained on.

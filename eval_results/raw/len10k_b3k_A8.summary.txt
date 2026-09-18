@@ -1,0 +1,88 @@
+========================================================================
+EVAL: backend=tinker ckpt=tinker://75b29e89-caf6-5e79-8415-5f4e64af39a3:train:0/weights/sft_general8w
+========================================================================
+# task=oolong_counting seed=3000000 dataset=trec_coarse gold=['less common than'] nodes=63 answer='Answer: entity is less common than location' term=answered score=1.000
+# task=oolong_counting seed=3000001 dataset=imdb gold=['positive'] nodes=63 answer='Label: negative' term=answered score=0.000
+# task=oolong_counting seed=3000002 dataset=agnews gold=['14'] nodes=31 answer='9' term=answered score=0.237
+# task=oolong_counting seed=3000003 dataset=negation gold=['less common than'] nodes=63 answer='Answer: True is more common than False' term=answered score=0.000
+# task=oolong_counting seed=3000004 dataset=yahoo gold=['same frequency as'] nodes=31 answer='Answer: Computers & Internet is more common than Politics & Government' term=answered score=0.000
+# task=oolong_user seed=3100000 dataset=trec_coarse gold=['35327'] nodes=63 answer='User: 35327' term=answered score=1.000
+# task=oolong_user seed=3100001 dataset=imdb gold=['29418'] nodes=63 answer='User: 29418' term=answered score=1.000
+# task=oolong_user seed=3100002 dataset=agnews gold=['Sci/Tech'] nodes=33 answer='Label: Business' term=answered score=0.000
+# task=oolong_user seed=3100003 dataset=negation gold=['more common than'] nodes=63 answer='Answer: True is more common than False' term=answered score=1.000
+# task=oolong_user seed=3100004 dataset=yahoo gold=['54578'] nodes=45 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=3200000 dataset=trec_coarse gold=['less common than'] nodes=63 answer='Answer: description and abstract concept is less common than numeric value' term=answered score=1.000
+# task=oolong_temporal seed=3200001 dataset=imdb gold=['1'] nodes=55 answer='2' term=answered score=0.750
+# task=oolong_temporal seed=3200002 dataset=agnews gold=['February 2022'] nodes=31 answer='Answer: February 2024' term=answered score=0.000
+# task=oolong_temporal seed=3200003 dataset=negation gold=['more common'] nodes=125 answer='Answer: True is less common before 2023-01-21' term=answered score=0.000
+# task=oolong_temporal seed=3200004 dataset=yahoo gold=['6'] nodes=31 answer='0' term=answered score=0.178
+# task=niah_single_1 seed=3003000 dataset=None gold=['2172054'] nodes=63 answer='2172054' term=answered score=1.000
+# task=niah_single_1 seed=3003001 dataset=None gold=['1178196'] nodes=63 answer='1178196' term=answered score=1.000
+# task=niah_single_1 seed=3003002 dataset=None gold=['2114230'] nodes=63 answer='2114230' term=answered score=1.000
+# task=niah_single_1 seed=3003003 dataset=None gold=['9823913'] nodes=63 answer='9823913' term=answered score=1.000
+# task=niah_single_1 seed=3003004 dataset=None gold=['3589833'] nodes=127 answer='3589833' term=answered score=1.000
+# task=niah_multikey_1 seed=3004000 dataset=None gold=['3200695'] nodes=63 answer='3200695' term=answered score=1.000
+# task=niah_multikey_1 seed=3004001 dataset=None gold=['6667147'] nodes=63 answer='6667147' term=answered score=1.000
+# task=niah_multikey_1 seed=3004002 dataset=None gold=['5401272'] nodes=380 answer='5401272' term=answered score=1.000
+# task=niah_multikey_1 seed=3004003 dataset=None gold=['4565457'] nodes=63 answer='4565457' term=answered score=1.000
+# task=niah_multikey_1 seed=3004004 dataset=None gold=['4815201'] nodes=63 answer='4815201' term=answered score=1.000
+# task=niah_multiquery seed=3005000 dataset=None gold=['7220140', '5555710', '3692535', '2979582'] nodes=63 answer='ruddy-need=7220140, dispensable-compliance=5555710, large-crop=3692535, boiling-shoelace=2979582' term=answered score=1.000
+# task=niah_multiquery seed=3005001 dataset=None gold=['7570971', '7408728', '6672440', '8101829'] nodes=65 answer='tawdry-harald=7570971, repulsive-mangrove=7408728, overjoyed-regionalism=6672440, deep-vermicelli=810' term=answered score=0.750
+# task=niah_multiquery seed=3005002 dataset=None gold=['3140389', '5269027', '8011217', '4091798'] nodes=63 answer='cynical-smoke=4091798|decorous-relation=5269027|encouraging-hut=8011217|unbecoming-sponsorship=3140389' term=answered score=1.000
+# task=niah_multiquery seed=3005003 dataset=None gold=['5715726', '3805421', '6589359', '2116138'] nodes=63 answer='grouchy-prevalence=5715726, old-fashioned-relay=3805421, bashful-defeat=6589359, nasty-paramedic=2116138' term=answered score=1.000
+# task=niah_multiquery seed=3005004 dataset=None gold=['3692910', '4468032', '5745501', '9846741'] nodes=22 answer='resonant-bonding=3692910, nonchalant-soliloquy=none, deserted-salary=5745501, woebegone-conditioner=9846741' term=answered score=0.750
+# task=vt seed=3006000 dataset=None gold=['KOYEM', 'EBXLX', 'NUDGV', 'WBXXV', 'CZNHP'] nodes=55 answer='none' term=answered score=0.000
+# task=vt seed=3006001 dataset=None gold=['GBCXB', 'YTVRT', 'YQKRV', 'LNFLB', 'RJSZG'] nodes=63 answer='GBCXB' term=answered score=0.200
+# task=vt seed=3006002 dataset=None gold=['WKXYO', 'OZCWM', 'WTDEV', 'NFWOX', 'IVGEY'] nodes=25 answer='IVGEY, NFWOX, OZCWM, WTDEV, WKXYO' term=answered score=1.000
+# task=vt seed=3006003 dataset=None gold=['SSHTK', 'QCHTK', 'HXGUU', 'EICFI', 'SKIGM'] nodes=25 answer='EICFI, HXGUU, QCHTK, SSHTK' term=answered score=0.800
+# task=vt seed=3006004 dataset=None gold=['RNLSV', 'BJZQC', 'XULTE', 'HPHVH', 'CSRXF'] nodes=63 answer='RNLSV' term=answered score=0.200
+# task=cwe seed=3007000 dataset=None gold=['angry', 'numeracy', 'loquat', 'deep', 'hug', 'nestling', 'back-up', 'outlaw', 'topic', 'osprey'] nodes=63 answer='numeracy(32), topic(31), back-up(28), loquat(25), angry(25), deep(25), hug(25), osprey(22), nestling(20), outlaw(14)' term=answered score=1.000
+# task=cwe seed=3007001 dataset=None gold=['boogeyman', 'fax', 'hubcap', 'angle', 'chivalrous', 'praise', 'cocktail', 'tank', 'champagne', 'undress'] nodes=65 answer='unchanged, champagne, chivalrous, fax, tank, cocktail, angle, praise, boogeyman, hubcap' term=answered score=0.900
+# task=cwe seed=3007002 dataset=None gold=['mansion', 'scimitar', 'spruce', 'shortage', 'estuary', 'production', 'homosexuality', 'dancing', 'soil', 'berry'] nodes=63 answer='spruce (33), estuary (31), berry (30), soil (30), shortage (29), scimitar (29), production (27), mansion (25), dancing (22), homosexuality (17)' term=answered score=1.000
+# task=cwe seed=3007003 dataset=None gold=['comptroller', 'naughty', 'turf', 'melody', 'seafood', 'online', 'savage', 'yeast', 'boulder', 'feedback'] nodes=63 answer='savage, turf, online, seafood, comptroller, boulder, naughty, feedback, melody, yeast' term=answered score=1.000
+# task=cwe seed=3007004 dataset=None gold=['pitcher', 'obsolete', 'bartender', 'sermon', 'world', 'soak', 'hypothermia', 'tiresome', 'mortise', 'airbag'] nodes=65 answer='bartender, 32, soak, mortise, obsolete, hypothermia, pitcher, world, sermon, tiresome' term=answered score=0.900
+# task=fwe seed=3008000 dataset=None gold=['ktdghe', 'qmrvhm', 'ihmnzv'] nodes=63 answer='ktdghe, qmrvhm, ihmnzv' term=answered score=1.000
+# task=fwe seed=3008001 dataset=None gold=['paxhmy', 'xbnwlb', 'vffjop'] nodes=69 answer='paxhmy, xbnwlb, vffjop' term=answered score=1.000
+# task=fwe seed=3008002 dataset=None gold=['csmsnv', 'xbnjhv', 'xiwinp'] nodes=63 answer='csmsnv, xbnjhv, xiwinp' term=answered score=1.000
+# task=fwe seed=3008003 dataset=None gold=['ccowoy', 'wlizzt', 'wvsbsh'] nodes=63 answer='ccowoy, wlizzt, wvsbsh' term=answered score=1.000
+# task=fwe seed=3008004 dataset=None gold=['dctjvy', 'otkpuo', 'xifoip'] nodes=65 answer='dctjvy, otkpuo, xifoip' term=answered score=1.000
+
+------------------------------------------------------------------------
+cwe: 0.960  (grounded 0.960 | 5 rollouts | no_answer=0/5 | mean_tree=63.8)
+fwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=64.6)
+niah_multikey_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=126.4)
+niah_multiquery: 0.900  (grounded 0.900 | 5 rollouts | no_answer=0/5 | mean_tree=55.2)
+niah_single_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=75.8)
+oolong_counting: 0.247  (grounded 0.247 | 5 rollouts | no_answer=0/5 | mean_tree=50.2)
+    dataset agnews         0.237  (n=1)
+    dataset imdb           0.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   most_common_label  0.000  (n=1)
+    qtype   numeric_one_class  0.237  (n=1)
+    qtype   relative_freq      0.333  (n=3)
+oolong_temporal: 0.386  (grounded 0.386 | 5 rollouts | no_answer=0/5 | mean_tree=61.0)
+    dataset agnews         0.000  (n=1)
+    dataset imdb           0.750  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.178  (n=1)
+    qtype   numeric_one_class  0.750  (n=1)
+    qtype   relative_freq      0.294  (n=4)
+oolong_user: 0.600  (grounded 0.600 | 5 rollouts | no_answer=1/5 | mean_tree=53.4)
+    dataset agnews         0.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   most_common_label  0.500  (n=2)
+    qtype   relative_freq      0.667  (n=3)
+vt: 0.440  (grounded 0.440 | 5 rollouts | no_answer=0/5 | mean_tree=46.2)
+
+OVERALL: 0.726  (grounded 0.726 | 45 rollouts)
+SCORE (held-out ['cwe', 'fwe', 'niah_multikey_1', 'niah_multiquery', 'niah_single_1', 'oolong_counting', 'oolong_temporal', 'oolong_user', 'vt']): 0.726  (45 rollouts)
+All 45 rollouts saved -> /tmp/eval_A8.jsonl + /tmp/eval_A8.txt
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+===== A8 DONE 12:26:45 =====
