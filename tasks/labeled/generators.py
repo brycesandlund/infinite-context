@@ -177,11 +177,21 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         grading, params = "exact", {"qauthor": au}
         q = head + filtered_question(rng, "items", f"author {au} (the `[by {au}]` tag)", "which label is the MOST common",
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
+    # Answer-form following (run 7: the model boxed `User: User 30140` for "in the form 'User: [X]'").
+    # A third of exact-answer questions state a template; the gold is the template filled ONCE.
+    answer_form = None
+    if grading == "exact" and rng.random() < 0.35:
+        word = {"most_common": "Label", "relative": "Answer", "section_most": unit_word.capitalize(),
+                "author_most": "Label", "author_top": "Author"}.get(qtype, "Answer")
+        answer_form = word
+        q = q.replace(" in \\boxed{}.", f". Give your final answer in the form '{word}: [X]', where [X] is "
+                                          f"the {'label' if word in ('Label',) else 'answer'}; put it inside \\boxed{{}}.")
+        gold = f"{word}: {gold}"
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
         task_context=_context(name, labels, key_mode), grading_mode=grading,
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype,
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
-                  "key_mode": key_mode,
+                  "key_mode": key_mode, "answer_form": answer_form,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},
     )

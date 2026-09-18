@@ -667,3 +667,25 @@ survives. Also small: the `User: User X` double prefix is an answer-format slip 
 
 Recipe note for the next from-base run: batch 16 with peak LR 2e-5 + linear decay has the same total
 movement as this run in half the wall time (see 09-17 discussion); do not stack it with curriculum changes.
+
+---
+
+## sft_general8w (run 8, warm start from sft_general7) — 2026-09-17/18 — regression recovery
+
+**Goal:** claw back run 7's regressions with minimal new surface (~10 h window; a from-base run doesn't fit).
+Warm start from `sft_general7` (keeps the counting gains), 25% replay, batch 16, LR 5e-6.
+
+1. **`synth_topk`** (tasks/topk, oracle/topk.py) — the open-vocabulary tally contract the root wrote WRONG on
+   cwe in run 7 ("a comma-separated list", no counts → set-union merge, 0.96 → 0.52). Word lists over a
+   PG-essay vocabulary (not RULER's), two layouts (numbered `<n>. word` / plain stream); k ∈ {3,5,8} hot
+   words at 3–5 occurrences per ~250-token leaf (cwe's regime), background one-off. Leaves narrate in 3-line
+   blocks ("abandoned×2, function×2, …; +35 one-off words") and return a PRUNED tally — the most frequent
+   words seen 2+ times, at most 2k (≥10), exact counts; the contract says so and adds "never a bare word
+   list, never list numbers as words". Merge adds counts; root ranks. Verified 80/80, max ctx 2485.
+   Built-in lessons from getting there: hot density must be per-LEAF (12–40× per doc left leaves with tied
+   singletons — the range-mode no-guarantee case); uncapped "2+" tallies grow with range size (cap at m).
+2. **Answer-form following** — 35% of exact-answer `labeled_records` questions now end "Give your final
+   answer in the form 'Label: [X]' …" and the gold is the filled template (run 7 boxed `User: User 30140`).
+3. Data: synth_topk 120, labeled_records 120, rule_label 40, vt_novel 50, replay ~10–40 elsewhere:
+   **720 traces / 31,042 datums / 52M tokens** (≈$65), all 1.00 in the dry run. Eval adds synth_topk as a
+   diagnostic. Script: `scripts/run_sft8_warm.sh`; output `/tmp/eval_general8w.*`.

@@ -147,8 +147,14 @@ class LabeledOracle(ScaffoldOracle):
         return ans, (f"\n`{self.qlabel}` per {uw}: " + ", ".join(f"{s}={n}" for s, n in counts.items())
                      + f"; the most is {ans} ({best}).")
 
-    def _finalize(self, state): return self._resolve(state)[0]
-    def _finalize_note(self, state): return self._resolve(state)[1]
+    def _finalize(self, state):
+        ans = self._resolve(state)[0]
+        form = self.meta.get("answer_form")
+        return f"{form}: {ans}" if form else ans      # fill the requested template exactly once
+    def _finalize_note(self, state):
+        note = self._resolve(state)[1]
+        form = self.meta.get("answer_form")
+        return note + (f"\nThe question asks for the form '{form}: [X]', so I box it that way." if form else "")
 
     # -- phrasing ---------------------------------------------------------------------------
 
