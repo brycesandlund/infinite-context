@@ -476,7 +476,7 @@ nearly every hop is empty and the model had to keep delegating anyway.
 
 ---
 
-## sft_general7 (run 7) — 7w warm 0.657 (09-15); from-base 7 held-out 0.573, diagnostics 0.888 (09-16) — INVALID as a curriculum read, see below
+## sft_general7 (run 7) — 7w 0.657 · 7w2 0.666 · from-base (corrected, 09-17) held-out 0.662, diagnostics 0.911
 
 **Target:** the run-6 post-mortem. (a) fold chains on nearly-empty haystacks (vt s0/s3) — DONE above
 (empty-slice narration + sparse/noisy vt_novel). (b) Leaves that JUDGE items collapsing to one line
@@ -635,3 +635,35 @@ longer re-list both children's tallies for counter/dict states (they are in the 
 this halves internal-node state cost for EVERY tally task), author tag only on author questions,
 snippets 32 chars, label list not repeated inside the goal phrase. Verified 120/120 (9 qtypes × 2
 key modes × 3 datasets, doc 6k/14k). `labeled_records` count 160 → 200 in the from-base script.
+
+**Run 7 (from base, corrected config) results — 2026-09-17 — held-out 0.662, diagnostics 0.911.**
+(ckpt `tinker://8ec58e87-7310-55dd-a31d-9f9caf3c0382:train:0/weights/sft_general7`; 2,080 traces /
+87,330 agent-datums / 143M tokens, 10,917 batches at batch 8, NLL **0.0058** (run 6: 0.0088); SFT 22:26→21:11
+(~23 h — batch 8 doubles steps without halving step time), eval 19 min; ≈$175. Raw `eval_results/raw/sft_general7_*`.)
+
+| held-out | run 6 | 7w2 (warm) | **run 7** | what happened |
+|---|---|---|---|---|
+| **oolong_counting** | 0.09 | 0.71 | **0.60** | trec **14 exact**, imdb 1.00, agnews 16/17, negation 28 vs 23 (no longer all-False), yahoo relative wrong (10-class leaf labels noisy) |
+| oolong_user | 0.60 | 0.40 | 0.40 → **~0.6 real** | trec degenerate now correct; yahoo has the RIGHT user but boxed `User: User 30140` (doubled prefix → 0); imdb/negation wrong |
+| oolong_temporal | 0.46 | 0.15 | 0.27 | the month×label 2-D state now appears 3/5 (trec, agnews, yahoo — `Apr/World=2`); answers off by leaf-label noise (agnews 3 vs 6); imdb 1-D; negation: document-wide per-DATE dict → overflow (training only scopes dates to a month) |
+| niah_single_1 / multikey_1 | 1.00 / 0.80 | 1.00 / 1.00 | **1.00 / 1.00** | |
+| niah_multiquery | 0.80 | 0.80 | **0.95** | |
+| vt | 0.44 | 0.48 | 0.48 | no overflows now; chains return 1–3 of 5 vars; s1 still binary-collect |
+| **cwe** | 0.96 | 0.92 | **0.52** | REGRESSION: the root now DICTATES a contract, and for this open key space it dictated "the 10 most common words as a comma-separated LIST" — no counts — so the merge is a set union; some leaves listed item numbers (605, 606) as words |
+| fwe | 0.93 | 0.53 | 0.73 | one `c10, c11, c12`, one junk third word |
+| diagnostics (11 × 2) | 0.95 | 0.99 | 0.911 | labeled_records / rule_label 1.00; narrativeqa 1 abstain; long_records mention_most ('have') 0.03 again |
+
+Leaf boundary at eval: 156 splits vs 38 reads at ≥500-wide (run 6: 144:15; invalid run 7: 20:153) — restored,
+not perfect (the 38 are mostly RULER niah/fwe leaves).
+
+**Reading.** Third from-base run in a row at ~0.66–0.68 held-out with the composition shifting under it:
+what we target moves (counting +0.51, retrieval to ~1.0, 2-D state now chosen on temporal), and a
+behaviour we didn't guard regresses. This time it's cwe: the *root-dictates-format* habit is strong enough
+that on an open vocabulary the root wrote a lossy contract (a word list, not `word:count`), and the model
+obeyed it. The general fix is to TEACH the open-set tally contract — a top-k-frequent-words task over
+non-RULER word lists whose partials are pruned `word:count` tallies — rather than hope the run-3 heuristic
+survives. Also small: the `User: User X` double prefix is an answer-format slip worth a paraphrase of
+"answer in the form …" instructions in training questions.
+
+Recipe note for the next from-base run: batch 16 with peak LR 2e-5 + linear decay has the same total
+movement as this run in half the wall time (see 09-17 discussion); do not stack it with curriculum changes.
