@@ -689,3 +689,29 @@ Warm start from `sft_general7` (keeps the counting gains), 25% replay, batch 16,
 3. Data: synth_topk 120, labeled_records 120, rule_label 40, vt_novel 50, replay ~10–40 elsewhere:
    **720 traces / 31,042 datums / 52M tokens** (≈$65), all 1.00 in the dry run. Eval adds synth_topk as a
    diagnostic. Script: `scripts/run_sft8_warm.sh`; output `/tmp/eval_general8w.*`.
+
+**Run 8w results — 2026-09-18 — held-out 0.758 (best so far), diagnostics 0.958.**
+(ckpt `tinker://75b29e89-caf6-5e79-8415-5f4e64af39a3:train:0/weights/sft_general8w`; 720 traces / 31,042
+datums / 52M tokens, 1,941 batches at batch 16, NLL 0.0136; SFT 23:54→02:23 (2.5 h), eval 8 min; ≈$65.
+Raw `eval_results/raw/sft_general8w_*`.)
+
+| held-out | run 6 | run 7 | **8w** | note |
+|---|---|---|---|---|
+| **cwe** | 0.96 | 0.52 | **1.00** | root now dictates the `word:count` pruned-tally contract on every cwe/fwe rollout (272+136+84 subtasks) |
+| fwe | 0.93 | 0.73 | **0.93** | one `none` third word |
+| **vt** | 0.44 | 0.48 | **0.88** | all 5 fold; two chains dropped 1–2 vars — first time vt is high without a vt-specific change |
+| niah_single_1 / multiquery | 1.00 / 0.80 | 1.00 / 0.95 | **1.00 / 1.00** | |
+| niah_multikey_1 | 0.80 | 1.00 | 0.80 | s4 picked another key's number |
+| oolong_user | 0.60 | 0.40 | 0.60 | negation/agnews/imdb right; yahoo STILL `User: User 30140` — the doc writes ids as "User 30140" and the model copies that token; our form templates only cover labels/authors/sections |
+| oolong_counting | 0.09 | 0.60 | 0.36 | trec 19 vs 14, agnews 19 vs 17, negation 6 vs 23, yahoo answered `No` — warm-start drift on a task with only 30 replay traces of labeled_records |
+| oolong_temporal | 0.46 | 0.27 | 0.25 | trec overflow; others partial |
+| diagnostics (12 × 2) | 0.95 | 0.91 | 0.958 | synth_topk 1.00; narrativeqa 1 abstain |
+
+**Reading.** Both regressions targeted were recovered exactly (cwe 0.52 → 1.00 via the contract the root now
+writes; fwe back to 0.93), vt jumped to 0.88 as a side effect (fewer, cleaner priors?), and retrieval is at
+ceiling. Counting gave back half of run 7's gain — the same warm-start drift as 7w/7w2, this time hitting the
+task with the thinnest replay (labeled_records 30). The `User: User X` slip needs the template task to
+include id-like answers ("User: [X]" where the doc writes `User 30140`), not just label names.
+**Next from-base run** should carry: synth_topk, answer-form templates incl. ids, labeled_records at full
+weight — and use batch 16 / peak 2e-5 with linear decay. Recipe note: with the curriculum now stable, that
+run is the first candidate for a "freeze".
