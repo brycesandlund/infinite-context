@@ -38,10 +38,11 @@ class LabeledOracle(ScaffoldOracle):
         self.unit_word = "section" if self.key_mode == "section" else "month"
         self.qlabel, self.qa, self.qb = m.get("qlabel"), m.get("qa"), m.get("qb")
         self.qauthor, self.qk, self.qmon, self.qdate = m.get("qauthor"), m.get("qk"), m.get("qmon"), m.get("qdate")
+        self.qa1, self.qa2 = m.get("qa1"), m.get("qa2")
 
     def _kind(self):
         return {"count": "int", "most_common": "counter", "relative": "counter", "author_most": "counter",
-                "author_top": "counter", "author_count": "counter", "author_least": "counter",
+                "author_top": "counter", "author_count": "counter", "author_least": "counter", "author_cmp": "counter",
                 "sections_cmp": "dict", "section_most": "dict", "section_mode_count": "dict",
                 "dates_rep_k": "dict", "first_month_cmp": "dict", "before_after": "dict"}[self.qtype]
 
@@ -58,7 +59,7 @@ class LabeledOracle(ScaffoldOracle):
     def _acc_step(self, acc, s):
         _, _, idx, label, outer, au, snip, date = s
         q = self.qtype
-        by = f" [by {au}]" if q in ("author_most", "author_top", "author_count", "author_least") else ""   # author only when it matters
+        by = f" [by {au}]" if q in ("author_most", "author_top", "author_count", "author_least", "author_cmp") else ""   # author only when it matters
         head = f"- {self._tag(outer, date)}{by} \"{snip}\" → label: {label}"
         if q == "count":
             hit = label == self.qlabel
@@ -72,7 +73,7 @@ class LabeledOracle(ScaffoldOracle):
                 acc = acc + Counter([label])
                 return acc, f"{head} (author matches) → {label}: {acc[label]}"
             return acc, f"{head} (other author, skip)"
-        if q == "author_top":
+        if q in ("author_top", "author_cmp"):
             if label == self.qlabel:
                 acc = acc + Counter([au])
                 return acc, f"{head} (counts for {au}) → {au}: {acc[au]}"
@@ -98,7 +99,7 @@ class LabeledOracle(ScaffoldOracle):
         q = self.qtype
         if q == "count":
             return sum(s for s in states if s is not None)
-        if q in ("most_common", "relative", "author_most", "author_top", "author_count", "author_least"):
+        if q in ("most_common", "relative", "author_most", "author_top", "author_count", "author_least", "author_cmp"):
             tot = Counter()
             for s in states: tot += s
             return tot
@@ -134,6 +135,13 @@ class LabeledOracle(ScaffoldOracle):
             a = self._argmax(c, self.labels)
             who = f" over author {self.qauthor}'s items" if q == "author_most" else ""
             return a, f"\nLabel tally{who}: {self._fmt(c, self.labels)}; most common is {a} ({c[a]})."
+        if q == "author_cmp":
+            c = state or Counter()
+            n1, n2 = c.get(self.qa1, 0), c.get(self.qa2, 0)
+            ans = self.qa1 if n1 > n2 else self.qa2 if n2 > n1 else min(self.qa1, self.qa2)
+            return ans, (f"\n`{self.qlabel}` items: author {self.qa1} has {n1}, author {self.qa2} has {n2} → "
+                         f"{'tie, alphabetical first' if n1 == n2 else 'more for'} {ans}. The answer is the tag content "
+                         f"itself, {ans} — not the word 'author'.")
         if q == "author_count":
             c = state or Counter()
             a = self._argmax(c, self.authors)
@@ -230,6 +238,7 @@ class LabeledOracle(ScaffoldOracle):
             "author_most": f"{self._labelling()} and tallying the labels of author {self.qauthor}'s items only",
             "author_top": f"{self._labelling()} and tallying, per author, the `{self.qlabel}` items",
             "author_count": "tallying how many items each author has (the label is irrelevant)",
+            "author_cmp": f"{self._labelling()} and tallying, per author, the `{self.qlabel}` items",
             "author_least": f"{self._labelling()} and tallying the labels of author {self.qauthor}'s items only",
             "section_mode_count": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
             "sections_cmp": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
@@ -247,6 +256,7 @@ class LabeledOracle(ScaffoldOracle):
             "author_most": f"the per-label tally over ONLY author {self.qauthor}'s items ({self._labelling()})",
             "author_top": f"the per-author tally of `{self.qlabel}` items ({self._labelling()})",
             "author_count": "the per-author tally of items (no label judgement needed)",
+            "author_cmp": f"the per-author tally of `{self.qlabel}` items ({self._labelling()})",
             "author_least": f"the per-label tally over ONLY author {self.qauthor}'s items ({self._labelling()})",
             "section_mode_count": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
             "sections_cmp": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
@@ -266,6 +276,9 @@ class LabeledOracle(ScaffoldOracle):
         if q == "section_mode_count":
             return (f"The question asks in how many {uw}s `{self.qlabel}` beats EVERY other label{derive}, so the state is a "
                     f"per-({uw}, label) tally over all labels — not a per-{uw} count of `{self.qlabel}` alone.")
+        if q == "author_cmp":
+            return (f"The question compares two named authors on `{self.qlabel}`, so the state is a per-author count of "
+                    f"`{self.qlabel}` items — the same tally as for any author question, read off for {self.qa1} and {self.qa2} at the end.")
         if q == "author_count":
             return ("The question asks which author has the most items, so the state is a per-author count — the labels "
                     "play no part, and the authors are whatever names or ids the `[by …]` tags carry.")
@@ -291,7 +304,7 @@ class LabeledOracle(ScaffoldOracle):
             return "the partial as a single integer"
         if q in ("most_common", "relative", "author_most", "author_least"):
             return f"the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of {labs}"
-        if q in ("author_top", "author_count"):
+        if q in ("author_top", "author_count", "author_cmp"):
             # OPEN key space: authors are read off the text, never enumerated by the root (run 9w on OOLONG-user:
             # the root invented `User A`..`User E` and every leaf returned `none:38`)
             return (f"the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author "
@@ -308,7 +321,7 @@ class LabeledOracle(ScaffoldOracle):
 
     def _combine_phrase(self):
         return {"count": "sum", "most_common": "merge", "relative": "merge", "author_most": "merge",
-                "author_top": "merge", "author_count": "merge", "author_least": "merge", "dates_rep_k": "merge (add per date)", "before_after": "merge (add per period/which key)"}.get(
+                "author_top": "merge", "author_count": "merge", "author_least": "merge", "author_cmp": "merge", "dates_rep_k": "merge (add per date)", "before_after": "merge (add per period/which key)"}.get(
             self.qtype, f"merge (add per {self.unit_word}/label key)")
 
     def _empty_phrase(self):

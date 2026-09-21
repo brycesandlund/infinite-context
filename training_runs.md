@@ -891,4 +891,12 @@ scripted-leaf cases.
    root invented `User A`..`User E`, leaves returned `none:38`). **Numeric author ids** on 40% of documents
    (`[by 30140]`) so the open-set contract and the `Author: [X]` form see id-like keys (the `User: User 30140`
    slip, 3 runs). labeled_records 200 → 240 roots (13 qtypes now).
+7. **`author_cmp` + form wording** (the OOLONG-user yahoo seed, lost the same way in 7/8w/9w with the TALLY correct):
+   "which user has more instances with label L: User 30140 or User 92806? … form 'User: [X]', where [X] is the user
+   ID" → 8w boxed `User: User 30140` (copied the question's mention), 9w `user 30140` (dropped the form); OOLONG's
+   grader takes the text after the last ':' and needs an exact match. New qtype: "Which author has more `L` items:
+   author 30140 or author 92806?" (per-author tally of L, two-way compare at the root; ties → alphabetical, stated);
+   the Author form now says "[X] is the author exactly as written in the `[by …]` tag (just the name or id)" and the
+   root's finalize says "The answer is the tag content itself, 30140 — not the word 'author'". Verified 80/80 with
+   all 14 qtypes hit. Full traces for every new qtype: `trace_snippets/new_qtypes_run10.txt`.
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).

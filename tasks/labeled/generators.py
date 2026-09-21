@@ -44,7 +44,11 @@ _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section
            # run 10: OOLONG-user / temporal shapes we lacked — "which author has the most items" (open key space of
            # names/ids, no label), "least common label among one author's items", "in how many months is L the
            # single most common label" (strict mode per outer key)
-           "author_count", "author_least", "section_mode_count"]
+           "author_count", "author_least", "section_mode_count",
+           # two named authors compared on one label; the question names them WITH the descriptor word
+           # ("author 30140 or author 92806") and the form wants only the id — the OOLONG-user yahoo seed lost
+           # the same way in 3 runs (`User: User 30140`, `user 30140`) with the tally itself correct
+           "author_cmp"]
 # 40% of documents tag authors with numeric ids instead of names, so the open-set contract ("the author exactly
 # as written in the tag") and the `Author: [X]` form both see id-like keys (run 7/8w/9w: `User: User 30140`).
 _ID_AUTHOR_FRAC = 0.4
@@ -207,6 +211,15 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         q = head + filtered_question(rng, "items", f"author = {au} (the `[by {au}]` tag)",
                                      "which label is the LEAST common among the labels that appear at least once",
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
+    elif qtype == "author_cmp":
+        L = rng.choice(labels)
+        a1, a2 = rng.sample(authors, 2)
+        c = Counter(r["au"] for r in recs if r["label"] == L)
+        gold = a1 if c[a1] > c[a2] else a2 if c[a2] > c[a1] else min(a1, a2)   # tie -> alphabetical first (stated)
+        grading, params = "exact", {"qlabel": L, "qa1": a1, "qa2": a2}
+        q = head + (f"Which author has more `{L}` items: author {a1} or author {a2}? If they are tied, answer the one "
+                    f"that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag "
+                    f"(e.g. {a1}) in \\boxed{{}}.")
     elif qtype == "author_top":
         L = rng.choice(labels)
         c = Counter(r["au"] for r in recs if r["label"] == L)
@@ -259,15 +272,15 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     if grading == "exact" and rng.random() < 0.35:
         word = {"most_common": "Label", "relative": "Answer", "section_most": unit_word.capitalize(),
                 "author_most": "Label", "author_top": "Author", "author_count": "Author",
-                "author_least": "Label"}.get(qtype, "Answer")
+                "author_least": "Label", "author_cmp": "Author"}.get(qtype, "Answer")
         answer_form = word
         # drop the question's own "Give … in \boxed{}." sentence and replace it with the form instruction
         # the question's closing "Give … in \boxed{}." sentence may contain dots ("e.g. S1", "e.g. 30140"), so
         # match up to the boxed instruction at the END rather than stopping at the first dot
         q = re.sub(r"\s*Give [^\n]*? in \\boxed\{\}\.\s*$", "", q)        # "Give the author … (e.g. Kim) in \boxed{}."
         q = re.sub(r"\s*Put it in \\boxed\{\}\.\s*$", "", q)              # "…equally common as. Put it in \boxed{}."
-        q += (f" Give your final answer in the form '{word}: [X]', where [X] is "
-              f"the {'label' if word == 'Label' else 'answer'}; put it inside \\boxed{{}}.")
+        what = {"Label": "the label", "Author": "the author exactly as written in the `[by …]` tag (just the name or id)"}.get(word, "the answer")
+        q += f" Give your final answer in the form '{word}: [X]', where [X] is {what}; put it inside \\boxed{{}}."
         gold = f"{word}: {gold}"
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
