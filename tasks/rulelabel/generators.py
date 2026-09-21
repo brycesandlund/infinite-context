@@ -60,6 +60,13 @@ _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section
 _SENT = re.compile(r"(?:(?<=[.!?])|(?<=[.!?][\"”’']))\s+(?=[\"“‘'(A-Z0-9])")
 
 
+def _snip(s: str, n: int = 60) -> str:
+    """Short evidence quote: keep both the head and the TAIL so the end-of-sentence mark is visible."""
+    if len(s) <= n + 3:
+        return s
+    return s[:n - 18].rstrip() + " … " + s[-18:].lstrip()
+
+
 def _sentences(prose: str) -> list[str]:
     prose = re.sub(r"\s*\n\s*", " ", prose).strip()
     out = []
@@ -102,7 +109,7 @@ def make_rulelabel_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed
         start = len(doc_tokens)
         doc_tokens.extend(toks)
         recs.append({"idx": i, "sec": f"S{sec}", "label": lt if check(s) else lf,
-                     "snip": (s[:42] + "…") if len(s) > 45 else s, "start": start, "end": len(doc_tokens)})
+                     "snip": _snip(s), "start": start, "end": len(doc_tokens)})
     sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
     spans = [(r["start"], r["end"], r["idx"], r["label"], r["sec"], r["snip"]) for r in recs]
 
@@ -127,8 +134,7 @@ def make_rulelabel_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed
                 "less common than" if tally[a] < tally[b] else "equally common as")
         grading = "exact"
         q = head + (f"Is `{a}` more common than, less common than, or equally common as `{b}`? "
-                    f"Answer with exactly one of: more common than / less common than / equally common as, "
-                    f"in \\boxed{{}}.")
+                    f"Answer in \\boxed{{}} with exactly one of: more common than / less common than / equally common as.")
         params = {"qa": a, "qb": b}
     elif qtype == "sections_cmp":
         a, b = (lt, lf) if rng.random() < 0.5 else (lf, lt)

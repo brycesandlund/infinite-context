@@ -72,7 +72,7 @@ def make_topk_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
         for _ in range(per_line_bg):
             # when the fresh supply runs out (long docs), fall back to a uniform draw over ALL background
             # words — never the small repeater pool, which would otherwise accumulate hot-like counts
-            words.append(rng.choice(repeaters) if rng.random() < 0.2 else next(fresh, rng.choice(bg_words)))
+            words.append(rng.choice(repeaters) if rng.random() < 0.2 else next(fresh, rng.choice(bg_words[12:] or bg_words)))
         rng.shuffle(words)
         if layout == "numbered":
             line = " ".join(f"{entry_no + j + 1}. {w}" for j, w in enumerate(words)) + "\n"

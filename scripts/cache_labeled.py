@@ -22,7 +22,8 @@ SPECS = {
 }
 
 def clip(t: str, max_words=60) -> str:
-    t = re.sub(r"\s+", " ", t.replace("\\n", " ")).strip()
+    t = t.replace("\\n", " ").replace('\\"', '"').replace("\\'", "'")   # CSV-style escapes in yelp
+    t = re.sub(r"\s+", " ", t).strip()
     w = t.split()
     return " ".join(w[:max_words]) + ("…" if len(w) > max_words else "")
 

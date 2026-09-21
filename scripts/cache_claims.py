@@ -19,9 +19,9 @@ for r in rows:
         continue
     subj, verb, pred = m.group("subj").strip(), m.group("verb"), m.group("pred").strip().rstrip(".")
     pw = pred.split()
-    if len(pw) < 4:
+    if len(pw) < 4 or len(pw) > 28:       # keep whole claims only — never a truncated one
         continue
-    pred = " ".join(pw[:25]) + ("…" if len(pw) > 25 else "")
+    pred = " ".join(pw)
     parsed.append({"subj": subj, "verb": verb, "pred": pred, "cls": r["label"]})
 
 rng = random.Random(0)

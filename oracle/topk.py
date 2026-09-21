@@ -19,6 +19,8 @@ class TopKOracle(ScaffoldOracle):
         super().__init__(problem, tokenizer, budget=budget,
                          max_chunk_tokens=max_chunk_tokens, strategy=strategy)
         self.k, self.keep_m, self.layout = self.meta["k"], self.meta["keep_m"], self.meta["layout"]
+        if self.strategy != "binary":
+            raise ValueError("synth_topk prunes its partials; a fold would drop counts — binary only")
 
     def _kind(self):
         return "counter"
@@ -28,8 +30,8 @@ class TopKOracle(ScaffoldOracle):
 
     # -- leaf: tally per line, then prune -------------------------------------------------------
 
-    def _acc_step(self, acc, s):      # not used directly (see _accumulate) but keep the contract
-        return acc + Counter([s[3]]), ""
+    def _acc_step(self, acc, s):
+        raise NotImplementedError("synth_topk narrates per block of lines; see _accumulate")
 
     def _accumulate(self, recs, acc):
         acc = Counter(acc) if acc else Counter()

@@ -26,7 +26,7 @@ class RuleLabelOracle(ScaffoldOracle):
         self.qlabel, self.qa, self.qb = m.get("qlabel"), m.get("qa"), m.get("qb")
         # the yes/no question the leaf asks of each sentence
         self.check_q = {
-            "dialogue": "contains a quotation mark?", "question": "ends with ?",
+            "dialogue": "contains a quotation mark?", "question": "ends with a question mark?",
             "numeric": "contains a digit?", "named": "capitalized word after the first?",
         }[m["rule"]]
 
@@ -130,8 +130,10 @@ class RuleLabelOracle(ScaffoldOracle):
         }[self.qtype]
 
     def _shape_reason(self):
-        if self.qtype in ("sections_cmp", "section_most"):
+        if self.qtype == "sections_cmp":
             return "The question compares labels WITHIN each section, so the state is a per-(section, label) tally, not a per-label one."
+        if self.qtype == "section_most":
+            return f"The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one."
         if self.qtype == "count":
             return f"The question asks for one label's total, so the state is a single count of `{self.qlabel}` sentences."
         return "The question asks about labels over the whole document, so a per-label tally is the right state."

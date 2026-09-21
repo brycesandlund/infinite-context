@@ -53,12 +53,14 @@ def _rows(name: str) -> list[dict]:
 
 
 def _context(name: str, labels: list[str], key_mode: str) -> str:
-    tag = ("a section tag `[S<n>]` (sections are numbered from 1 and appear in order)" if key_mode == "section"
-           else "the item's date `[Mon DD, YYYY]`; questions about MONTHS refer to the month and year of that "
-                "date (e.g. `Jul 28, 2022` is in month `Jul 2022`)")
+    if key_mode == "section":
+        tag, note = "a section tag `[S<n>]` (sections are numbered from 1 and appear in order)", ""
+    else:
+        tag = "the item's date `[Mon DD, YYYY]`"
+        note = " Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`)."
     return (
         f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
-        f"`[by <name>]`, followed by the item's text. {_DESC[name]} The label is NOT written in the text — you "
+        f"`[by <name>]`, followed by the item's text.{note} {_DESC[name]} The label is NOT written in the text — you "
         f"must judge each item yourself. The label set is exactly: {', '.join(labels)}."
     )
 
@@ -115,7 +117,8 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         r = rows[ri]
         au = rng.choice(authors)
         if key_mode == "section":
-            outer, date = f"S{min(n_sections, i // per_sec + 1)}", None
+            # section = position in the document, so all n_sections are populated whatever the item length
+            outer, date = f"S{min(n_sections, len(doc_tokens) * n_sections // doc_size_tokens + 1)}", None
             tag = f"[{outer}]"
         else:
             outer = rng.choice(months)
@@ -130,7 +133,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         t = r[text_key]
         recs.append({"idx": i, "sec": outer, "au": au, "label": r["label"], "date": date,
                      # claims: the judged content is the PREDICATE, so quote most of the sentence
-                     "snip": ((t[:100] + "…") if len(t) > 103 else t) if name == "claims" else ((t[:32] + "…") if len(t) > 35 else t),
+                     "snip": t if name == "claims" else ((t[:32] + "…") if len(t) > 35 else t),
                      "start": start, "end": len(doc_tokens)})
     if key_mode == "section":
         sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
@@ -159,7 +162,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         gold = ("more common than" if tally[a] > tally[b] else "less common than" if tally[a] < tally[b] else "equally common as")
         grading, params = "exact", {"qa": a, "qb": b}
         q = head + (f"Is `{a}` more common than, less common than, or equally common as `{b}`? Answer with exactly "
-                    f"one of: more common than / less common than / equally common as, in \\boxed{{}}.")
+                    f"one of: more common than / less common than / equally common as. Put it in \\boxed{{}}.")
     elif qtype == "sections_cmp":
         a, b = rng.sample(labels, 2)
         gold = sum(1 for s_ in sections if per[s_][a] > per[s_][b])
@@ -188,7 +191,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         k = rng.choice([1, 1, 2, 3])
         gold, grading, params = sum(1 for v in dc.values() if v == k), "numeric", {"qk": k, "qmon": mon}
         q = (f"Considering only items dated in {mon}: how many distinct dates are represented exactly {k} "
-             f"time{'s' if k != 1 else ''} (i.e. exactly {k} item{'s' if k != 1 else ''} carry that exact date)? "
+             f"time{'s' if k != 1 else ''} (i.e. exactly {k} item{'s carry' if k != 1 else ' carries'} that exact date)? "
              f"Give the single integer in \\boxed{{}}.")
     elif qtype == "first_month_cmp":
         a, b = rng.sample(labels, 2)
@@ -216,7 +219,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         c = Counter(r["label"] for r in recs if r["au"] == au)
         gold = min((l for l in labels if c[l] == max(c[l2] for l2 in labels))) if c else labels[0]
         grading, params = "exact", {"qauthor": au}
-        q = head + filtered_question(rng, "items", f"author {au} (the `[by {au}]` tag)", "which label is the MOST common",
+        q = head + filtered_question(rng, "items", f"author = {au} (the `[by {au}]` tag)", "which label is the MOST common",
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
     # Answer-form following (run 7: the model boxed `User: User 30140` for "in the form 'User: [X]'").
     # A third of exact-answer questions state a template; the gold is the template filled ONCE.
@@ -227,7 +230,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         answer_form = word
         # drop the question's own "Give … in \boxed{}." sentence and replace it with the form instruction
         q = re.sub(r"\s*Give [^.]*?in \\boxed\{\}\.\s*$", "", q)          # "Give it in \boxed{}."
-        q = re.sub(r",? in \\boxed\{\}\.\s*$", ".", q)                   # "…equally common as, in \boxed{}."
+        q = re.sub(r"\s*Put it in \\boxed\{\}\.\s*$", "", q)              # "…equally common as. Put it in \boxed{}."
         q += (f" Give your final answer in the form '{word}: [X]', where [X] is "
               f"the {'label' if word == 'Label' else 'answer'}; put it inside \\boxed{{}}.")
         gold = f"{word}: {gold}"

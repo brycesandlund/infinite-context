@@ -127,6 +127,21 @@ class ScaffoldOracle(ModelBackend):
         if k == "set":     return "the collected values joined by `|`"
         return f"the partial as `<key>=<value>` entries joined by `|`{self._key_space()}"
 
+    def _empty_partial(self) -> str:
+        """Appended to the contract: what a range with no owned items boxes. Audit 2026-09-20: sibling
+        leaves boxed `negative:3|positive:6` and `none` under the same contract, which never defined the
+        empty case. Scalar states box their identity (0), so only collection states need the clause."""
+        return "; `none` if no " + self._unit_singular() + " starts in the range" if self._kind() != "int" else ""
+
+    def _unit_singular(self) -> str:
+        u = self._unit()
+        if u.endswith("ies"): return u[:-3] + "y"
+        if u.endswith("s"): return u[:-1]
+        return u
+
+    def _n_units(self, n: int) -> str:
+        return f"{n} {self._unit_singular() if n == 1 else self._unit()}"
+
     def _key_space(self) -> str:
         """Appended to the format contract: the allowed KEYS. Closed label sets are enumerated
         ("where `<key>` is exactly one of K1, K2, K3, K4"); open sets state what a key is ("each
@@ -150,12 +165,12 @@ class ScaffoldOracle(ModelBackend):
         return "  (nothing starts here)"
 
     def _partial_header(self, a, b, n) -> str:
-        return (f"Computing the partial over the {n} records whose line STARTS in {a}..{b} "
+        return (f"Computing the partial over the {self._n_units(n)} whose line STARTS in {a}..{b} "
                 f"({self._op_phrase()}; the trailing reads only finish the last line, and any "
                 f"record starting at/after {b} belongs to the next range)")
 
     def _fold_header(self, n, a, cut) -> str:
-        return f"Folding the {n} records whose line STARTS in {a}..{cut} into the accumulator (in order)"
+        return f"Folding the {self._n_units(n)} whose line STARTS in {a}..{cut} into the accumulator (in order)"
 
     # Boundary-read wording. Records are one line by default; a task whose record is a
     # multi-line block (longrec) overrides these so the read narration matches its layout.
@@ -212,8 +227,8 @@ class ScaffoldOracle(ModelBackend):
             f"Over the {unit} STARTING in tokens {a}..{b}, {v} {goal}. Recursively split "
             f"the range at its midpoint, delegating each half to a subagent, until the range "
             f"is less than {L} tokens. When the range is less than {L} tokens, read it and "
-            f"{v} {goal} over the {unit} STARTING in the range. Return {self._state_format()} "
-            f"in \\boxed{{}}."
+            f"{v} {goal} over the {unit} STARTING in the range. Put the result in \\boxed{{}}: "
+            f"{self._state_format()}{self._empty_partial()}."
         )
 
     def _fold_subtask(self, a: int, b: int, acc) -> str:
@@ -296,20 +311,23 @@ class ScaffoldOracle(ModelBackend):
         if self.strategy == "left_fold":
             return (
                 f"This document is {n} tokens — too long to read in one context. This task is "
-                f"order-dependent: {self._sequential_reason()} — so I process the document left "
+                f"order-dependent: {self._sequential_reason()}. I therefore process the document left "
                 f"to right with a running accumulator: read the first slice and update the "
                 f"accumulator by {self._op_phrase()}, then hand the rest of the document plus the "
                 f"accumulator to a subagent to continue the same way. Once the final slice is "
                 f"folded in, the accumulator holds the whole-document result and I turn it into "
                 f"the final answer."
             )
+        # Reasoning BEFORE the commitment: the state-shape inference comes first, then the
+        # order-independence argument, and only then the plan that names the goal — so the tokens
+        # that justify the choice are generated before the choice is.
         shape = self._shape_reason()
         return (
-            f"This document is {n} tokens — too long to read in one context. The result over a "
-            f"range does not depend on the order of the {self._unit()}, so I split the range in "
-            f"half recursively, having a subagent {self._verb()} {self._goal_phrase()} over each "
-            f"half and combining the two partials." + (f" {shape}" if shape else "") +
-            f" Once I have it for the whole document, I turn the combined result into the final answer."
+            f"This document is {n} tokens — too long to read in one context." + (f" {shape}" if shape else "") +
+            f" The result over a range does not depend on the order of the {self._unit()}, so I split "
+            f"the range in half recursively, having a subagent {self._verb()} {self._goal_phrase()} over "
+            f"each half and combining the two partials. Once I have it for the whole document, I turn "
+            f"the combined result into the final answer."
         )
 
     def _box_text(self, state, is_root):

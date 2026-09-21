@@ -155,11 +155,12 @@ class SynthOracle(ScaffoldOracle):
             return {"prev": amt, "count": n}, f"- [{idx:04d}] amt={amt:+d}  ({amt} > {prev}? {'yes' if hit else 'no'})  → count={n}"
         if t == "synth_first_exceed":
             tot = acc.get("total", 0) + amt
-            if "first" in acc:
-                return {**acc, "total": tot}, f"- [{idx:04d}] amt={amt:+d}  → total={tot} (already exceeded at index {acc['first']})"
+            first = acc.get("first")          # None/absent means "not yet"; serialized as first=-1
+            if first is not None and first >= 0:
+                return {"total": tot, "first": first}, f"- [{idx:04d}] amt={amt:+d}  → total={tot} (already exceeded at index {first})"
             if tot > self.thresh:
                 return {"total": tot, "first": idx}, f"- [{idx:04d}] amt={amt:+d}  → total={tot} > {self.thresh}: FIRST exceed at index {idx}"
-            return {"total": tot}, f"- [{idx:04d}] amt={amt:+d}  → total={tot} (not > {self.thresh})"
+            return {"total": tot, "first": -1}, f"- [{idx:04d}] amt={amt:+d}  → total={tot} (not > {self.thresh}; first=-1 means not yet)"
         mon = s[6]   # outer value; `grp` (s[5]) is the inner value
         if t == "synth_filter_argmax":
             fv = flag if self.ffield == "flag" else mon
@@ -227,9 +228,9 @@ class SynthOracle(ScaffoldOracle):
 
     def _sequential_reason(self) -> str:
         return {
-            "synth_runreset": "a grp=RST record resets the total, so what a record contributes depends on the resets before it",
-            "synth_varchain": "a `set B = A` copies A's value AT THAT POINT, so assignments must be applied in order",
-            "synth_peak": "the peak is a property of the running total's path, which depends on every record before",
+            "synth_runreset": "a grp=RST record resets the total, and what a record contributes depends on the resets before it",
+            "synth_varchain": "a `set B = A` copies A's value AT THAT POINT, and assignments must be applied in order",
+            "synth_peak": "the peak is a property of the running total's path, which depends on every record before it",
             "synth_streak": "a run of consecutive flag=Y records is defined by the records immediately before each one",
             "synth_adjacent": "each record is compared with the record immediately before it",
             "synth_first_exceed": "the answer is the FIRST index where the running total crosses the threshold, which depends on all earlier records",
@@ -260,12 +261,17 @@ class SynthOracle(ScaffoldOracle):
     def _shape_reason(self) -> str:
         t = self.task
         if t == "synth_2d":
+            if self.qtype == "month_for_grp":
+                return (f"The question asks which {self.f_out} has the most {self.f_in}={self.qgrp} records, so the state must "
+                        f"count {self.f_in}={self.qgrp} separately WITHIN each {self.f_out}: a per-({self.f_out}, {self.f_in}) tally.")
             return (f"The question is about {self.f_in} values WITHIN each {self.f_out}, so the state is a per-({self.f_out}, "
                     f"{self.f_in}) tally, not a per-{self.f_in} one.")
         if t == "synth_filter_argmax":
             return f"The question is restricted to records with {self.ffield}={self.fval}, so the state is a per-{self.f_in} tally over those records only."
-        if t in ("synth_mode", "synth_distinct"):
-            return "The question asks about grp values over the whole document, so a per-grp tally is the right state."
+        if t == "synth_mode":
+            return "The question asks which grp value is most common over the whole document, so a per-grp tally is the right state."
+        if t == "synth_distinct":
+            return "The question asks how many DISTINCT grp values appear, so the state is the SET of grp values seen (no counts)."
         if t == "synth_sumby":
             return "The question asks which grp has the largest total, so the state is a per-grp running total."
         if t == "synth_diff":
@@ -274,7 +280,7 @@ class SynthOracle(ScaffoldOracle):
             return "The question asks for one number over the whole document, so the state is a single running count/sum."
         return ""
 
-    def _state_format(self) -> str:
+    def _state_format_base(self) -> str:
         if self.task == "synth_2d":
             return (f"the partial tally as `<{self.f_out}>/<{self.f_in}>=<count>` entries joined by `|`, "
                     f"where `<{self.f_out}>` is one of {', '.join(self.out_vals)} and `<{self.f_in}>` is one of "
@@ -288,9 +294,16 @@ class SynthOracle(ScaffoldOracle):
     def _key_space(self) -> str:
         if self.task == "synth_filter_argmax":
             return f", where `<key>` is exactly one of {', '.join(self.in_vals)}"
-        if self.task in ("synth_mode", "synth_distinct"):
+        if self.task == "synth_mode":
             return ", where `<key>` is exactly one of K1, K2, K3, K4 (never RST)"
         return ""
+
+    def _state_format(self) -> str:
+        if self.task == "synth_distinct":
+            return "the collected grp values joined by `|`, each exactly one of K1, K2, K3, K4 (never RST)"
+        if self.task in ("synth_max", "synth_min", "synth_maxwhere"):
+            return "the partial as a single integer, or `none` if no qualifying record starts in the range"
+        return self._state_format_base()
 
     def _combine_phrase(self) -> str:
         # Must read naturally in BOTH "then {phrase} their two results" (subtask) and
@@ -324,7 +337,7 @@ class SynthOracle(ScaffoldOracle):
         if t == "synth_streak":   return str(state.get("best", 0))
         if t == "synth_adjacent": return str(state.get("count", 0))
         if t == "synth_first_exceed":
-            return str(state["first"]) if "first" in state else "none"
+            return str(state["first"]) if state.get("first", -1) >= 0 else "none"
         if t in ("synth_filter_argmax", "synth_2d"):
             return self._month_resolve(state)[0]
         return "0" if state is None else str(state)
@@ -409,13 +422,16 @@ class SynthOracle(ScaffoldOracle):
             return f"\nPer-grp totals: {self._ser_state(state)}; largest total is {w} ({mx})."
         if t == "synth_diff":
             y, n = state.get("Y", 0), state.get("N", 0)
-            return f"\nflag=Y total = {y}, flag=N total = {n}; difference = {y} - {n} = {y - n}."
+            fmt = lambda v: f"({v})" if v < 0 else str(v)
+            return f"\nflag=Y total = {y}, flag=N total = {n}; difference = {fmt(y)} - {fmt(n)} = {y - n}."
         if t == "synth_varchain":
             return f"\nFinal value of {self.query_var}: {state.get(self.query_var, 0)}."
         if t == "synth_peak":     return f"\nHighest running total reached: {state.get('peak', 0)} (final total {state.get('total', 0)})."
         if t == "synth_streak":   return f"\nLongest run of consecutive flag=Y: {state.get('best', 0)}."
         if t == "synth_adjacent": return f"\nRecords with amt above their predecessor: {state.get('count', 0)}."
         if t == "synth_first_exceed":
-            return (f"\nThe running total first exceeds {self.thresh} at index {state['first']}." if "first" in state
-                    else f"\nThe running total never exceeds {self.thresh} (final total {state.get('total', 0)}).")
+            return (f"\nThe running total first exceeds {self.thresh} at index {state['first']}." if state.get("first", -1) >= 0
+                    else f"\nThe running total never exceeds {self.thresh} (first=-1 throughout; final total {state.get('total', 0)}).")
+        if t == "synth_runreset":
+            return f"\nFinal running total after the last record (and any resets): {state}."
         return ""   # numeric reduce/fold: the boxed answer IS the state

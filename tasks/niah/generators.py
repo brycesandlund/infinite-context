@@ -245,7 +245,10 @@ def make_niah_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
         document_tokens=enc["input_ids"], question=_phrase(rng, _Q_SINGLE, vword="number", key=key),
         gold_answers=[value], task=task, task_context=_CONTEXT, grading_mode="qa_part",
         metadata={"family": "niah", "strategy_default": "binary", "task": task,
-                  "answer": value, "key": key, "record_spans": spans, "k": 12},
+                  "answer": value, "key": key, "record_spans": spans, "k": 12,
+                  # bare question, embedded verbatim in every subtask by BookQAOracle (no preface /
+                  # answer-format tail — those conflict with the leaf protocol)
+                  "q_core": f"What is the special magic number for {key}?"},
     )
 
 

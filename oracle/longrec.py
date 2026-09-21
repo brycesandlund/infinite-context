@@ -23,8 +23,10 @@ def _argbest(counts: dict, best, order):
     return min((k for k, v in counts.items() if v == target), key=order.index)
 
 
-def _fmt(d: dict) -> str:
-    return ", ".join(f"{k}={v}" for k, v in sorted(d.items())) or "none"
+def _fmt(d: dict, order=None) -> str:
+    """Render a tally in the document's natural key order (the tie-break order the question states)."""
+    keys = sorted(d, key=(lambda k: (order.index(k) if k in order else len(order), k)) if order else None)
+    return ", ".join(f"{k}={d[k]}" for k in keys) or "none"
 
 
 class LongRecOracle(ScaffoldOracle):
@@ -55,43 +57,47 @@ class LongRecOracle(ScaffoldOracle):
         _, _, n, src, tag, occ, snips = s
         q = self.qtype
         # Show the matches counted (≤4 snippets) so the count is grounded in the text read.
-        ev = (" [" + "; ".join(f'"{x}"' for x in snips) + ("; …" if occ > len(snips) else "") + "]") if occ else ""
+        ev = ""
+        if occ:
+            shown = "; ".join("\u201c" + str(x).replace('"', "'") + "\u201d" for x in snips)
+            more = f"; +{occ - len(snips)} more" if occ > len(snips) else ""
+            ev = f" [{shown}{more}]"
         if q == "count_tag":
             hit = tag == self.qtag
             if hit: acc += 1
-            return acc, f"- entry {n} ({self.fb}={tag})  ({'match' if hit else 'no'})  → count={acc}"
+            return acc, f"- entry {n} ({self.fb}={tag}) ({'match' if hit else 'no'}) → count={acc}"
         if q == "src_most":
             acc = acc + Counter([src])
-            return acc, f"- entry {n} ({self.fa}={src})  → {self._ser_state(acc)}"
+            return acc, f"- entry {n} ({self.fa}={src}) → {self._ser_state(acc)}"
         if q == "tag_in_src":
             if src == self.qsrc:
                 acc = acc + Counter([tag])
-                return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag})  (match)  → {self._ser_state(acc)}"
-            return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag})  (skip)  → {self._ser_state(acc)}"
+                return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag}) (match) → {self._ser_state(acc)}"
+            return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag}) (skip) → {self._ser_state(acc)}"
         if q == "src_tag_2d":
             key = f"{src}/{tag}"
             acc = {**acc, key: acc.get(key, 0) + 1}
-            return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag})  → {key}={acc[key]}"
+            return acc, f"- entry {n} ({self.fa}={src}, {self.fb}={tag}) → {key}={acc[key]}"
         if q == "mention_count":
             if occ > 0: acc += 1
-            return acc, (f"- entry {n}: '{self.word}' appears {occ}x in the body{ev}  "
-                         f"({'counts' if occ > 0 else 'no'})  → count={acc}")
+            return acc, (f"- entry {n}: '{self.word}' appears {occ}x in the body{ev} "
+                         f"({'counts' if occ > 0 else 'no'}) → count={acc}")
         if q == "first_reach":
             if "first" in acc:
-                return acc, f"- entry {n} ({self.fb}={tag})  → already reached at entry {acc['first']}; unchanged"
+                return acc, f"- entry {n} ({self.fb}={tag}) (done) → already reached at entry {acc['first']}; unchanged"
             hit = tag == self.qtag
             cnt = acc.get("count", 0) + (1 if hit else 0)
             acc = {**acc, "count": cnt}
             if hit and cnt >= self.qn:
                 acc = {**acc, "first": n}
-                return acc, f"- entry {n} ({self.fb}={tag})  (match)  → count={cnt} — reaches {self.qn} here: first={n}"
-            return acc, f"- entry {n} ({self.fb}={tag})  ({'match' if hit else 'no'})  → count={cnt}"
+                return acc, f"- entry {n} ({self.fb}={tag}) (match) → count={cnt} — reaches {self.qn} here: first={n}"
+            return acc, f"- entry {n} ({self.fb}={tag}) ({'match' if hit else 'no'}) → count={cnt}"
         # mention_most: keep the best (most occurrences; ties -> lowest entry number)
         cur_n, cur_best = acc.get("n", -1), acc.get("best")
         if occ > cur_n or (occ == cur_n and (cur_best is None or n < cur_best)):
             acc = {"best": n, "n": occ}
-            return acc, f"- entry {n}: '{self.word}' appears {occ}x{ev}  (new best)  → {self._ser_state(acc)}"
-        return acc, f"- entry {n}: '{self.word}' appears {occ}x{ev}  → {self._ser_state(acc)}"
+            return acc, f"- entry {n}: '{self.word}' appears {occ}x in the body{ev} (new best) → {self._ser_state(acc)}"
+        return acc, f"- entry {n}: '{self.word}' appears {occ}x in the body{ev} (not better) → {self._ser_state(acc)}"
 
     def _combine(self, states):
         q = self.qtype
@@ -118,17 +124,17 @@ class LongRecOracle(ScaffoldOracle):
     def _resolve(self, state):
         q, state = self.qtype, state or {}
         if q == "count_tag":
-            return str(state or 0), ""
+            return str(state or 0), f"\nTotal entries with {self.fb}={self.qtag} over the whole document: {state or 0}."
         if q == "mention_count":
-            return str(state or 0), ""
+            return str(state or 0), f"\nTotal entries whose body contains '{self.word}': {state or 0}."
         if q == "src_most":
             if not state: return self.a_vals[0], f"\nNo entries; defaulting to {self.a_vals[0]}."
             a = _argbest(state, max, self.a_vals)
-            return a, f"\nEntries per {self.fa}: {_fmt(state)}; most is {a} ({state[a]})."
+            return a, f"\nEntries per {self.fa} (in natural order): {_fmt(state, self.a_vals)}; most is {a} ({state[a]})."
         if q == "tag_in_src":
             if not state: return self.b_vals[0], f"\nNo entries with {self.fa}={self.qsrc}; defaulting to {self.b_vals[0]}."
             a = _argbest(state, max, self.b_vals)
-            return a, f"\n{self.fb} tally over {self.fa}={self.qsrc} entries: {_fmt(state)}; most common is {a} ({state[a]})."
+            return a, f"\n{self.fb} tally over {self.fa}={self.qsrc} entries (in natural order): {_fmt(state, self.b_vals)}; most common is {a} ({state[a]})."
         if q == "src_tag_2d":
             per = {s: {} for s in self.a_vals}
             for k, v in state.items():
@@ -140,7 +146,7 @@ class LongRecOracle(ScaffoldOracle):
                 other = max((v for t, v in d.items() if t != self.qtag), default=0)
                 ok = d.get(self.qtag, 0) > other
                 if ok: hits.append(s)
-                rows.append(f"  {self.fa}={s}: {_fmt(d)} → {self.qtag}={d.get(self.qtag, 0)} vs best other {other}: {'yes' if ok else 'no'}")
+                rows.append(f"  {self.fa}={s}: {_fmt(d, self.b_vals)} → {self.qtag}={d.get(self.qtag, 0)} vs best other {other}: {'yes' if ok else 'no'}")
             return str(len(hits)), (f"\nPer {self.fa}, is {self.qtag} strictly the most common {self.fb}?\n" + "\n".join(rows)
                                     + f"\n{self.fa} values where yes: {', '.join(hits) or 'none'} → {len(hits)}.")
         if q == "first_reach":
@@ -226,12 +232,12 @@ class LongRecOracle(ScaffoldOracle):
         return "  (no entry header starts here — this range is inside an entry owned by the range before it)"
 
     def _partial_header(self, a, b, n) -> str:
-        return (f"Computing the partial over the {n} entries whose HEADER line STARTS in {a}..{b} "
+        return (f"Computing the partial over the {self._n_units(n)} whose HEADER STARTS in {a}..{b} "
                 f"({self._op_phrase()}; the trailing reads only finish the last entry's body, and "
                 f"any entry whose header starts at/after {b} belongs to the next range)")
 
     def _fold_header(self, n, a, cut) -> str:
-        return f"Folding the {n} entries whose HEADER line STARTS in {a}..{cut} into the accumulator (in order)"
+        return f"Folding the {self._n_units(n)} whose HEADER STARTS in {a}..{cut} into the accumulator (in order)"
 
     def _finish_phrase(self, end) -> str:
         return f"to finish the last entry's body (it may run well past {end})"

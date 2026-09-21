@@ -25,9 +25,18 @@ import re
 from oracle.base import ScaffoldOracle, ToolCall, _new_id, AssistantTurn, _RANGE_RE
 
 
+def _clip(t: str, n: int) -> str:
+    """Clip at a word boundary with an ellipsis (never mid-word)."""
+    if len(t) <= n:
+        return t
+    cut = t[:n].rsplit(" ", 1)[0]
+    return (cut or t[:n]) + "…"
+
+
 class BookQAOracle(ScaffoldOracle):
     name = "bookqa_oracle"
     _SEP = " ⟐ "
+    _CTX_SEP = " ‖ "     # joins passed-up context sentences; distinct from the ANSWER record separator
     _ANS = "ANSWER"   # sentinel: a serialized result whose first field is this carries the answer
     NO_ANSWER = "answer not found in document"   # boxed when no leaf answered -> gate rejects it
 
@@ -47,6 +56,10 @@ class BookQAOracle(ScaffoldOracle):
         super().__init__(problem, tokenizer, budget=budget,
                          max_chunk_tokens=max_chunk_tokens, strategy="binary")
         self.question = problem.question
+        # The subtask embeds the question for the children: strip an instructional preface and the
+        # answer-format tail (they conflict with the leaf protocol's own \\boxed{ANSWER ⟐ …}). The
+        # generator stores the bare question as metadata "q_core" where it has one.
+        self.q_core = problem.metadata.get("q_core") or problem.question
         self.answer = self.meta["answer"]      # gold — used ONLY by the external rejection gate
         self.k = self.meta.get("k", 12)
         self.leaf_model = leaf_model           # ModelBackend; None => scripted fallback leaf
@@ -67,12 +80,12 @@ class BookQAOracle(ScaffoldOracle):
     def _subtask(self, a: int, b: int) -> str:
         L = self.LEAF_TOKENS
         return (
-            f'Find the answer to the question "{self.question}" within the document range in '
+            f'Find the answer to the question "{self.q_core}" within the document range in '
             f"tokens {a}..{b}. Recursively split the range at its midpoint, delegating each "
             f"half to a subagent, until the range is less than {L} tokens. When the range is "
             f"less than {L} tokens, read it directly. If this range contains the answer, return "
             f"it with the sentence that states it; otherwise return any relevant information you "
-            f'find, or "No relevant information in this range." if there is none.'
+            f'find, or say "No relevant information in this range." and return `none` if there is none.'
         )
 
     # -- result (answer / context / none) <-> string through \boxed{} -----------
@@ -82,11 +95,11 @@ class BookQAOracle(ScaffoldOracle):
         if kind == "answer":
             return f"{self._ANS}{self._SEP}{ans}{self._SEP}{payload}"
         if kind == "context" and payload:
-            return self._SEP.join(payload[: self.k])
+            return self._CTX_SEP.join(payload[: self.k])
         return "none"
 
     def _parse(self, box):
-        parts = (box or "").strip().split(self._SEP)
+        parts = (box or "").strip().replace(self._CTX_SEP, self._SEP).split(self._SEP)
         if len(parts) >= 2 and parts[0].strip() == self._ANS:
             return ("answer", parts[1].strip(), self._SEP.join(parts[2:]).strip())
         snips = [p.strip() for p in parts if p.strip() and p.strip().lower() != "none"]
@@ -137,12 +150,12 @@ class BookQAOracle(ScaffoldOracle):
             ans = m.group(1).strip().strip('"').rstrip(".").strip()
             # EVIDENCE may span several sentences — keep the whole block, newlines collapsed.
             ev = re.search(r"EVIDENCE:\s*(.+)", t, re.I | re.S)
-            evid = (re.sub(r"\s+", " ", ev.group(1)).strip()[:400] if ev else "")
+            evid = (_clip(re.sub(r"\s+", " ", ev.group(1)).strip(), 400) if ev else "")
             if ans and ans.upper() != "NONE":
                 return ("answer", ans, evid or ans)
         m = re.search(r"CONTEXT:\s*(.+)", t, re.I | re.S)
         if m:
-            snip = m.group(1).strip().split("\n")[0].strip()[:200]
+            snip = _clip(m.group(1).strip().split("\n")[0].strip(), 200)
             if snip:
                 return ("context", None, [snip])
         return ("none", None, None)

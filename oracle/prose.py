@@ -120,13 +120,19 @@ class NiahMultiOracle(ScaffoldOracle):
         return "collect"
 
     def _shape_reason(self) -> str:
+        if self.mode == "hidden":
+            return (f"The question asks for the magic {self.vword} of a key that only a hidden lookup instruction names, so "
+                    f"the state is the set of collected key=value facts plus that instruction, resolved only at the root.")
+        if self.mode == "multivalue":
+            return (f"The question asks for EVERY magic {self.vword} stated for one key, so the state collects all values "
+                    f"per key (several values under one key are comma-joined), merged at the root.")
         return (f"The question asks for specific keys' magic {self.vword}s, so the state is the set of collected "
-                f"key=value facts (plus any lookup instruction), resolved only at the root.")
+                f"key=value facts, resolved only at the root.")
 
     def _state_format(self) -> str:
-        return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|`, where each "
-                f"`<key>` is the key name exactly as written in the text (a lookup instruction as "
-                f"`QUERY=<key>`; `none` if the range has no fact)")
+        return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|` (several values for one "
+                f"key comma-joined: `<key>=<v1>,<v2>`), where each `<key>` is the key name exactly as written in the "
+                f"text, and a lookup instruction as `QUERY=<key>`")
 
     def _goal_phrase(self) -> str:
         # Name what the question asks for, so every subtask carries the KEY(s) down the tree
@@ -198,7 +204,7 @@ class VtNovelOracle(ScaffoldOracle):
 
     def _sequential_reason(self) -> str:
         return ("a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be "
-                "reassigned later, so the bindings must be applied in document order")
+                "reassigned later, which makes the order of the bindings matter")
 
     def _op_phrase(self) -> str:
         return "applying each VAR assignment in order (VAR A = VAR B copies B's current value)"

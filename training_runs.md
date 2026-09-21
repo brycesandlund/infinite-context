@@ -756,3 +756,32 @@ vendored generator) and the model compared counts; yahoo root chose a 1-D tally 
    rule_label 40, replay elsewhere. Verified: all tally tasks 60/60 each at doc 6k/14k after the shape-reason
    change; labeled_records 80/80 incl. claims / first_month_cmp / before_after / long items (max ctx 2842).
    Traces: `trace_snippets/labeled_records_v3.txt`. Script: `scripts/run_sft9_warm.sh`.
+7. **Trace-text audit (2026-09-20, six subagents over ~600 dumped traces, one per task family).** Prompted by the
+   "Give it." stub: same-class bugs found and fixed before run 9, all verified 12/12 at doc 6k/14k
+   (`trace_snippets/audit_fixes_verify.txt`):
+   - Shape reason moved BEFORE the strategy commitment in every binary preamble (reason → decision, not the reverse);
+     fold connector reworded ("This task is order-dependent: {reason}. I therefore process…").
+   - Subtask contract: "Put the result in \boxed{}: {fmt}; `none` if no <unit> starts in the range" — the empty-leaf
+     `none` was contradicting the stated `key:count` format; `\boxed{}` no longer attaches to the wrong noun.
+   - Plurals via `_n_units` ("the 1 entry", not "the 1 entries"; 843 hits in long_records alone); long_records kv
+     layout says "HEADER STARTS" (it has a 3-line header, not a "HEADER line").
+   - long_records: every step line carries exactly one marker (`(not better)` was an empty slot with a doubled
+     space); tallies rendered in the document's NATURAL order (the stated tie rule) instead of alphabetically;
+     evidence quotes use “ ” so an embedded `"` cannot break the list, and the cap says `+N more`; count roots
+     close with a sentence like every other qtype.
+   - rule_label: `section_most` reason said "WITHIN each section" for an ACROSS-sections question; evidence snippets
+     keep head AND tail so the `?`/quote the rule inspects is visible (88% were `…`-truncated before the mark);
+     "equally common as, in \boxed{}" comma (also in labeled_records) → "Answer in \boxed{} with exactly one of…".
+   - labeled_records: author filter "where author Diaz" → "author = Diaz (the `[by Diaz]` tag)"; `on/after` two-slash
+     period key → `on_or_after`; single-section docs → sections by document position; date-mode context clause.
+   - synth: synth_distinct had the wrong shape reason; synth_2d month_for_grp reason; first_exceed fixed field list
+     (`first=-1` = not yet); diff negative formatting; niah_multi hidden-mode reason; synth_topk binary-only guard.
+   - Corpora: NarrativeQA cache had HTML in 1048/2000 rows → stripped and re-cached (0 rows with tags;
+     `_CACHE_VERSION` v3, ~$10 haiku regen); yelp `\""` escapes unescaped; claims predicates >28 words dropped
+     instead of `…`-truncated (5,450 rows).
+   - BookQA/niah_novel: the subtask embeds the bare question (`q_core` metadata) instead of the full prompt with its
+     preface and `\boxed{}` directive; empty-leaf sentinel says what to return; evidence/snippet clipping at word
+     boundaries (`_clip`); passed-up context joined with ` ‖ ` so ` ⟐ ` means only the ANSWER record.
+   Not fixed (cosmetic, in source prose): PG-essay scrape artifacts ("close.The way"), read_chunk clips mid-header.
+   narrativeqa verify shows 9/12 with the SCRIPTED leaf — pre-existing (these are the gold-rejection-sampled cases;
+   SFT uses the haiku leaf).
