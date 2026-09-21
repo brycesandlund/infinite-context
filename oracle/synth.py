@@ -278,6 +278,14 @@ class SynthOracle(ScaffoldOracle):
             return "The question subtracts one flag's total from the other's, so the state keeps a running total per flag."
         if t in ("synth_count", "synth_count2", "synth_count_cmp", "synth_count_range", "synth_sumwhere"):
             return "The question asks for one number over the whole document, so the state is a single running count/sum."
+        if t == "synth_sum":
+            return "The question asks for one total over the whole document, so the state is a single running sum — no per-grp breakdown is needed."
+        if t in ("synth_max", "synth_min"):
+            w = "largest" if t == "synth_max" else "smallest"
+            return f"The question asks for the single {w} 'amt', so the state is just the best value seen so far (`none` until one is seen) — not a running total."
+        if t == "synth_maxwhere":
+            return (f"The question asks for the largest 'amt' among flag={self.qflag} records only, so the state is the best value "
+                    f"seen among those records (`none` until one is seen) — other records are skipped, not counted.")
         # fold tasks: why the ACCUMULATOR carries what it carries
         if t == "synth_runreset":
             return ("The answer is the running total after the last reset, so the accumulator is just the current total — "
