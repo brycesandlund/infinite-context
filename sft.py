@@ -242,10 +242,19 @@ def _parse_doc_mix(spec: str, default: int) -> list[int]:
 _DOC_CYCLE = _parse_doc_mix(os.environ.get("DOC_MIX", ""), DOC_SIZE_TOKENS)
 
 
-def _doc_size_for(i: int) -> int:
-    """Doc size for problem index `i` — cycles DOC_MIX so the long fraction spreads evenly and
-    reproducibly across each task's problems."""
-    return _DOC_CYCLE[i % len(_DOC_CYCLE)]
+# Per-task doc mix: "vt_novel=6000:1,14000:1;long_records=..." — a task whose eval regime is long
+# (RULER vt at 10K+ is a 25-hop fold chain; run-8w roots abandoned fold at 10K) gets more long docs.
+_DOC_MIX_OVERRIDE = {
+    kv.split("=")[0].strip(): _parse_doc_mix(kv.split("=")[1], DOC_SIZE_TOKENS)
+    for kv in os.environ.get("DOC_MIX_OVERRIDE", "").split(";") if "=" in kv
+}
+
+
+def _doc_size_for(i: int, task: str | None = None) -> int:
+    """Doc size for problem index `i` — cycles DOC_MIX (or the task's DOC_MIX_OVERRIDE) so the long
+    fraction spreads evenly and reproducibly across each task's problems."""
+    cyc = _DOC_MIX_OVERRIDE.get(task, _DOC_CYCLE)
+    return cyc[i % len(cyc)]
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +276,7 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     # DOC_MIX (long-doc tier) applies only to SCRIPTED tasks — for a model-leaf task
     # (narrativeqa/bookqa) a longer doc means a bigger tree = many more paid leaf calls for no
     # QA benefit, so pin those to the base size.
-    doc = DOC_SIZE_TOKENS if task in _REJECT_SAMPLE_TASKS else _doc_size_for(i)
+    doc = DOC_SIZE_TOKENS if task in _REJECT_SAMPLE_TASKS else _doc_size_for(i, task)
     if task.startswith("oolong"):
         seed, dataset = oolong_spec(task, i, DATA_SEED)
         return seed, make_oolong_problem(

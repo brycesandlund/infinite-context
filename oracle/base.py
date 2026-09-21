@@ -135,6 +135,14 @@ class ScaffoldOracle(ModelBackend):
         `not relevant` — the merge summed incompatible vocabularies. Default: no clause."""
         return ""
 
+    def _shape_reason(self) -> str:
+        """One sentence the ROOT says about WHY the state has its shape — which field(s) the question
+        groups by ("The question compares labels within each month and the items carry dates, so the
+        state is a per-(month, label) tally"). Same device as the fold/binary reason: the run-7/8w
+        roots still chose a 1-D per-label tally for per-month questions (OOLONG temporal/yahoo) because
+        shape selection was an imitated template with no stated inference behind it. Default: none."""
+        return ""
+
     def _combine_phrase(self) -> str:
         return "combine"
 
@@ -295,12 +303,13 @@ class ScaffoldOracle(ModelBackend):
                 f"folded in, the accumulator holds the whole-document result and I turn it into "
                 f"the final answer."
             )
+        shape = self._shape_reason()
         return (
             f"This document is {n} tokens — too long to read in one context. The result over a "
             f"range does not depend on the order of the {self._unit()}, so I split the range in "
             f"half recursively, having a subagent {self._verb()} {self._goal_phrase()} over each "
-            f"half and combining the two partials. Once I have it for the whole document, I turn "
-            f"the combined result into the final answer."
+            f"half and combining the two partials." + (f" {shape}" if shape else "") +
+            f" Once I have it for the whole document, I turn the combined result into the final answer."
         )
 
     def _box_text(self, state, is_root):

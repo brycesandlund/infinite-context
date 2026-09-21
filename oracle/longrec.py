@@ -193,6 +193,20 @@ class LongRecOracle(ScaffoldOracle):
         return (f"the answer is the FIRST entry at which a running count reaches {self.qn}, which "
                 f"depends on every entry before it")
 
+    def _shape_reason(self) -> str:
+        q = self.qtype
+        if q == "src_tag_2d":
+            return f"The question compares {self.fb} values WITHIN each {self.fa}, so the state is a per-({self.fa}, {self.fb}) tally."
+        if q == "tag_in_src":
+            return f"The question is restricted to {self.fa}={self.qsrc} entries, so the state is a per-{self.fb} tally over those only."
+        if q == "src_most":
+            return f"The question asks which {self.fa} has the most entries, so the state is a per-{self.fa} count."
+        if q in ("count_tag", "mention_count"):
+            return "The question asks for one total over the whole document, so the state is a single count."
+        if q == "mention_most":
+            return "The question asks which single entry has the most occurrences, so the state is just the best (entry, count) seen so far."
+        return ""
+
     def _state_format(self) -> str:
         if self.qtype == "src_tag_2d":
             return (f"the partial tally as `<{self.fa}>/<{self.fb}>=<count>` entries joined by `|`, where "

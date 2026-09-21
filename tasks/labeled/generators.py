@@ -36,6 +36,7 @@ _DESC = {
     "dbpedia": "Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described.",
     "emotion": "Each item is a short personal message; its label is the EMOTION the writer expresses.",
     "yelp": "Each item is a customer review of a business; its label is the review's overall SENTIMENT.",
+    "claims": "Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False.",
 }
 _AUTHORS = ["Cho", "Diaz", "Han", "Ivanov", "Kim", "Lee", "Okafor", "Park", "Rossi", "Sato"]
 _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top"]
@@ -61,6 +62,11 @@ def _context(name: str, labels: list[str], key_mode: str) -> str:
     )
 
 
+def _date_key(date: str):
+    mon, day, year = date.replace(",", "").split()
+    return (int(year), _MONTHS.index(mon), int(day))
+
+
 def _month_key(date: str) -> str:
     mon, _, year = date.replace(",", "").split()
     return f"{mon} {year}"
@@ -70,7 +76,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     if task not in LABELED_TASKS:
         raise ValueError(f"Unknown labeled task: {task!r}")
     rng = random.Random(seed)
-    name = rng.choice(["dbpedia", "emotion", "emotion", "yelp", "yelp"])
+    name = rng.choice(["dbpedia", "emotion", "emotion", "yelp", "yelp", "claims", "claims"])
     # Long-item regime: 20% of problems use full-length yelp reviews (up to ~700 tokens), so a leaf
     # owns at most one item, must extend its read 2-3 times to finish it, and neighbouring leaves see
     # only a fragment they do not own — the OOLONG-imdb shape that broke ownership in run 8w.
@@ -122,7 +128,9 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         doc_tokens.extend(toks)
         t = r[text_key]
         recs.append({"idx": i, "sec": outer, "au": au, "label": r["label"], "date": date,
-                     "snip": (t[:32] + "…") if len(t) > 35 else t, "start": start, "end": len(doc_tokens)})
+                     # claims: the judged content is the PREDICATE, so quote most of the sentence
+                     "snip": ((t[:100] + "…") if len(t) > 103 else t) if name == "claims" else ((t[:32] + "…") if len(t) > 35 else t),
+                     "start": start, "end": len(doc_tokens)})
     if key_mode == "section":
         sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
     else:
@@ -132,7 +140,8 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
 
     tally = Counter(r["label"] for r in recs)
     per = {s_: Counter(r["label"] for r in recs if r["sec"] == s_) for s_ in sections}
-    qtypes = _QTYPES + (["dates_rep_k", "dates_rep_k"] if key_mode == "date" else [])
+    qtypes = _QTYPES + (["dates_rep_k", "dates_rep_k", "first_month_cmp", "first_month_cmp", "before_after", "before_after"]
+                        if key_mode == "date" else [])
     qtype = rng.choice(qtypes)
     head = f"Judge each item's label (one of: {', '.join(labels)}). "
     ex = labels[0]
@@ -180,6 +189,27 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         q = (f"Considering only items dated in {mon}: how many distinct dates are represented exactly {k} "
              f"time{'s' if k != 1 else ''} (i.e. exactly {k} item{'s' if k != 1 else ''} carry that exact date)? "
              f"Give the single integer in \\boxed{{}}.")
+    elif qtype == "first_month_cmp":
+        a, b = rng.sample(labels, 2)
+        hit = next((m for m in sections if per[m][a] > per[m][b]), None)
+        gold, grading, params = (hit or "none"), "exact", {"qa": a, "qb": b}
+        q = head + (f"In which month did `{a}` FIRST occur more often than `{b}`? Months are in chronological order; "
+                    f"answer with the month and year exactly as written in the items' dates (e.g. {sections[0]}), or "
+                    f"none if it never happens. Give it in \\boxed{{}}.")
+    elif qtype == "before_after":
+        # OOLONG-temporal semantics: compare the SHARE of items with label L before date D vs on/after D.
+        L = rng.choice(labels)
+        dates_sorted = sorted({r["date"] for r in recs}, key=_date_key)
+        D = dates_sorted[rng.randint(len(dates_sorted) // 4, 3 * len(dates_sorted) // 4)]
+        before = [r for r in recs if _date_key(r["date"]) < _date_key(D)]
+        after = [r for r in recs if _date_key(r["date"]) >= _date_key(D)]
+        fb = sum(r["label"] == L for r in before) / max(1, len(before))
+        fa = sum(r["label"] == L for r in after) / max(1, len(after))
+        gold = "more common" if fb > fa + 1e-9 else "less common" if fb < fa - 1e-9 else "the same frequency"
+        grading, params = "exact", {"qlabel": L, "qdate": D}
+        q = head + (f"Was `{L}` more common, less common, or the same frequency among items dated before {D} as "
+                    f"compared to items dated on or after {D}? 'Common' means the share of that period's items "
+                    f"with the label. Answer with exactly one of: more common / less common / the same frequency, in \\boxed{{}}.")
     else:  # author_most
         au = rng.choice(authors)
         c = Counter(r["label"] for r in recs if r["au"] == au)

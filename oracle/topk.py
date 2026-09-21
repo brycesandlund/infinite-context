@@ -100,6 +100,10 @@ class TopKOracle(ScaffoldOracle):
     def _combine_phrase(self):
         return "merge (add per word)"
 
+    def _shape_reason(self):
+        return ("The question asks for the most frequent words over an open vocabulary, so each partial is a pruned "
+                "`word:count` tally (never a bare word list) and only the root ranks.")
+
     def _state_format(self):
         return (f"the partial as `<word>:<count>` entries joined by `|` for the most frequent words seen 2+ times "
                 f"in the range (at most {self.keep_m}; exact counts; one-off words dropped) — a tally with counts, never a bare word list"

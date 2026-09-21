@@ -119,6 +119,10 @@ class NiahMultiOracle(ScaffoldOracle):
     def _verb(self) -> str:
         return "collect"
 
+    def _shape_reason(self) -> str:
+        return (f"The question asks for specific keys' magic {self.vword}s, so the state is the set of collected "
+                f"key=value facts (plus any lookup instruction), resolved only at the root.")
+
     def _state_format(self) -> str:
         return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|`, where each "
                 f"`<key>` is the key name exactly as written in the text (a lookup instruction as "

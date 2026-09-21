@@ -257,6 +257,23 @@ class SynthOracle(ScaffoldOracle):
             "synth_2d": f"the per-({self.f_out}, {self.f_in}) tally (how many records have each {self.f_out} AND {self.f_in} combination)",
         }[self.task]
 
+    def _shape_reason(self) -> str:
+        t = self.task
+        if t == "synth_2d":
+            return (f"The question is about {self.f_in} values WITHIN each {self.f_out}, so the state is a per-({self.f_out}, "
+                    f"{self.f_in}) tally, not a per-{self.f_in} one.")
+        if t == "synth_filter_argmax":
+            return f"The question is restricted to records with {self.ffield}={self.fval}, so the state is a per-{self.f_in} tally over those records only."
+        if t in ("synth_mode", "synth_distinct"):
+            return "The question asks about grp values over the whole document, so a per-grp tally is the right state."
+        if t == "synth_sumby":
+            return "The question asks which grp has the largest total, so the state is a per-grp running total."
+        if t == "synth_diff":
+            return "The question subtracts one flag's total from the other's, so the state keeps a running total per flag."
+        if t in ("synth_count", "synth_count2", "synth_count_cmp", "synth_count_range", "synth_sumwhere"):
+            return "The question asks for one number over the whole document, so the state is a single running count/sum."
+        return ""
+
     def _state_format(self) -> str:
         if self.task == "synth_2d":
             return (f"the partial tally as `<{self.f_out}>/<{self.f_in}>=<count>` entries joined by `|`, "

@@ -129,6 +129,13 @@ class RuleLabelOracle(ScaffoldOracle):
             "section_most": f"the per-(section, label) tally ({self._rule()})",
         }[self.qtype]
 
+    def _shape_reason(self):
+        if self.qtype in ("sections_cmp", "section_most"):
+            return "The question compares labels WITHIN each section, so the state is a per-(section, label) tally, not a per-label one."
+        if self.qtype == "count":
+            return f"The question asks for one label's total, so the state is a single count of `{self.qlabel}` sentences."
+        return "The question asks about labels over the whole document, so a per-label tally is the right state."
+
     def _state_format(self):
         labs = f"`{self.lt}` or `{self.lf}`"
         if self.qtype == "count":

@@ -727,3 +727,32 @@ were ~450 tokens). Now: `long_records` — 40% of problems carry bodies of 400�
 by scripts/cache_labeled.py). Verified 160/160 at 1.00 (doc 6k/14k), max ctx 2851; in a 30-trace sample:
 46 extension turns, 12 leaves with 2+ consecutive extensions, 15 fragment-only leaves. Leaf size stays a
 constant 500 (leaf ≈ range + one item; items up to ~1,000 tokens fit a 3K budget).
+
+---
+
+## sft_general9w (run 9, warm start from sft_general8w) — PLANNED 2026-09-20
+
+**From the 10K fresh-seed audit (A7/A8) — per-item leaf label accuracy vs OOLONG gold:** trec 0.87 (8w) / 0.34
+(run 7); imdb 0.92 but WRONG answer (8 leaves labelled fragments they did not own → 24 items, 32 votes); agnews
+0.70; yahoo 0.80; negation 0.46 with a strong True bias. Temporal: month key lost its YEAR on a "first month
+where…" question; "more common before D than after" is a SHARE comparison in OOLONG (checked `get_frac` in the
+vendored generator) and the model compared counts; yahoo root chose a 1-D tally for a per-month question. vt at
+10K: 3/5 roots went binary-collect (fold prior weakens with length). Full audit in the 09-18 session notes.
+
+**Changes**
+1. **Long-item regime** (logged above): long_records bodies to 400–700 tokens; labeled_records full-length yelp.
+2. **Claim verification** (`scripts/cache_claims.py` → labeled dataset `claims`, 6,244 balanced rows): DBpedia
+   "Subject is/was predicate" sentences; FALSE = the predicate of a different class ("Carmeuse is a village in…").
+   Negation's shape (one-sentence definitional claim, True/False) on non-OOLONG data; leaf lines quote ~100 chars.
+3. **Temporal qtypes in labeled_records date mode:** `first_month_cmp` ("in which month did A FIRST occur more often
+   than B" — chronological argmin over month×label, answer `Mon YYYY`, none if never) and `before_after` ("was L
+   more/less/the same frequency before D vs on/after D" — SHARE semantics, stated in the question; state = 2 periods ×
+   {L, other}; root shows both percentages). Month keys already carry the year across 2022–2025.
+4. **Shape reason** (`_shape_reason` hook, all binary tally oracles): the root now says WHY the state has its shape —
+   *"The question compares labels WITHIN each month and the items carry dates, so each item's month is derived from
+   its date, and the state is a per-(month, label) tally, not a per-label one."* Same device that fixed fold/binary.
+5. **`DOC_MIX_OVERRIDE`** (sft.py): per-task doc mix; `vt_novel=6000:1,14000:1` so half its fold chains are ~35 hops.
+6. Warm from 8w, 25% replay, batch 16, LR 5e-6: labeled_records 200, long_records 120, vt_novel 100, synth_topk 40,
+   rule_label 40, replay elsewhere. Verified: all tally tasks 60/60 each at doc 6k/14k after the shape-reason
+   change; labeled_records 80/80 incl. claims / first_month_cmp / before_after / long items (max ctx 2842).
+   Traces: `trace_snippets/labeled_records_v3.txt`. Script: `scripts/run_sft9_warm.sh`.

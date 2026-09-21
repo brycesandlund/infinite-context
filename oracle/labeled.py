@@ -17,6 +17,13 @@ from collections import Counter
 
 from oracle.base import ScaffoldOracle
 
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
+def _dkey(date):
+    mon, day, year = date.replace(",", "").split()
+    return (int(year), _MONTHS.index(mon), int(day))
+
 
 class LabeledOracle(ScaffoldOracle):
     name = "labeled_oracle"
@@ -30,12 +37,12 @@ class LabeledOracle(ScaffoldOracle):
         self.key_mode = m.get("key_mode", "section")
         self.unit_word = "section" if self.key_mode == "section" else "month"
         self.qlabel, self.qa, self.qb = m.get("qlabel"), m.get("qa"), m.get("qb")
-        self.qauthor, self.qk, self.qmon = m.get("qauthor"), m.get("qk"), m.get("qmon")
+        self.qauthor, self.qk, self.qmon, self.qdate = m.get("qauthor"), m.get("qk"), m.get("qmon"), m.get("qdate")
 
     def _kind(self):
         return {"count": "int", "most_common": "counter", "relative": "counter", "author_most": "counter",
                 "author_top": "counter", "sections_cmp": "dict", "section_most": "dict",
-                "dates_rep_k": "dict"}[self.qtype]
+                "dates_rep_k": "dict", "first_month_cmp": "dict", "before_after": "dict"}[self.qtype]
 
     def _unit(self):
         return "items"
@@ -69,6 +76,11 @@ class LabeledOracle(ScaffoldOracle):
         if q in ("most_common", "relative"):
             acc = acc + Counter([label])
             return acc, f"{head} → {label}: {acc[label]}"
+        if q == "before_after":
+            side = "before" if _dkey(date) < _dkey(self.qdate) else "on/after"
+            key = f"{side}/{label if label == self.qlabel else 'other'}"
+            acc = {**acc, key: acc.get(key, 0) + 1}
+            return acc, f"- [{date} → {side} {self.qdate}] \"{snip}\" → label: {label} → {key}={acc[key]}"
         if q == "dates_rep_k":
             if outer != self.qmon:
                 return acc, f"- [{date} → {outer}] \"{snip}\" (not {self.qmon}, skip)"
@@ -132,7 +144,24 @@ class LabeledOracle(ScaffoldOracle):
             shown = ", ".join(hits[:12]) + (f", … (+{len(hits) - 12} more)" if len(hits) > 12 else "")
             return str(len(hits)), (f"\nDistinct {self.qmon} dates: {len(c)}; represented exactly {self.qk}x: "
                                     f"{shown or 'none'} → {len(hits)}.")
+        if q == "before_after":
+            c = state or {}
+            bL, bO = c.get(f"before/{self.qlabel}", 0), c.get("before/other", 0)
+            aL, aO = c.get(f"on/after/{self.qlabel}", 0), c.get("on/after/other", 0)
+            fb = bL / max(1, bL + bO); fa = aL / max(1, aL + aO)
+            ans = "more common" if fb > fa + 1e-9 else "less common" if fb < fa - 1e-9 else "the same frequency"
+            return ans, (f"\nBefore {self.qdate}: {bL} of {bL + bO} items are `{self.qlabel}` ({fb:.0%}); on/after: {aL} of "
+                         f"{aL + aO} ({fa:.0%}). Comparing shares, `{self.qlabel}` was {ans} before.")
         per = self._per_section(state)
+        if q == "first_month_cmp":
+            rows = []
+            hit = None
+            for m in self.sections:
+                a, b = per[m].get(self.qa, 0), per[m].get(self.qb, 0)
+                rows.append(f"  {m}: {self.qa}={a} vs {self.qb}={b}: {'yes' if a > b else 'no'}")
+                if hit is None and a > b: hit = m
+            return (hit or "none"), (f"\nIn chronological order, {self.qa} > {self.qb}?\n" + "\n".join(rows)
+                                     + f"\nFirst month where yes: {hit or 'none'}.")
         if q == "sections_cmp":
             hits, rows = [], []
             for s in self.sections:
@@ -176,6 +205,8 @@ class LabeledOracle(ScaffoldOracle):
             "sections_cmp": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{self._outer_note()}",
             "section_most": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{self._outer_note()}",
             "dates_rep_k": f"tallying how many items carry each exact date, for items dated in {self.qmon} only",
+            "first_month_cmp": f"{self._labelling()} and tallying each (month, label) pair (an item's month is the month and year of its date)",
+            "before_after": f"{self._labelling()} and tallying, separately for items dated before {self.qdate} and on/after it, how many are `{self.qlabel}` and how many are any other label",
         }[self.qtype]
 
     def _goal_phrase(self):
@@ -188,7 +219,27 @@ class LabeledOracle(ScaffoldOracle):
             "sections_cmp": f"the per-({self.unit_word}, label) tally ({self._labelling()}){self._outer_note()}",
             "section_most": f"the per-({self.unit_word}, label) tally ({self._labelling()}){self._outer_note()}",
             "dates_rep_k": f"the per-date tally over ONLY items dated in {self.qmon} (how many items carry each exact date)",
+            "first_month_cmp": f"the per-(month, label) tally ({self._labelling()}) (an item's month is the month and year of its date)",
+            "before_after": f"the before/on-or-after {self.qdate} tally of `{self.qlabel}` vs other labels ({self._labelling()})",
         }[self.qtype]
+
+    def _shape_reason(self):
+        q, uw = self.qtype, self.unit_word
+        derive = " and the items carry dates, so each item's month is derived from its date" if self.key_mode == "date" else ""
+        if q in ("sections_cmp", "section_most", "first_month_cmp"):
+            return f"The question compares labels WITHIN each {uw}{derive}, so the state is a per-({uw}, label) tally, not a per-label one."
+        if q == "before_after":
+            return (f"The question compares the label's share before vs on/after {self.qdate}, so the state keeps two periods "
+                    f"x (`{self.qlabel}` vs other) — four counts — not one overall tally.")
+        if q == "author_top":
+            return f"The question asks WHICH AUTHOR has the most `{self.qlabel}` items, so the state is a per-author count of `{self.qlabel}` items."
+        if q == "author_most":
+            return f"The question is restricted to author {self.qauthor}'s items, so the state is a per-label tally over those items only."
+        if q == "dates_rep_k":
+            return f"The question asks how many dates in {self.qmon} appear exactly {self.qk} times, so the state is a per-DATE count, reduced at the root."
+        if q == "count":
+            return f"The question asks for one label's total, so the state is a single count of `{self.qlabel}` items."
+        return "The question asks about labels over the whole document, so a per-label tally is the right state."
 
     def _state_format(self):
         labs = ", ".join(f"`{l}`" for l in self.labels)
@@ -202,6 +253,9 @@ class LabeledOracle(ScaffoldOracle):
                     + ", ".join(f"`{a}`" for a in self.authors))
         if q == "dates_rep_k":
             return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a {self.qmon} date exactly as written in the item's tag"
+        if q == "before_after":
+            return (f"the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on/after` "
+                    f"(relative to {self.qdate}) and `<which>` is `{self.qlabel}` or `other`")
         outer = (f"the line's `S<n>` tag" if self.key_mode == "section"
                  else "the month and year of the item's date, one of " + ", ".join(f"`{m}`" for m in self.sections))
         return (f"the partial tally as `<{self.unit_word}>/<label>=<count>` entries joined by `|`, where "
@@ -209,7 +263,7 @@ class LabeledOracle(ScaffoldOracle):
 
     def _combine_phrase(self):
         return {"count": "sum", "most_common": "merge", "relative": "merge", "author_most": "merge",
-                "author_top": "merge", "dates_rep_k": "merge (add per date)"}.get(
+                "author_top": "merge", "dates_rep_k": "merge (add per date)", "before_after": "merge (add per period/which key)"}.get(
             self.qtype, f"merge (add per {self.unit_word}/label key)")
 
     def _empty_phrase(self):
