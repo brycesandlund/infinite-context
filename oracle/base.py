@@ -330,9 +330,13 @@ class ScaffoldOracle(ModelBackend):
                 f"the final answer."
             )
         return (
+            # FIXED text, byte-identical in every binary root (retrieval included): the order relation
+            # is a property of the task, not of a noun. Run 9w filled a per-task unit slot here from the
+            # question's surface ("the order of the hidden number's occurrences") and that noun cascaded
+            # into the subtask and the leaf template. Specifics live in the state sentence.
             f"This document is {n} tokens — too long to read in one context. The result over a range "
-            f"does not depend on the order of the {self._unit()}, so disjoint ranges can be computed "
-            f"independently and merged.{shape} I therefore split the range in half recursively, having a "
+            f"does not depend on the order in which the document is read, so disjoint ranges can be "
+            f"computed independently and merged.{shape} I therefore split the range in half recursively, having a "
             f"subagent {self._verb()} {self._goal_phrase()} over "
             f"each half and combining the two partials. Once I have it for the whole document, I turn "
             f"the combined result into the final answer."

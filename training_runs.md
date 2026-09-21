@@ -855,4 +855,18 @@ scripted-leaf cases.
    count)". So "one fact once found" / "set of facts" (niah_multi) / "pruned tally" (topk) / "per-key tally" are
    four named alternatives in the same slot, instead of the 55 retrieval roots having a different-looking opener
    that loses to the 619 tally roots on frequency.
+3. **Every binary root has a state sentence.** The question+root audit (`trace_snippets/root_audit_v10.txt`,
+   `scripts/audit_roots.py`: one sample per (task, question shape), 129 groups over 300 traces) showed synth_sum /
+   synth_max / synth_min / synth_maxwhere had none. Added, contrastive: "…a single running sum — no per-grp breakdown
+   is needed"; "…just the best value seen so far (`none` until one is seen) — not a running total"; maxwhere "…other
+   records are skipped, not counted".
+4. **The binary order sentence is FIXED text**, byte-identical in all 227/300 binary roots incl. retrieval: *"The
+   result over a range does not depend on the order in which the document is read, so disjoint ranges can be
+   computed independently and merged."* It used to carry a per-task unit noun ("…order of the records / items /
+   entries / sentences / words / hidden fact sentences / occurrences of the word 'X'") and retrieval had its own
+   sentence; run 9w filled that slot from the question's surface ("the order of the hidden number's occurrences",
+   "the order of the variables assigned") and the invented noun cascaded into the subtask and the leaf template.
+   Now the root makes ONE decision at sentence two (the fixed binary sentence, or "This task is order-dependent:
+   {reason}, so…") and all task specifics live in the state sentence; retrieval's plan sentence keeps "search each
+   half … the one that finds it wins".
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).

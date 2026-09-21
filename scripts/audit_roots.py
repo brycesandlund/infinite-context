@@ -1,7 +1,7 @@
 r"""Curate a question + ROOT-response audit sample from a trace dump: for every task and every distinct
 question SHAPE (question text with numbers/names/quoted values normalized), print the document
-description (from the system prompt), the question, the root's first turn (preamble + first action) and
-the root's final turn. Subtrees are omitted — this is for checking the FORMAT the model must follow.
+description (from the system prompt), the question, and EVERY root turn with its tool calls (tool results
+summarised). Subtrees are omitted — this is for checking the FORMAT the model must follow.
 
   uv run python scripts/audit_roots.py DUMP OUT [per_shape=1]
 """
@@ -35,24 +35,33 @@ for tr in traces:
     # document description = everything between the first paragraph and "You have two tools"
     parts = sysd.split("\n\n")
     desc = "\n\n".join(p for p in parts[1:] if not p.startswith("You have two tools") and not p.startswith("When you are confident")).strip()
-    turns = re.findall(r"^\[assistant\] (.*?)(?=^\[assistant\]|^\[tool:|^\[user\]|\Z)", root, re.S | re.M)
-    first = turns[0].strip() if turns else "?"
-    last = turns[-1].strip() if len(turns) > 1 else ""
+    # every root turn, each with its tool calls; tool RESULTS (read_chunk text, child returns) are
+    # summarised to one line so the file stays about the root's own text
+    body = root.split("\n[user]", 1)[1] if "\n[user]" in root else root
+    turns = re.findall(r"^(\[assistant\] .*?)(?=^\[assistant\]|\Z)", body, re.S | re.M)
+    def clean(t):
+        out = []
+        for ln in t.rstrip().split("\n"):
+            if ln.startswith("[tool:read_chunk]"): out.append("[tool:read_chunk] …")
+            elif ln.startswith("[tool:spawn_subagent]"): out.append(ln[:300])
+            elif out and out[-1] == "[tool:read_chunk] …" and not ln.startswith("[") and not ln.startswith("  ->"): continue
+            else: out.append(ln)
+        return "\n".join(out)
+    turns = [clean(t) for t in turns]
     key = (task, shape(q))
-    groups.setdefault(key, []).append((q, desc, first, last))
+    groups.setdefault(key, []).append((q, desc, turns))
 
 lines = [f"# Question + root-response audit — {sum(len(v) for v in groups.values())} traces, "
          f"{len(groups)} (task, question-shape) groups; {per} per group. Source: {dump}\n"]
 for (task, sh), items in groups.items():
-    for q, desc, first, last in items[:per]:
+    for q, desc, turns in items[:per]:
         lines.append("=" * 110)
         lines.append(f"TASK {task}   ({len(items)} traces with this question shape)")
         lines.append("-" * 110)
         lines.append(f"[document description]\n{desc}\n")
         lines.append(f"[question]\n{q}\n")
-        lines.append(f"[root turn 1]\n{first}\n")
-        if last:
-            lines.append(f"[root final turn]\n{last}\n")
+        for i, t in enumerate(turns, 1):
+            lines.append(f"[root turn {i}]\n{t}\n")
 open(out, "w").write("\n".join(lines) + "\n")
 print(f"{len(groups)} groups -> {out}")
 for (task, sh), items in groups.items():
