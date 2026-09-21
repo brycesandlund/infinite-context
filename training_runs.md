@@ -880,4 +880,15 @@ scripted-leaf cases.
    one.") instead of the needle ones ("it contains a few planted facts"), and every LIST question (vt which_vars,
    niah_multi multivalue/multiquery) draws list-shaped answer tails ("Give them in \boxed{}") instead of "Reply with
    just the value".
+6. **labeled_records coverage for the OOLONG-user / temporal shapes we lacked** (verified 80/80, all qtypes hit):
+   `author_count` — "Which author has the MOST items overall (regardless of label)?" = OOLONG "which user is
+   represented most often"; per-author count with an OPEN key space. `author_least` — "among author X's items,
+   which label is the LEAST common (among labels that appear)" = OOLONG-user trec. `section_mode_count` — "For how
+   many months/sections is `L` the single most common label (STRICTLY more than any other one label)?" = the
+   OOLONG-temporal question that scored 0/8 on trec in 9w; per-(outer, label) tally, strict-mode finalize at the
+   root. **Open key-space contract** for author-keyed tallies (author_top, author_count): "where `<author>` is the
+   author exactly as written in the item's `[by …]` tag" instead of enumerating the authors (9w on OOLONG-user:
+   root invented `User A`..`User E`, leaves returned `none:38`). **Numeric author ids** on 40% of documents
+   (`[by 30140]`) so the open-set contract and the `Author: [X]` form see id-like keys (the `User: User 30140`
+   slip, 3 runs). labeled_records 200 → 240 roots (13 qtypes now).
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).

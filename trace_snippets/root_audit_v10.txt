@@ -1,4 +1,4 @@
-# Question + root-response audit — 330 traces, 157 (task, question-shape) groups; 1 per group. Source: /private/tmp/claude-501/-Users-brycesandlund-GitHub-infinite-context/21271114-02c2-4774-b1c6-9a5c9d5705cd/scratchpad/audit_all7.txt
+# Question + root-response audit — 380 traces, 186 (task, question-shape) groups; 1 per group. Source: /private/tmp/claude-501/-Users-brycesandlund-GitHub-infinite-context/21271114-02c2-4774-b1c6-9a5c9d5705cd/scratchpad/audit_all8.txt
 
 ==============================================================================================================
 TASK synth_sum   (10 traces with this question shape)
@@ -2422,199 +2422,6 @@ numeric per section: S1=1, S2=1, S3=0; the most is S1 (1).
 \boxed{S1}
 
 ==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
-
-[question]
-Judge each item's label (one of: negative, positive). How many items are labelled `positive`? Give the single integer in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5520 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `positive` items. I therefore split the range in half recursively, having a subagent compute how many items are `positive` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5520 is not below 500; splitting at midpoint 2760.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2760, compute how many items are `positive` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `positive` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2760..5520, compute how many items are `positive` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `positive` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
-[tool:spawn_subagent] 2
-[tool:spawn_subagent] 2
-
-[root turn 2]
-[assistant] Sum my children [2, 2] -> 4.
-\boxed{4}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
-
-[question]
-Judge each item's label (one of: negative, positive). Which section has the MOST `positive` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}. Give your final answer in the form 'Section: [X]', where [X] is the answer; put it inside \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5957 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5957 is not below 500; splitting at midpoint 2978.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2978, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2978..5957, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
-[tool:spawn_subagent] S1/positive=3|S2/positive=3|S3/negative=2|S3/positive=1
-[tool:spawn_subagent] S4/negative=2|S5/positive=2|S6/negative=2
-
-[root turn 2]
-[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/positive=3|S2/positive=3|S3/negative=2|S3/positive=1|S4/negative=2|S5/positive=2|S6/negative=2.
-`positive` per section: S1=3, S2=3, S3=1, S4=0, S5=2, S6=0; the most is S1 (3).
-The question asks for the form 'Section: [X]', so I box it that way.
-\boxed{Section: S1}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
-
-[question]
-Judge each item's label (one of: False, True). Among ONLY the items with author = Lee (the `[by Lee]` tag), which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. False) in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5971 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is restricted to author Lee's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author Lee's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5971 is not below 500; splitting at midpoint 2985.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2985, compute the per-label tally over ONLY author Lee's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Lee's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2985..5971, compute the per-label tally over ONLY author Lee's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Lee's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
-[tool:spawn_subagent] False:16|True:14
-[tool:spawn_subagent] False:14|True:15
-
-[root turn 2]
-[assistant] Merge my two children's tallies (above) -> False:30|True:29.
-Label tally over author Lee's items: False=30, True=29; most common is False (30).
-\boxed{False}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
-
-[question]
-Judge each item's label (one of: negative, positive). Is `positive` more common than, less common than, or equally common as `negative`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5913 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5913 is not below 500; splitting at midpoint 2956.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2956, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2956..5913, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
-[tool:spawn_subagent] negative:3|positive:5
-[tool:spawn_subagent] negative:2|positive:5
-
-[root turn 2]
-[assistant] Merge my two children's tallies (above) -> negative:5|positive:10.
-positive=10 vs negative=5 → positive is more common than negative.
-\boxed{more common than}
-
-==============================================================================================================
-TASK labeled_records   (2 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <name>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
-
-[question]
-Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Was `love` more common, less common, or the same frequency among items dated before Jan 27, 2024 as compared to items dated on or after Jan 27, 2024? 'Common' means the share of that period's items with the label. Answer with exactly one of: more common / less common / the same frequency. Put it in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5984 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares the label's share before vs on/after Jan 27, 2024, so the state keeps two periods x (`love` vs other) — four counts — not one overall tally. I therefore split the range in half recursively, having a subagent compute the before/on-or-after Jan 27, 2024 tally of `love` vs other labels (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5984 is not below 500; splitting at midpoint 2992.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2992, compute the before/on-or-after Jan 27, 2024 tally of `love` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Jan 27, 2024 tally of `love` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Jan 27, 2024) and `<which>` is `love` or `other`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2992..5984, compute the before/on-or-after Jan 27, 2024 tally of `love` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Jan 27, 2024 tally of `love` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Jan 27, 2024) and `<which>` is `love` or `other`; `none` if no item starts in the range."})
-[tool:spawn_subagent] before/love=3|before/other=44|on_or_after/love=1|on_or_after/other=32
-[tool:spawn_subagent] before/love=3|before/other=44|on_or_after/love=5|on_or_after/other=28
-
-[root turn 2]
-[assistant] Merge (add per period/which key) my two children's tallies (above) -> before/love=6|before/other=88|on_or_after/love=6|on_or_after/other=60.
-Before Jan 27, 2024: 6 of 94 items are `love` (6%); on/after: 6 of 66 (9%). Comparing shares, `love` was less common before.
-\boxed{less common}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Album, Artist, Athlete, Building, OfficeHolder, Plant.
-
-[question]
-Judge each item's label (one of: Album, Artist, Athlete, Building, OfficeHolder, Plant). How many items are labelled `Building`? Give the single integer in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5968 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `Building` items. I therefore split the range in half recursively, having a subagent compute how many items are `Building` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5968 is not below 500; splitting at midpoint 2984.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2984, compute how many items are `Building` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `Building` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2984..5968, compute how many items are `Building` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `Building` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
-[tool:spawn_subagent] 8
-[tool:spawn_subagent] 7
-
-[root turn 2]
-[assistant] Sum my children [8, 7] -> 15.
-\boxed{15}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
-
-[question]
-Judge each item's label (one of: False, True). Which section has the MOST `False` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5983 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5983 is not below 500; splitting at midpoint 2991.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5983, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
-[tool:spawn_subagent] S1/False=18|S1/True=27|S2/False=15|S2/True=24
-[tool:spawn_subagent] S3/False=24|S3/True=19|S4/False=20|S4/True=20
-
-[root turn 2]
-[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/False=18|S1/True=27|S2/False=15|S2/True=24|S3/False=24|S3/True=19|S4/False=20|S4/True=20.
-`False` per section: S1=18, S2=15, S3=24, S4=20; the most is S3 (24).
-\boxed{S3}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <name>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
-
-[question]
-Judge each item's label (one of: negative, positive). In which month did `negative` FIRST occur more often than `positive`? Months are in chronological order; answer with the month and year exactly as written in the items' dates (e.g. Feb 2022), or none if it never happens. Give it in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5668 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5668 is not below 500; splitting at midpoint 2834.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2834, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Feb 2022`, `May 2022`, `Mar 2023`, `Sep 2023`, `Sep 2025`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2834..5668, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Feb 2022`, `May 2022`, `Mar 2023`, `Sep 2023`, `Sep 2025`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
-[tool:spawn_subagent] Feb 2022/negative=1|Feb 2022/positive=1|Mar 2023/negative=1|May 2022/negative=1|Sep 2023/positive=2|Sep 2025/negative=1
-[tool:spawn_subagent] Feb 2022/negative=2|Mar 2023/negative=1|Mar 2023/positive=1|May 2022/negative=1|Sep 2025/negative=1
-
-[root turn 2]
-[assistant] Merge (add per month/label key) my two children's tallies (above) -> Feb 2022/negative=3|Feb 2022/positive=1|Mar 2023/negative=2|Mar 2023/positive=1|May 2022/negative=2|Sep 2023/positive=2|Sep 2025/negative=2.
-In chronological order, negative > positive?
-  Feb 2022: negative=3 vs positive=1: yes
-  May 2022: negative=2 vs positive=0: yes
-  Mar 2023: negative=2 vs positive=1: yes
-  Sep 2023: negative=0 vs positive=2: no
-  Sep 2025: negative=2 vs positive=0: yes
-First month where yes: Feb 2022.
-\boxed{Feb 2022}
-
-==============================================================================================================
-TASK labeled_records   (1 traces with this question shape)
---------------------------------------------------------------------------------------------------------------
-[document description]
-The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
-
-[question]
-Judge each item's label (one of: False, True). How many items are labelled `False`? Give the single integer in \boxed{}.
-
-[root turn 1]
-[assistant] This document is 5980 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `False` items. I therefore split the range in half recursively, having a subagent compute how many items are `False` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
-Range 0..5980 is not below 500; splitting at midpoint 2990.
-  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2990, compute how many items are `False` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `False` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2990..5980, compute how many items are `False` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `False` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
-[tool:spawn_subagent] 48
-[tool:spawn_subagent] 42
-
-[root turn 2]
-[assistant] Sum my children [48, 42] -> 90.
-\boxed{90}
-
-==============================================================================================================
 TASK realdoc_count   (10 traces with this question shape)
 --------------------------------------------------------------------------------------------------------------
 [document description]
@@ -4245,4 +4052,862 @@ Reading the first 400 tokens (0..400) of this range to fold, then the next 200 t
 [assistant] The chain returned its final accumulator.
 Variables whose final value is 15267: AAXKQ, CWWKE, JVKXF, LHABM, LHWSH, VENBV, VLVPA.
 \boxed{AAXKQ, CWWKE, JVKXF, LHABM, LHWSH, VENBV, VLVPA}
+
+==============================================================================================================
+TASK labeled_records   (3 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Is `True` more common than, less common than, or equally common as `False`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5991 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5991 is not below 500; splitting at midpoint 2995.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2995, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2995..5991, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] False:40|True:36
+[tool:spawn_subagent] False:42|True:29
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> False:82|True:65.
+True=65 vs False=82 → True is less common than False.
+\boxed{less common than}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Filter the items to those with author = Okafor (the `[by Okafor]` tag), then answer: which label is the LEAST common among the labels that appear at least once? Break ties by the alphabetically first label. Give the label (e.g. anger) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5996 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is restricted to author Okafor's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author Okafor's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5996 is not below 500; splitting at midpoint 2998.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2998, compute the per-label tally over ONLY author Okafor's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Okafor's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2998..5996, compute the per-label tally over ONLY author Okafor's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Okafor's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."})
+[tool:spawn_subagent] fear:4|joy:7|love:3|sadness:8|surprise:1
+[tool:spawn_subagent] anger:1|fear:4|joy:6|sadness:6|surprise:1
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> anger:1|fear:8|joy:13|love:3|sadness:14|surprise:2.
+Label tally over author Okafor's items: anger=1, fear=8, joy=13, love=3, sadness=14, surprise=2; among the labels that appear, the least common is anger (1).
+\boxed{anger}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Album, Athlete, Company, MeanOfTransportation, Village.
+
+[question]
+Judge each item's label (one of: Album, Athlete, Company, MeanOfTransportation, Village). Is `Album` more common than, less common than, or equally common as `Athlete`? Answer with exactly one of: more common than / less common than / equally common as. Give your final answer in the form 'Answer: [X]', where [X] is the answer; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5917 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5917 is not below 500; splitting at midpoint 2958.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2958, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Album`, `Athlete`, `Company`, `MeanOfTransportation`, `Village`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2958..5917, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Album`, `Athlete`, `Company`, `MeanOfTransportation`, `Village`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Album:8|Athlete:5|Company:8|MeanOfTransportation:13|Village:4
+[tool:spawn_subagent] Album:8|Athlete:7|Company:7|MeanOfTransportation:6|Village:7
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> Album:16|Athlete:12|Company:15|MeanOfTransportation:19|Village:11.
+Album=16 vs Athlete=12 → Album is more common than Athlete.
+The question asks for the form 'Answer: [X]', so I box it that way.
+\boxed{Answer: more common than}
+
+==============================================================================================================
+TASK labeled_records   (5 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). How many items are labelled `positive`? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5979 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `positive` items. I therefore split the range in half recursively, having a subagent compute how many items are `positive` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5979 is not below 500; splitting at midpoint 2989.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2989, compute how many items are `positive` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `positive` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2989..5979, compute how many items are `positive` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `positive` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
+[tool:spawn_subagent] 15
+[tool:spawn_subagent] 16
+
+[root turn 2]
+[assistant] Sum my children [15, 16] -> 31.
+\boxed{31}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Is `fear` more common than, less common than, or equally common as `anger`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5999 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5999 is not below 500; splitting at midpoint 2999.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2999, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2999..5999, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."})
+[tool:spawn_subagent] anger:8|fear:15|joy:47|love:7|sadness:31|surprise:3
+[tool:spawn_subagent] anger:15|fear:10|joy:32|love:8|sadness:34|surprise:2
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> anger:23|fear:25|joy:79|love:15|sadness:65|surprise:5.
+fear=25 vs anger=23 → fear is more common than anger.
+\boxed{more common than}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). How many items are labelled `sadness`? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5981 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `sadness` items. I therefore split the range in half recursively, having a subagent compute how many items are `sadness` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5981 is not below 500; splitting at midpoint 2990.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2990, compute how many items are `sadness` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `sadness` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2990..5981, compute how many items are `sadness` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `sadness` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
+[tool:spawn_subagent] 25
+[tool:spawn_subagent] 32
+
+[root turn 2]
+[assistant] Sum my children [25, 32] -> 57.
+\boxed{57}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which label is the most common overall? Break ties by the alphabetically first label. Give the label in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5990 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5990 is not below 500; splitting at midpoint 2995.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2995, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2995..5990, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."})
+[tool:spawn_subagent] anger:10|fear:12|joy:27|love:12|sadness:36|surprise:6
+[tool:spawn_subagent] anger:13|fear:9|joy:37|love:12|sadness:28|surprise:4
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> anger:23|fear:21|joy:64|love:24|sadness:64|surprise:10.
+Label tally: anger=23, fear=21, joy=64, love=24, sadness=64, surprise=10; most common is joy (64).
+\boxed{joy}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). For how many months is `False` the single most common label — i.e. that month has STRICTLY more `False` items than items of any other one label? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5983 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks in how many months `False` beats EVERY other label (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally over all labels — not a per-month count of `False` alone. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5983 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2022`, `Apr 2022`, `Mar 2023`, `Feb 2024`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5983, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2022`, `Apr 2022`, `Mar 2023`, `Feb 2024`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Apr 2022/False=8|Apr 2022/True=4|Feb 2024/False=7|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=5|Mar 2023/False=10|Mar 2023/True=15
+[tool:spawn_subagent] Apr 2022/False=9|Apr 2022/True=7|Feb 2024/False=10|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=12|Mar 2023/False=9|Mar 2023/True=5
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Apr 2022/False=17|Apr 2022/True=11|Feb 2024/False=17|Feb 2024/True=14|Mar 2022/False=16|Mar 2022/True=17|Mar 2023/False=19|Mar 2023/True=20.
+Per month, is `False` strictly the most common label?
+  Mar 2022: False=16 vs best other 17: no
+  Apr 2022: False=17 vs best other 11: yes
+  Mar 2023: False=19 vs best other 20: no
+  Feb 2024: False=17 vs best other 14: yes
+Months where yes: Apr 2022, Feb 2024 → 2.
+\boxed{2}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). In how many months are there STRICTLY more `False` items than `True` items? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5982 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5982 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Jan 2023`, `Mar 2024`, `May 2024`, `Jan 2025`, `May 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5982, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Jan 2023`, `Mar 2024`, `May 2024`, `Jan 2025`, `May 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Jan 2023/False=3|Jan 2023/True=7|Jan 2025/False=2|Jan 2025/True=5|Mar 2024/False=5|Mar 2024/True=5|May 2024/False=10|May 2024/True=5|May 2025/False=3|May 2025/True=5|Sep 2022/False=10|Sep 2022/True=5
+[tool:spawn_subagent] Jan 2023/False=11|Jan 2023/True=7|Jan 2025/False=3|Jan 2025/True=4|Mar 2024/False=6|Mar 2024/True=1|May 2024/False=7|May 2024/True=5|May 2025/False=4|May 2025/True=7|Sep 2022/False=8|Sep 2022/True=4
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Jan 2023/False=14|Jan 2023/True=14|Jan 2025/False=5|Jan 2025/True=9|Mar 2024/False=11|Mar 2024/True=6|May 2024/False=17|May 2024/True=10|May 2025/False=7|May 2025/True=12|Sep 2022/False=18|Sep 2022/True=9.
+Per month, False > True?
+  Sep 2022: False=18 vs True=9: yes
+  Jan 2023: False=14 vs True=14: no
+  Mar 2024: False=11 vs True=6: yes
+  May 2024: False=17 vs True=10: yes
+  Jan 2025: False=5 vs True=9: no
+  May 2025: False=7 vs True=12: no
+Months where yes: Sep 2022, Mar 2024, May 2024 → 3.
+\boxed{3}
+
+==============================================================================================================
+TASK labeled_records   (3 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Which label is the most common overall? Break ties by the alphabetically first label. Give the label in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5985 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5985 is not below 500; splitting at midpoint 2992.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2992, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2992..5985, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] False:38|True:46
+[tool:spawn_subagent] False:45|True:39
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> False:83|True:85.
+Label tally: False=83, True=85; most common is True (85).
+\boxed{True}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Which author has the MOST `True` items? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. 32972) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5972 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks WHICH AUTHOR has the most `True` items, so the state is a per-author count of `True` items. I therefore split the range in half recursively, having a subagent compute the per-author tally of `True` items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5972 is not below 500; splitting at midpoint 2986.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2986, compute the per-author tally of `True` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `True` items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2986..5972, compute the per-author tally of `True` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `True` items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] 32972:8|52832:11|53359:6|72870:5
+[tool:spawn_subagent] 32972:6|52832:4|53359:7|72870:7
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> 32972:14|52832:15|53359:13|72870:12.
+`True` items per author: 32972=14, 52832=15, 53359=13, 72870=12; the most is 52832 (15).
+\boxed{52832}
+
+==============================================================================================================
+TASK labeled_records   (3 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Artist, Building, Company, Film, OfficeHolder, Village.
+
+[question]
+Judge each item's label (one of: Artist, Building, Company, Film, OfficeHolder, Village). Which label is the most common overall? Break ties by the alphabetically first label. Give your final answer in the form 'Label: [X]', where [X] is the label; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5928 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5928 is not below 500; splitting at midpoint 2964.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2964, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Artist`, `Building`, `Company`, `Film`, `OfficeHolder`, `Village`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2964..5928, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Artist`, `Building`, `Company`, `Film`, `OfficeHolder`, `Village`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Artist:5|Building:8|Company:8|Film:10|OfficeHolder:2|Village:8
+[tool:spawn_subagent] Artist:4|Building:7|Company:4|Film:2|OfficeHolder:9|Village:8
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> Artist:9|Building:15|Company:12|Film:12|OfficeHolder:11|Village:16.
+Label tally: Artist=9, Building=15, Company=12, Film=12, OfficeHolder=11, Village=16; most common is Village (16).
+The question asks for the form 'Label: [X]', so I box it that way.
+\boxed{Label: Village}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Which author has the MOST items overall (regardless of label)? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the answer; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5610 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks which author has the most items, so the state is a per-author count — the labels play no part, and the authors are whatever names or ids the `[by …]` tags carry. I therefore split the range in half recursively, having a subagent compute the per-author tally of items (no label judgement needed) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5610 is not below 500; splitting at midpoint 2805.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2805, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2805..5610, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] 10036:1|39727:1|68253:1|80875:5
+[tool:spawn_subagent] 10036:3|39727:2|80875:3
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> 10036:4|39727:3|68253:1|80875:8.
+Items per author: 10036=4, 39727=3, 68253=1, 80875=8; the most is 80875 (8).
+The question asks for the form 'Author: [X]', so I box it that way.
+\boxed{Author: 80875}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which section has the MOST `joy` items? Break ties by the earlier section. Give your final answer in the form 'Section: [X]', where [X] is the answer; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5972 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5972 is not below 500; splitting at midpoint 2986.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2986, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2986..5972, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/anger=6|S1/fear=8|S1/joy=16|S1/love=4|S1/sadness=20|S1/surprise=4|S2/anger=4|S2/fear=1|S2/joy=9|S2/love=1|S2/sadness=15
+[tool:spawn_subagent] S2/anger=2|S2/fear=1|S2/joy=19|S2/love=1|S2/sadness=6|S2/surprise=2|S3/anger=5|S3/fear=7|S3/joy=19|S3/love=2|S3/sadness=23|S3/surprise=2
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/anger=6|S1/fear=8|S1/joy=16|S1/love=4|S1/sadness=20|S1/surprise=4|S2/anger=6|S2/fear=2|S2/joy=28|S2/love=2|S2/sadness=21|S2/surprise=2|S3/anger=5|S3/fear=7|S3/joy=19|S3/love=2|S3/sadness=23|S3/surprise=2.
+`joy` per section: S1=16, S2=28, S3=19; the most is S2 (28).
+The question asks for the form 'Section: [X]', so I box it that way.
+\boxed{Section: S2}
+
+==============================================================================================================
+TASK labeled_records   (3 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Which author has the MOST items overall (regardless of label)? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. 10421) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5988 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks which author has the most items, so the state is a per-author count — the labels play no part, and the authors are whatever names or ids the `[by …]` tags carry. I therefore split the range in half recursively, having a subagent compute the per-author tally of items (no label judgement needed) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5988 is not below 500; splitting at midpoint 2994.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2994, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2994..5988, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] 10421:18|31502:17|49739:20|73350:23|78833:13
+[tool:spawn_subagent] 10421:19|31502:18|49739:10|73350:20|78833:20
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> 10421:37|31502:35|49739:30|73350:43|78833:33.
+Items per author: 10421=37, 31502=35, 49739=30, 73350=43, 78833=33; the most is 73350 (43).
+\boxed{73350}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). Was `negative` more common, less common, or the same frequency among items dated before May 22, 2022 as compared to items dated on or after May 22, 2022? 'Common' means the share of that period's items with the label. Answer with exactly one of: more common / less common / the same frequency. Put it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5941 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares the label's share before vs on/after May 22, 2022, so the state keeps two periods x (`negative` vs other) — four counts — not one overall tally. I therefore split the range in half recursively, having a subagent compute the before/on-or-after May 22, 2022 tally of `negative` vs other labels (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5941 is not below 500; splitting at midpoint 2970.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2970, compute the before/on-or-after May 22, 2022 tally of `negative` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after May 22, 2022 tally of `negative` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to May 22, 2022) and `<which>` is `negative` or `other`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2970..5941, compute the before/on-or-after May 22, 2022 tally of `negative` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after May 22, 2022 tally of `negative` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to May 22, 2022) and `<which>` is `negative` or `other`; `none` if no item starts in the range."})
+[tool:spawn_subagent] before/negative=6|before/other=4|on_or_after/negative=12|on_or_after/other=14
+[tool:spawn_subagent] before/negative=4|before/other=3|on_or_after/negative=15|on_or_after/other=12
+
+[root turn 2]
+[assistant] Merge (add per period/which key) my two children's tallies (above) -> before/negative=10|before/other=7|on_or_after/negative=27|on_or_after/other=26.
+Before May 22, 2022: 10 of 17 items are `negative` (59%); on/after: 27 of 53 (51%). Comparing shares, `negative` was more common before.
+\boxed{more common}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). In how many sections are there STRICTLY more `negative` items than `positive` items? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5959 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each section, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5959 is not below 500; splitting at midpoint 2979.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2979, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2979..5959, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/negative=11|S1/positive=6|S2/negative=3|S2/positive=12|S3/negative=7|S3/positive=2
+[tool:spawn_subagent] S3/negative=3|S3/positive=5|S4/negative=6|S4/positive=11|S5/negative=5|S5/positive=12
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/negative=11|S1/positive=6|S2/negative=3|S2/positive=12|S3/negative=10|S3/positive=7|S4/negative=6|S4/positive=11|S5/negative=5|S5/positive=12.
+Per section, negative > positive?
+  S1: negative=11 vs positive=6: yes
+  S2: negative=3 vs positive=12: no
+  S3: negative=10 vs positive=7: yes
+  S4: negative=6 vs positive=11: no
+  S5: negative=5 vs positive=12: no
+Sections where yes: S1, S3 → 2.
+\boxed{2}
+
+==============================================================================================================
+TASK labeled_records   (4 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Album, Animal, Athlete, Company, WrittenWork.
+
+[question]
+Which author has the MOST items overall (regardless of label)? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. Cho) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5988 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks which author has the most items, so the state is a per-author count — the labels play no part, and the authors are whatever names or ids the `[by …]` tags carry. I therefore split the range in half recursively, having a subagent compute the per-author tally of items (no label judgement needed) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5988 is not below 500; splitting at midpoint 2994.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2994, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2994..5988, compute the per-author tally of items (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (no label judgement needed) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] Cho:11|Ivanov:15|Okafor:12
+[tool:spawn_subagent] Cho:12|Ivanov:13|Okafor:13
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> Cho:23|Ivanov:28|Okafor:25.
+Items per author: Cho=23, Ivanov=28, Okafor=25; the most is Ivanov (28).
+\boxed{Ivanov}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Looking only at items that have author = Rossi (the `[by Rossi]` tag): which label is the LEAST common among the labels that appear at least once? Break ties by the alphabetically first label. Give the label (e.g. False) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5968 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is restricted to author Rossi's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author Rossi's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5968 is not below 500; splitting at midpoint 2984.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2984, compute the per-label tally over ONLY author Rossi's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Rossi's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2984..5968, compute the per-label tally over ONLY author Rossi's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Rossi's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] False:20|True:10
+[tool:spawn_subagent] False:16|True:10
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> False:36|True:20.
+Label tally over author Rossi's items: False=36, True=20; among the labels that appear, the least common is True (20).
+\boxed{True}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Restrict attention to the subset of items where author = Kim (the `[by Kim]` tag). Which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. False) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5977 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is restricted to author Kim's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author Kim's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5977 is not below 500; splitting at midpoint 2988.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2988, compute the per-label tally over ONLY author Kim's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Kim's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2988..5977, compute the per-label tally over ONLY author Kim's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Kim's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] False:9|True:8
+[tool:spawn_subagent] False:7|True:11
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> False:16|True:19.
+Label tally over author Kim's items: False=16, True=19; most common is True (19).
+\boxed{True}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). For how many sections is `True` the single most common label — i.e. that section has STRICTLY more `True` items than items of any other one label? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5985 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks in how many sections `True` beats EVERY other label, so the state is a per-(section, label) tally over all labels — not a per-section count of `True` alone. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5985 is not below 500; splitting at midpoint 2992.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2992, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2992..5985, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/False=31|S1/True=19|S2/False=16|S2/True=11
+[tool:spawn_subagent] S2/False=13|S2/True=15|S3/False=26|S3/True=32
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/False=31|S1/True=19|S2/False=29|S2/True=26|S3/False=26|S3/True=32.
+Per section, is `True` strictly the most common label?
+  S1: True=19 vs best other 31: no
+  S2: True=26 vs best other 29: no
+  S3: True=32 vs best other 26: yes
+Sections where yes: S3 → 1.
+\boxed{1}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). For how many months is `negative` the single most common label — i.e. that month has STRICTLY more `negative` items than items of any other one label? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5730 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks in how many months `negative` beats EVERY other label (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally over all labels — not a per-month count of `negative` alone. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5730 is not below 500; splitting at midpoint 2865.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2865, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Feb 2022`, `Sep 2022`, `Jun 2023`, `Nov 2023`, `Sep 2024`, `May 2025`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2865..5730, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Feb 2022`, `Sep 2022`, `Jun 2023`, `Nov 2023`, `Sep 2024`, `May 2025`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Feb 2022/positive=1|Jun 2023/negative=1|May 2025/positive=1|Nov 2023/negative=2|Sep 2022/positive=2|Sep 2024/negative=1
+[tool:spawn_subagent] Jun 2023/negative=3|Jun 2023/positive=1|Nov 2023/negative=1|Sep 2024/positive=1
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Feb 2022/positive=1|Jun 2023/negative=4|Jun 2023/positive=1|May 2025/positive=1|Nov 2023/negative=3|Sep 2022/positive=2|Sep 2024/negative=1|Sep 2024/positive=1.
+Per month, is `negative` strictly the most common label?
+  Feb 2022: negative=0 vs best other 1: no
+  Sep 2022: negative=0 vs best other 2: no
+  Jun 2023: negative=4 vs best other 1: yes
+  Nov 2023: negative=3 vs best other 0: yes
+  Sep 2024: negative=1 vs best other 1: no
+  May 2025: negative=0 vs best other 1: no
+Months where yes: Jun 2023, Nov 2023 → 2.
+\boxed{2}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Athlete, Building, MeanOfTransportation, OfficeHolder, Village.
+
+[question]
+Judge each item's label (one of: Athlete, Building, MeanOfTransportation, OfficeHolder, Village). Which section has the MOST `OfficeHolder` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5981 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5981 is not below 500; splitting at midpoint 2990.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2990, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `Athlete`, `Building`, `MeanOfTransportation`, `OfficeHolder`, `Village`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2990..5981, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `Athlete`, `Building`, `MeanOfTransportation`, `OfficeHolder`, `Village`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/Athlete=6|S1/Building=5|S1/MeanOfTransportation=3|S1/OfficeHolder=5|S1/Village=6|S2/Athlete=6|S2/Building=3|S2/MeanOfTransportation=2|S2/OfficeHolder=1|S2/Village=2
+[tool:spawn_subagent] S2/Athlete=3|S2/Building=4|S2/OfficeHolder=2|S2/Village=3|S3/Athlete=4|S3/Building=6|S3/MeanOfTransportation=3|S3/OfficeHolder=5|S3/Village=6
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/Athlete=6|S1/Building=5|S1/MeanOfTransportation=3|S1/OfficeHolder=5|S1/Village=6|S2/Athlete=9|S2/Building=7|S2/MeanOfTransportation=2|S2/OfficeHolder=3|S2/Village=5|S3/Athlete=4|S3/Building=6|S3/MeanOfTransportation=3|S3/OfficeHolder=5|S3/Village=6.
+`OfficeHolder` per section: S1=5, S2=3, S3=5; the most is S1 (5).
+\boxed{S1}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Considering only items dated in Jan 2024: how many distinct dates are represented exactly 1 time (i.e. exactly 1 item carries that exact date)? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5913 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks how many dates in Jan 2024 appear exactly 1 time, so the state is a per-DATE count, reduced at the root. I therefore split the range in half recursively, having a subagent compute the per-date tally over ONLY items dated in Jan 2024 (how many items carry each exact date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5913 is not below 500; splitting at midpoint 2956.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2956, compute the per-date tally over ONLY items dated in Jan 2024 (how many items carry each exact date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-date tally over ONLY items dated in Jan 2024 (how many items carry each exact date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in Jan 2024 written exactly as in the item's tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2956..5913, compute the per-date tally over ONLY items dated in Jan 2024 (how many items carry each exact date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-date tally over ONLY items dated in Jan 2024 (how many items carry each exact date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in Jan 2024 written exactly as in the item's tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] Jan 02, 2024=1|Jan 12, 2024=2|Jan 15, 2024=1|Jan 18, 2024=1|Jan 19, 2024=1
+[tool:spawn_subagent] Jan 06, 2024=1|Jan 15, 2024=1|Jan 18, 2024=1|Jan 19, 2024=1|Jan 21, 2024=2|Jan 26, 2024=1
+
+[root turn 2]
+[assistant] Merge (add per date) my two children's tallies (above) -> Jan 02, 2024=1|Jan 06, 2024=1|Jan 12, 2024=2|Jan 15, 2024=2|Jan 18, 2024=2|Jan 19, 2024=2|Jan 21, 2024=2|Jan 26, 2024=1.
+Distinct Jan 2024 dates: 8; represented exactly 1x: Jan 02, 2024, Jan 06, 2024, Jan 26, 2024 → 3.
+\boxed{3}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Which section has the MOST `True` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5984 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5984 is not below 500; splitting at midpoint 2992.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2992, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2992..5984, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/False=27|S1/True=21|S2/False=14|S2/True=11
+[tool:spawn_subagent] S2/False=12|S2/True=11|S3/False=26|S3/True=23
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/False=27|S1/True=21|S2/False=26|S2/True=22|S3/False=26|S3/True=23.
+`True` per section: S1=21, S2=22, S3=23; the most is S3 (23).
+\boxed{S3}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). In which month did `False` FIRST occur more often than `True`? Months are in chronological order; answer with the month and year exactly as written in the items' dates (e.g. Mar 2023), or none if it never happens. Give it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5989 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5989 is not below 500; splitting at midpoint 2994.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2994, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2023`, `Aug 2023`, `Jun 2024`, `Feb 2025`, `Sep 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2994..5989, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2023`, `Aug 2023`, `Jun 2024`, `Feb 2025`, `Sep 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Aug 2023/False=7|Aug 2023/True=4|Feb 2025/False=7|Feb 2025/True=6|Jun 2024/False=3|Jun 2024/True=8|Mar 2023/False=5|Mar 2023/True=9|Sep 2025/False=9|Sep 2025/True=6
+[tool:spawn_subagent] Aug 2023/False=5|Aug 2023/True=7|Feb 2025/False=10|Feb 2025/True=7|Jun 2024/False=10|Jun 2024/True=6|Mar 2023/False=3|Mar 2023/True=6|Sep 2025/False=4|Sep 2025/True=6
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Aug 2023/False=12|Aug 2023/True=11|Feb 2025/False=17|Feb 2025/True=13|Jun 2024/False=13|Jun 2024/True=14|Mar 2023/False=8|Mar 2023/True=15|Sep 2025/False=13|Sep 2025/True=12.
+In chronological order, False > True?
+  Mar 2023: False=8 vs True=15: no
+  Aug 2023: False=12 vs True=11: yes
+  Jun 2024: False=13 vs True=14: no
+  Feb 2025: False=17 vs True=13: yes
+  Sep 2025: False=13 vs True=12: yes
+First month where yes: Aug 2023.
+\boxed{Aug 2023}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). In which month did `True` FIRST occur more often than `False`? Months are in chronological order; answer with the month and year exactly as written in the items' dates (e.g. Sep 2022), or none if it never happens. Give it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5949 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5949 is not below 500; splitting at midpoint 2974.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2974, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Aug 2023`, `Nov 2024`, `Dec 2024`, `Mar 2025`, `Apr 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2974..5949, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Aug 2023`, `Nov 2024`, `Dec 2024`, `Mar 2025`, `Apr 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Apr 2025/False=4|Apr 2025/True=5|Aug 2023/False=5|Aug 2023/True=3|Dec 2024/False=3|Dec 2024/True=10|Mar 2025/False=1|Mar 2025/True=9|Nov 2024/False=8|Nov 2024/True=6|Sep 2022/False=5|Sep 2022/True=8
+[tool:spawn_subagent] Apr 2025/False=6|Apr 2025/True=3|Aug 2023/False=5|Aug 2023/True=6|Dec 2024/False=9|Dec 2024/True=3|Mar 2025/False=9|Mar 2025/True=5|Nov 2024/False=4|Nov 2024/True=7|Sep 2022/False=6|Sep 2022/True=1
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Apr 2025/False=10|Apr 2025/True=8|Aug 2023/False=10|Aug 2023/True=9|Dec 2024/False=12|Dec 2024/True=13|Mar 2025/False=10|Mar 2025/True=14|Nov 2024/False=12|Nov 2024/True=13|Sep 2022/False=11|Sep 2022/True=9.
+In chronological order, True > False?
+  Sep 2022: True=9 vs False=11: no
+  Aug 2023: True=9 vs False=10: no
+  Nov 2024: True=13 vs False=12: yes
+  Dec 2024: True=13 vs False=12: yes
+  Mar 2025: True=14 vs False=10: yes
+  Apr 2025: True=8 vs False=10: no
+First month where yes: Nov 2024.
+\boxed{Nov 2024}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). Was `negative` more common, less common, or the same frequency among items dated before Feb 11, 2024 as compared to items dated on or after Feb 11, 2024? 'Common' means the share of that period's items with the label. Answer with exactly one of: more common / less common / the same frequency. Give your final answer in the form 'Answer: [X]', where [X] is the answer; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5975 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares the label's share before vs on/after Feb 11, 2024, so the state keeps two periods x (`negative` vs other) — four counts — not one overall tally. I therefore split the range in half recursively, having a subagent compute the before/on-or-after Feb 11, 2024 tally of `negative` vs other labels (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5975 is not below 500; splitting at midpoint 2987.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2987, compute the before/on-or-after Feb 11, 2024 tally of `negative` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Feb 11, 2024 tally of `negative` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Feb 11, 2024) and `<which>` is `negative` or `other`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2987..5975, compute the before/on-or-after Feb 11, 2024 tally of `negative` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Feb 11, 2024 tally of `negative` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Feb 11, 2024) and `<which>` is `negative` or `other`; `none` if no item starts in the range."})
+[tool:spawn_subagent] before/negative=5|before/other=12|on_or_after/negative=9|on_or_after/other=10
+[tool:spawn_subagent] before/negative=10|before/other=11|on_or_after/negative=11|on_or_after/other=5
+
+[root turn 2]
+[assistant] Merge (add per period/which key) my two children's tallies (above) -> before/negative=15|before/other=23|on_or_after/negative=20|on_or_after/other=15.
+Before Feb 11, 2024: 15 of 38 items are `negative` (39%); on/after: 20 of 35 (57%). Comparing shares, `negative` was less common before.
+The question asks for the form 'Answer: [X]', so I box it that way.
+\boxed{Answer: less common}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+[question]
+Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which month has the MOST `sadness` items? Break ties by the earlier month. Give the month (e.g. Sep 2024) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5962 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS months (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5962 is not below 500; splitting at midpoint 2981.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2981, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2024`, `Sep 2025`, `Nov 2025`; and `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2981..5962, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2024`, `Sep 2025`, `Nov 2025`; and `<label>` is exactly one of `anger`, `fear`, `joy`, `love`, `sadness`, `surprise`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Nov 2025/anger=5|Nov 2025/fear=2|Nov 2025/joy=9|Nov 2025/love=2|Nov 2025/sadness=10|Sep 2024/anger=3|Sep 2024/fear=4|Sep 2024/joy=14|Sep 2024/love=2|Sep 2024/sadness=6|Sep 2024/surprise=1|Sep 2025/anger=2|Sep 2025/fear=7|Sep 2025/joy=10|Sep 2025/love=3|Sep 2025/sadness=3|Sep 20
+[tool:spawn_subagent] Nov 2025/anger=1|Nov 2025/fear=6|Nov 2025/joy=7|Nov 2025/love=3|Nov 2025/sadness=11|Sep 2024/anger=5|Sep 2024/fear=3|Sep 2024/joy=4|Sep 2024/love=2|Sep 2024/sadness=8|Sep 2025/anger=4|Sep 2025/fear=1|Sep 2025/joy=6|Sep 2025/love=4|Sep 2025/sadness=13|Sep 2025/surprise=2
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Nov 2025/anger=6|Nov 2025/fear=8|Nov 2025/joy=16|Nov 2025/love=5|Nov 2025/sadness=21|Sep 2024/anger=8|Sep 2024/fear=7|Sep 2024/joy=18|Sep 2024/love=4|Sep 2024/sadness=14|Sep 2024/surprise=1|Sep 2025/anger=6|Sep 2025/fear=8|Sep 2025/joy=16|Sep 2025/love=7|Sep 2025/sadness=16|Sep 2025/surprise=4.
+`sadness` per month: Sep 2024=14, Sep 2025=16, Nov 2025=21; the most is Nov 2025 (21).
+\boxed{Nov 2025}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Animal, Company, Film, Village, WrittenWork.
+
+[question]
+Judge each item's label (one of: Animal, Company, Film, Village, WrittenWork). In how many months are there STRICTLY more `Film` items than `Village` items? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5930 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5930 is not below 500; splitting at midpoint 2965.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2965, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Jan 2022`, `Sep 2023`, `Feb 2024`; and `<label>` is exactly one of `Animal`, `Company`, `Film`, `Village`, `WrittenWork`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2965..5930, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Jan 2022`, `Sep 2023`, `Feb 2024`; and `<label>` is exactly one of `Animal`, `Company`, `Film`, `Village`, `WrittenWork`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Feb 2024/Animal=2|Feb 2024/Company=3|Feb 2024/Film=2|Feb 2024/Village=4|Feb 2024/WrittenWork=3|Jan 2022/Animal=2|Jan 2022/Company=2|Jan 2022/Village=1|Jan 2022/WrittenWork=3|Sep 2023/Animal=2|Sep 2023/Company=1|Sep 2023/Film=4|Sep 2023/Village=5|Sep 2023/WrittenWork=3
+[tool:spawn_subagent] Feb 2024/Animal=2|Feb 2024/Film=2|Feb 2024/Village=3|Feb 2024/WrittenWork=4|Jan 2022/Animal=7|Jan 2022/Company=1|Jan 2022/Film=2|Jan 2022/Village=3|Jan 2022/WrittenWork=2|Sep 2023/Animal=4|Sep 2023/Company=2|Sep 2023/WrittenWork=3
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Feb 2024/Animal=4|Feb 2024/Company=3|Feb 2024/Film=4|Feb 2024/Village=7|Feb 2024/WrittenWork=7|Jan 2022/Animal=9|Jan 2022/Company=3|Jan 2022/Film=2|Jan 2022/Village=4|Jan 2022/WrittenWork=5|Sep 2023/Animal=6|Sep 2023/Company=3|Sep 2023/Film=4|Sep 2023/Village=5|Sep 2023/WrittenWork=6.
+Per month, Film > Village?
+  Jan 2022: Film=2 vs Village=4: no
+  Sep 2023: Film=4 vs Village=5: no
+  Feb 2024: Film=4 vs Village=7: no
+Months where yes: none → 0.
+\boxed{0}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). How many items are labelled `True`? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5969 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `True` items. I therefore split the range in half recursively, having a subagent compute how many items are `True` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5969 is not below 500; splitting at midpoint 2984.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2984, compute how many items are `True` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `True` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2984..5969, compute how many items are `True` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `True` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
+[tool:spawn_subagent] 43
+[tool:spawn_subagent] 36
+
+[root turn 2]
+[assistant] Sum my children [43, 36] -> 79.
+\boxed{79}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). For how many sections is `positive` the single most common label — i.e. that section has STRICTLY more `positive` items than items of any other one label? Give the single integer in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5934 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks in how many sections `positive` beats EVERY other label, so the state is a per-(section, label) tally over all labels — not a per-section count of `positive` alone. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5934 is not below 500; splitting at midpoint 2967.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2967, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2967..5934, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/negative=9|S1/positive=3|S2/negative=5|S2/positive=7|S3/negative=10|S3/positive=4
+[tool:spawn_subagent] S4/negative=8|S4/positive=5|S5/negative=7|S5/positive=5|S6/negative=4|S6/positive=7
+
+[root turn 2]
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/negative=9|S1/positive=3|S2/negative=5|S2/positive=7|S3/negative=10|S3/positive=4|S4/negative=8|S4/positive=5|S5/negative=7|S5/positive=5|S6/negative=4|S6/positive=7.
+Per section, is `positive` strictly the most common label?
+  S1: positive=3 vs best other 9: no
+  S2: positive=7 vs best other 5: yes
+  S3: positive=4 vs best other 10: no
+  S4: positive=5 vs best other 8: no
+  S5: positive=5 vs best other 7: no
+  S6: positive=7 vs best other 4: yes
+Sections where yes: S2, S6 → 2.
+\boxed{2}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Which month has the MOST `False` items? Break ties by the earlier month. Give the month (e.g. Sep 2023) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5968 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS months (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5968 is not below 500; splitting at midpoint 2984.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2984, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2023`, `Jan 2024`, `Oct 2024`, `May 2025`, `Sep 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2984..5968, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2023`, `Jan 2024`, `Oct 2024`, `May 2025`, `Sep 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Jan 2024/False=5|Jan 2024/True=8|May 2025/False=9|May 2025/True=6|Oct 2024/False=10|Oct 2024/True=5|Sep 2023/False=6|Sep 2023/True=3|Sep 2025/False=8|Sep 2025/True=5
+[tool:spawn_subagent] Jan 2024/False=10|Jan 2024/True=3|May 2025/False=7|May 2025/True=13|Oct 2024/False=5|Oct 2024/True=8|Sep 2023/False=3|Sep 2023/True=4|Sep 2025/False=8|Sep 2025/True=5
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Jan 2024/False=15|Jan 2024/True=11|May 2025/False=16|May 2025/True=19|Oct 2024/False=15|Oct 2024/True=13|Sep 2023/False=9|Sep 2023/True=7|Sep 2025/False=16|Sep 2025/True=10.
+`False` per month: Sep 2023=9, Jan 2024=15, Oct 2024=15, May 2025=16, Sep 2025=16; the most is May 2025 (16).
+\boxed{May 2025}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). In which month did `positive` FIRST occur more often than `negative`? Months are in chronological order; answer with the month and year exactly as written in the items' dates (e.g. Jan 2022), or none if it never happens. Give it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5993 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each month (the items carry dates; an item's month is the month and year of its date), so the state is a per-(month, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5993 is not below 500; splitting at midpoint 2996.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2996, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Jan 2022`, `Aug 2024`, `Oct 2024`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2996..5993, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Jan 2022`, `Aug 2024`, `Oct 2024`; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Aug 2024/negative=7|Aug 2024/positive=7|Jan 2022/negative=6|Jan 2022/positive=7|Oct 2024/negative=7|Oct 2024/positive=5
+[tool:spawn_subagent] Aug 2024/negative=6|Aug 2024/positive=10|Jan 2022/negative=4|Jan 2022/positive=4|Oct 2024/negative=7|Oct 2024/positive=6
+
+[root turn 2]
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Aug 2024/negative=13|Aug 2024/positive=17|Jan 2022/negative=10|Jan 2022/positive=11|Oct 2024/negative=14|Oct 2024/positive=11.
+In chronological order, positive > negative?
+  Jan 2022: positive=11 vs negative=10: yes
+  Aug 2024: positive=17 vs negative=13: yes
+  Oct 2024: positive=11 vs negative=14: no
+First month where yes: Jan 2022.
+\boxed{Jan 2022}
+
+==============================================================================================================
+TASK labeled_records   (2 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). Which author has the MOST `True` items? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the answer; put it inside \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5989 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks WHICH AUTHOR has the most `True` items, so the state is a per-author count of `True` items. I therefore split the range in half recursively, having a subagent compute the per-author tally of `True` items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5989 is not below 500; splitting at midpoint 2994.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2994, compute the per-author tally of `True` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `True` items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2994..5989, compute the per-author tally of `True` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `True` items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range."})
+[tool:spawn_subagent] 47250:6|55032:1|56522:7|57668:5|86957:4
+[tool:spawn_subagent] 47250:2|55032:7|56522:8|57668:7|86957:4
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> 47250:8|55032:8|56522:15|57668:12|86957:8.
+`True` items per author: 47250=8, 55032=8, 56522=15, 57668=12, 86957=8; the most is 56522 (15).
+The question asks for the form 'Author: [X]', so I box it that way.
+\boxed{Author: 56522}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). Is `positive` more common than, less common than, or equally common as `negative`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5908 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5908 is not below 500; splitting at midpoint 2954.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2954, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2954..5908, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] negative:6|positive:2
+[tool:spawn_subagent] negative:2|positive:5
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> negative:8|positive:7.
+positive=7 vs negative=8 → positive is less common than negative.
+\boxed{less common than}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+[question]
+Judge each item's label (one of: False, True). For this question, consider only the items with author = 96128 (the `[by 96128]` tag). Among those items, which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. False) in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5972 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is restricted to author 96128's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author 96128's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5972 is not below 500; splitting at midpoint 2986.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2986, compute the per-label tally over ONLY author 96128's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author 96128's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2986..5972, compute the per-label tally over ONLY author 96128's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author 96128's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] False:5|True:8
+[tool:spawn_subagent] False:7|True:3
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> False:12|True:11.
+Label tally over author 96128's items: False=12, True=11; most common is False (12).
+\boxed{False}
+
+==============================================================================================================
+TASK labeled_records   (1 traces with this question shape)
+--------------------------------------------------------------------------------------------------------------
+[document description]
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+[question]
+Judge each item's label (one of: negative, positive). Which label is the most common overall? Break ties by the alphabetically first label. Give the label in \boxed{}.
+
+[root turn 1]
+[assistant] This document is 5979 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks about labels over the whole document, so a per-label tally is the right state. I therefore split the range in half recursively, having a subagent compute the per-label tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5979 is not below 500; splitting at midpoint 2989.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2989, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2989..5979, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] negative:18|positive:15
+[tool:spawn_subagent] negative:18|positive:15
+
+[root turn 2]
+[assistant] Merge my two children's tallies (above) -> negative:36|positive:30.
+Label tally: negative=36, positive=30; most common is negative (36).
+\boxed{negative}
 

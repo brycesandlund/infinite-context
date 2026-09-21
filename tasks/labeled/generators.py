@@ -40,7 +40,14 @@ _DESC = {
     "claims": "Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False.",
 }
 _AUTHORS = ["Cho", "Diaz", "Han", "Ivanov", "Kim", "Lee", "Okafor", "Park", "Rossi", "Sato"]
-_QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top"]
+_QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top",
+           # run 10: OOLONG-user / temporal shapes we lacked — "which author has the most items" (open key space of
+           # names/ids, no label), "least common label among one author's items", "in how many months is L the
+           # single most common label" (strict mode per outer key)
+           "author_count", "author_least", "section_mode_count"]
+# 40% of documents tag authors with numeric ids instead of names, so the open-set contract ("the author exactly
+# as written in the tag") and the `Author: [X]` form both see id-like keys (run 7/8w/9w: `User: User 30140`).
+_ID_AUTHOR_FRAC = 0.4
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _ROWS: dict[str, list[dict]] = {}
 
@@ -60,7 +67,7 @@ def _context(name: str, labels: list[str], key_mode: str) -> str:
         note = " Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`)."
     return (
         f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
-        f"`[by <name>]`, followed by the item's text.{note} {_DESC[name]} The label is NOT written in the text — you "
+        f"`[by <author>]`, followed by the item's text.{note} {_DESC[name]} The label is NOT written in the text — you "
         f"must judge each item yourself. The label set is exactly: {', '.join(labels)}."
     )
 
@@ -101,7 +108,10 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     # Joint outer x label key space capped at ~18 (the binary combine holds two children's tallies plus
     # the merge; 6 months x 6 emotions = 36 multi-token keys measured 3.6k real tokens at internal nodes).
     n_sections = rng.randint(3, min(6, max(3, 18 // len(labels))))
-    authors = sorted(rng.sample(_AUTHORS, rng.randint(3, 5)))
+    if rng.random() < _ID_AUTHOR_FRAC:
+        authors = sorted(str(x) for x in rng.sample(range(10000, 99999), rng.randint(3, 5)))
+    else:
+        authors = sorted(rng.sample(_AUTHORS, rng.randint(3, 5)))
     per_sec = max(1, (doc_size_tokens // 45) // n_sections)     # ~45 tok/item
     if key_mode == "date":
         # 3-6 months (calendar order, may span years); each month gets a pool of ~5-9 specific dates so
@@ -175,14 +185,36 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         grading, params = "exact", {"qlabel": L}
         q = head + (f"Which {unit_word} has the MOST `{L}` items? Break ties by the earlier {unit_word}. Give the "
                     f"{unit_word} (e.g. {sections[0]}) in \\boxed{{}}.")
+    elif qtype == "author_count":
+        c = Counter(r["au"] for r in recs)
+        best = max(c[a] for a in authors)
+        gold = next(a for a in authors if c[a] == best)           # authors sorted -> first in sort order on ties
+        grading, params = "exact", {}
+        q = (f"Which author has the MOST items overall (regardless of label)? Break ties by the author that comes "
+             f"first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. {authors[0]}) in \\boxed{{}}.")
+    elif qtype == "section_mode_count":
+        L = rng.choice(labels)
+        gold = sum(1 for s_ in sections if per[s_][L] > max((per[s_][l] for l in labels if l != L), default=0))
+        grading, params = "numeric", {"qlabel": L}
+        q = head + (f"For how many {unit_word}s is `{L}` the single most common label — i.e. that {unit_word} has "
+                    f"STRICTLY more `{L}` items than items of any other one label? Give the single integer in \\boxed{{}}.")
+    elif qtype == "author_least":
+        au = rng.choice(authors)
+        c = Counter(r["label"] for r in recs if r["au"] == au)
+        present = [l for l in labels if c[l] > 0]
+        gold = min(present, key=lambda l: (c[l], l)) if present else labels[0]
+        grading, params = "exact", {"qauthor": au}
+        q = head + filtered_question(rng, "items", f"author = {au} (the `[by {au}]` tag)",
+                                     "which label is the LEAST common among the labels that appear at least once",
+                                     f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
     elif qtype == "author_top":
         L = rng.choice(labels)
         c = Counter(r["au"] for r in recs if r["label"] == L)
         best = max((c[a] for a in authors), default=0)
         gold = next(a for a in authors if c[a] == best)           # authors sorted -> alphabetical tie
         grading, params = "exact", {"qlabel": L}
-        q = head + (f"Which author has the MOST `{L}` items? Break ties by the alphabetically first author. Give "
-                    f"the author name (e.g. {authors[0]}) in \\boxed{{}}.")
+        q = head + (f"Which author has the MOST `{L}` items? Break ties by the author that comes first in alphabetical "
+                    f"order. Give the author exactly as written in the `[by …]` tag (e.g. {authors[0]}) in \\boxed{{}}.")
     elif qtype == "dates_rep_k":
         # Scoped to ONE month so the per-date tally stays <= ~14 keys (a whole-document per-date dict
         # overflowed the root); the leaf must derive each item's month to decide whether it counts.
@@ -226,10 +258,13 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     answer_form = None
     if grading == "exact" and rng.random() < 0.35:
         word = {"most_common": "Label", "relative": "Answer", "section_most": unit_word.capitalize(),
-                "author_most": "Label", "author_top": "Author"}.get(qtype, "Answer")
+                "author_most": "Label", "author_top": "Author", "author_count": "Author",
+                "author_least": "Label"}.get(qtype, "Answer")
         answer_form = word
         # drop the question's own "Give … in \boxed{}." sentence and replace it with the form instruction
-        q = re.sub(r"\s*Give [^.]*?in \\boxed\{\}\.\s*$", "", q)          # "Give it in \boxed{}."
+        # the question's closing "Give … in \boxed{}." sentence may contain dots ("e.g. S1", "e.g. 30140"), so
+        # match up to the boxed instruction at the END rather than stopping at the first dot
+        q = re.sub(r"\s*Give [^\n]*? in \\boxed\{\}\.\s*$", "", q)        # "Give the author … (e.g. Kim) in \boxed{}."
         q = re.sub(r"\s*Put it in \\boxed\{\}\.\s*$", "", q)              # "…equally common as. Put it in \boxed{}."
         q += (f" Give your final answer in the form '{word}: [X]', where [X] is "
               f"the {'label' if word == 'Label' else 'answer'}; put it inside \\boxed{{}}.")
