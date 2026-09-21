@@ -204,7 +204,11 @@ class VtNovelOracle(ScaffoldOracle):
 
     def _sequential_reason(self) -> str:
         return ("a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be "
-                "reassigned later, which makes the order of the bindings matter")
+                "reassigned later")
+
+    def _shape_reason(self) -> str:
+        return ("The question is about variables' FINAL values, so the accumulator is the current value of "
+                "every variable seen so far (a later assignment overwrites an earlier one).")
 
     def _op_phrase(self) -> str:
         return "applying each VAR assignment in order (VAR A = VAR B copies B's current value)"

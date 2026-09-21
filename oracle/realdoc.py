@@ -26,6 +26,9 @@ class RealDocOracle(ScaffoldOracle):
     def _unit(self):
         return f"occurrences of the word '{self.entity}'"
 
+    def _shape_reason(self) -> str:
+        return f"The question asks for one total over the whole document, so the state is a single count of '{self.entity}' occurrences."
+
     def _goal_phrase(self):
         return "the total count"
 

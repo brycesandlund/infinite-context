@@ -151,7 +151,7 @@ class ScaffoldOracle(ModelBackend):
         return ""
 
     def _shape_reason(self) -> str:
-        """One sentence the ROOT says about WHY the state has its shape — which field(s) the question
+        """One sentence the ROOT says about WHY the state (binary partial / fold accumulator) has its shape — which field(s) the question
         groups by ("The question compares labels within each month and the items carry dates, so the
         state is a per-(month, label) tally"). Same device as the fold/binary reason: the run-7/8w
         roots still chose a 1-D per-label tally for per-month questions (OOLONG temporal/yahoo) because
@@ -308,24 +308,32 @@ class ScaffoldOracle(ModelBackend):
         # The strategy is a property of the task, and the root SAYS WHY it picks one: sequential
         # (order-dependent) tasks fold, order-independent tasks split. Stating the reason is what
         # turns the correlation into a rule the model can apply to an unseen question.
+        # Both strategies open with the SAME three moves in the same slots, so the first decision
+        # after the opener is about ORDER (a property of the task), not about state shape:
+        #   1. order relation, stated without committing to a state;
+        #   2. why the state has its shape, then the state;
+        #   3. the plan (split-and-merge / left-to-right accumulator) using that state.
+        # Before this, binary roots opened with a shape sentence and fold roots with an order
+        # sentence — so the sentence choice WAS the strategy choice, made through vocabulary that
+        # only ever appeared on one side (619 binary vs 180 fold roots in the run-9 dry run).
+        shape = self._shape_reason()
+        shape = f" {shape}" if shape else ""
         if self.strategy == "left_fold":
             return (
                 f"This document is {n} tokens — too long to read in one context. This task is "
-                f"order-dependent: {self._sequential_reason()}. I therefore process the document left "
-                f"to right with a running accumulator: read the first slice and update the "
+                f"order-dependent: {self._sequential_reason()}, so the document has to be processed "
+                f"left to right.{shape} I therefore process the document left to right with a running "
+                f"accumulator: read the first slice and update the "
                 f"accumulator by {self._op_phrase()}, then hand the rest of the document plus the "
                 f"accumulator to a subagent to continue the same way. Once the final slice is "
                 f"folded in, the accumulator holds the whole-document result and I turn it into "
                 f"the final answer."
             )
-        # Reasoning BEFORE the commitment: the state-shape inference comes first, then the
-        # order-independence argument, and only then the plan that names the goal — so the tokens
-        # that justify the choice are generated before the choice is.
-        shape = self._shape_reason()
         return (
-            f"This document is {n} tokens — too long to read in one context." + (f" {shape}" if shape else "") +
-            f" The result over a range does not depend on the order of the {self._unit()}, so I split "
-            f"the range in half recursively, having a subagent {self._verb()} {self._goal_phrase()} over "
+            f"This document is {n} tokens — too long to read in one context. The result over a range "
+            f"does not depend on the order of the {self._unit()}, so disjoint ranges can be computed "
+            f"independently and merged.{shape} I therefore split the range in half recursively, having a "
+            f"subagent {self._verb()} {self._goal_phrase()} over "
             f"each half and combining the two partials. Once I have it for the whole document, I turn "
             f"the combined result into the final answer."
         )

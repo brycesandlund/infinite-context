@@ -211,6 +211,9 @@ class LongRecOracle(ScaffoldOracle):
             return "The question asks for one total over the whole document, so the state is a single count."
         if q == "mention_most":
             return "The question asks which single entry has the most occurrences, so the state is just the best (entry, count) seen so far."
+        if q == "first_reach":
+            return (f"The answer is the entry at which the running count of {self.fb}={self.qtag} entries first reaches {self.qn}, "
+                    f"so the accumulator carries the running count and that entry once it is reached.")
         return ""
 
     def _state_format(self) -> str:

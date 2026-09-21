@@ -278,6 +278,20 @@ class SynthOracle(ScaffoldOracle):
             return "The question subtracts one flag's total from the other's, so the state keeps a running total per flag."
         if t in ("synth_count", "synth_count2", "synth_count_cmp", "synth_count_range", "synth_sumwhere"):
             return "The question asks for one number over the whole document, so the state is a single running count/sum."
+        # fold tasks: why the ACCUMULATOR carries what it carries
+        if t == "synth_runreset":
+            return "The answer is the running total after the last reset, so the accumulator is just the current total."
+        if t == "synth_varchain":
+            return "The answer is a variable's final value, so the accumulator is the current value of every variable."
+        if t == "synth_peak":
+            return "The peak is the highest value the running total ever reaches, so the accumulator carries the running total and the highest total so far."
+        if t == "synth_streak":
+            return "The longest run can end anywhere, so the accumulator carries the current run length and the longest run so far."
+        if t == "synth_adjacent":
+            return "Each comparison needs the previous record's amt, so the accumulator carries the count of increases and the previous amt."
+        if t == "synth_first_exceed":
+            return (f"The answer is the first index at which the running total exceeds {self.thresh}, so the accumulator "
+                    f"carries the running total and that first index (-1 until it happens).")
         return ""
 
     def _state_format_base(self) -> str:
