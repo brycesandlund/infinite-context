@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 from collections import Counter
 
 from tasks.base import Problem
@@ -224,8 +225,11 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         word = {"most_common": "Label", "relative": "Answer", "section_most": unit_word.capitalize(),
                 "author_most": "Label", "author_top": "Author"}.get(qtype, "Answer")
         answer_form = word
-        q = q.replace(" in \\boxed{}.", f". Give your final answer in the form '{word}: [X]', where [X] is "
-                                          f"the {'label' if word in ('Label',) else 'answer'}; put it inside \\boxed{{}}.")
+        # drop the question's own "Give … in \boxed{}." sentence and replace it with the form instruction
+        q = re.sub(r"\s*Give [^.]*?in \\boxed\{\}\.\s*$", "", q)          # "Give it in \boxed{}."
+        q = re.sub(r",? in \\boxed\{\}\.\s*$", ".", q)                   # "…equally common as, in \boxed{}."
+        q += (f" Give your final answer in the form '{word}: [X]', where [X] is "
+              f"the {'label' if word == 'Label' else 'answer'}; put it inside \\boxed{{}}.")
         gold = f"{word}: {gold}"
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,

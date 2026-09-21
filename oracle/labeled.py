@@ -225,7 +225,7 @@ class LabeledOracle(ScaffoldOracle):
 
     def _shape_reason(self):
         q, uw = self.qtype, self.unit_word
-        derive = " and the items carry dates, so each item's month is derived from its date" if self.key_mode == "date" else ""
+        derive = " (the items carry dates; an item's month is the month and year of its date)" if self.key_mode == "date" else ""
         if q in ("sections_cmp", "section_most", "first_month_cmp"):
             return f"The question compares labels WITHIN each {uw}{derive}, so the state is a per-({uw}, label) tally, not a per-label one."
         if q == "before_after":
