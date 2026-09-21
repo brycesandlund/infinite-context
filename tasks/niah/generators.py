@@ -135,8 +135,17 @@ _LIST_TAILS = [   # for questions whose answer is a LIST of names — "the value
 ]
 
 
-def _phrase(rng, forms, tails=None, **kw) -> str:
-    return rng.choice(_PREFACES) + rng.choice(forms).format(**kw) + " " + rng.choice(tails or _ANSWER_TAILS)
+_VT_PREFACES = [   # vt's own prefaces: about assignments, not "planted facts"/"special values" (needle vocabulary)
+    "", "", "",
+    "The assignments in this passage form chains; a later line can overwrite an earlier one. ",
+    "Some lines in this passage assign variables; the rest is ordinary prose. ",
+    "Assignments are scattered through the text and must be applied in the order they appear. ",
+    "Keep a running picture of every variable's current value as you go. ",
+]
+
+
+def _phrase(rng, forms, tails=None, prefaces=None, **kw) -> str:
+    return rng.choice(prefaces or _PREFACES) + rng.choice(forms).format(**kw) + " " + rng.choice(tails or _ANSWER_TAILS)
 _CONTEXT = (
     "The document is a long passage of text with a single factual sentence hidden inside it. "
     "Answer the question using ONLY this passage."
@@ -391,11 +400,11 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
     t_val = vals[0]
     holders = sorted(n for n, v in binding.items() if v == t_val)
     if qtype == "which_vars":
-        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, t_val=t_val)
+        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=_VT_PREFACES, t_val=t_val)
         gold, grading, qvar = (holders or ["none"]), "set", None
     else:
         qvar = rng.choice([n for n, _, _ in chains[0]])
-        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_FINAL, qvar=qvar)
+        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_FINAL, prefaces=_VT_PREFACES, qvar=qvar)
         gold, grading = [str(binding[qvar])], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",

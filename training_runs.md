@@ -875,5 +875,9 @@ scripted-leaf cases.
    staying a paraphrase: "Which variables are assigned the value X, directly or through a chain of copies? List
    them all, comma-separated." / "Find every variable that ends up with the value X (a copy passes the value
    along). List them, comma-separated." (6 forms for which_vars, 4 for final_value; RULER's sentence and its
-   "Question:" layout are NOT copied.) vt_novel 100 → 150 roots, fold share ≈ 21% → 27%.
+   "Question:" layout are NOT copied.) vt_novel 100 → 150 roots, fold share ≈ 21% → 27%. Also: vt questions get their
+   own prefaces about assignments ("The assignments in this passage form chains; a later line can overwrite an earlier
+   one.") instead of the needle ones ("it contains a few planted facts"), and every LIST question (vt which_vars,
+   niah_multi multivalue/multiquery) draws list-shaped answer tails ("Give them in \boxed{}") instead of "Reply with
+   just the value".
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).
