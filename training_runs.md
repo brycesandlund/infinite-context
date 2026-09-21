@@ -833,7 +833,7 @@ variable's current value — not just the variables currently holding X, since w
 at the end"), and give the retrieval tasks (niah_novel/narrativeqa) the same three-move opener so "search" is a
 named alternative to "tally" in slot 2. (A) first is the cleaner experiment.
 
-## sft_general10w (run 10, warm start from sft_general8w) — 2026-09-21 — PLANNED
+## sft_general10w (run 10, warm start from sft_general8w) — 2026-09-21 — held-out 0.711, diagnostics 1.000
 Run 9's recipe and corpus, warm from **8w again** (not 9w — its vt/niah roots drifted), with the two fixes the run-9
 post-mortem asked for. Verified 8/8 per task at doc 6k/14k (`scratchpad verify_G`), narrativeqa 6/8 = the known
 scripted-leaf cases.
@@ -900,3 +900,32 @@ scripted-leaf cases.
    root's finalize says "The answer is the tag content itself, 30140 — not the word 'author'". Verified 80/80 with
    all 14 qtypes hit. Full traces for every new qtype: `trace_snippets/new_qtypes_run10.txt`.
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).
+
+**Run 10w results — 2026-09-21 — held-out 0.711 (8w 0.758, 9w 0.646), diagnostics 1.000 (24/24).**
+(ckpt `tinker://cbf4f333-a798-5a49-92ca-7f1d89a4b8a0:train:0/weights/sft_general10w`; 944 traces / 39,978 datums /
+68.8M tokens, 2,499 batches at batch 16, LR 5e-6, NLL 0.0055; SFT 12:40→15:55 (3.25 h), eval 7 min. Raw
+`eval_results/raw/sft_general10w.{jsonl,txt}`; failure rollouts `trace_snippets/run10_failures.txt`.)
+
+| held-out | 8w | 9w | **10w** | note |
+|---|---|---|---|---|
+| oolong_counting | 0.36 | 0.63 | 0.50 | trec 20 vs 14, agnews 13 vs 17, negation 5 vs 23 — leaf labelling noise, no root failure |
+| oolong_user | 0.60 | 0.40 | 0.55 | yahoo `User: User 30140` AGAIN: the root ENUMERATED the key space "`<user>` is exactly one of `User 30140`, `User 92806`" (the question's mentions, descriptor included) so the tally keys carried "User 30140" and the box copied them — author_cmp's open-set contract did not transfer; trec: root emitted its spawn call as raw `<tool_call>` text → 1-agent overflow (same glitch as 9w fwe); agnews 0 vs 1 (leaf) |
+| oolong_temporal | 0.25 | 0.37 | **0.21** | 3/5 roots chose a ONE-dimensional per-label tally for a per-month question ("the state is a per-label tally over an independent range"), then reasoned "no monthly information → 0" / "World=8 vs Sports=10 → No"; 9w had 2 of these 3 as 2-D. section_mode_count did not transfer |
+| **vt** | 0.88 | 0.16 | **0.36** | 4/5 roots took the FIXED binary sentence then "the state is the set of variable=value facts … pruned to the queried value"; the 1 fold root scored 1.00 with a model-written reason and a correctly resolving accumulator. Fold EXECUTION is fine when chosen; the sentence-two CHOICE goes binary 4:1 |
+| niah_multikey_1 | 0.80 | 0.60 | 0.80 | all 5 roots took the retrieval state sentence and the leaf found the needle; the miss is a leaf digit truncation (278069 vs 2780693) |
+| niah_single_1 / multiquery | 1.00 / 1.00 | 1.00 / 0.85 | 1.00 / **1.00** | |
+| cwe / fwe | 1.00 / 0.93 | 1.00 / 0.80 | 0.98 / **1.00** | |
+| diagnostics (12 × 2) | 0.958 | 1.000 | 1.000 | |
+
+**Reading.** The retrieval fix worked (niah_multikey back to 0.80 with the right root path on 5/5; the miss is a leaf
+copy error). The fold fix did NOT: with sentence two fixed and byte-identical across 71% of roots, binary became the
+zero-effort continuation and 4/5 RULER-vt roots took it — the downside case named before launch. The uniform
+three-move preamble has now been tried twice (9w: unit-noun slot → invented filter noun; 10w: fixed sentence →
+frequency prior) and lost vt both times; 8w's asymmetric form (binary opens with SHAPE, fold opens with ORDER and has
+no state slot) is the only one that held fold on vt (0.88). Temporal regressed for a related reason: the state slot
+is where the root decides 1-D vs 2-D, and with 14 labeled qtypes sharing the fixed opener the per-month shape lost to
+per-label on 3/5 roots. OOLONG-user yahoo failed a 4th time on the form and now also on an ENUMERATED key space
+built from the question's mentions — the open-set author contract in training did not carry to "User 30140".
+**Best checkpoint remains 8w (0.758).** Best-of-per-task oracle across all runs is now 0.874 (counting 0.71 / user
+0.75 / temporal 0.46 / vt 0.88 / fwe 1.00 / rest 1.00).
+
