@@ -11,10 +11,28 @@ BookQAOracle + qa_part grading + model-executed leaf + rejection sampling apply 
 Run:  N=2000 MAX_SEEN=8000 uv run python scripts/cache_narrativeqa.py
 """
 
+import html
 import json
 import os
+import re
 
 from datasets import load_dataset
+
+# About half of NarrativeQA's documents are movie scripts scraped from IMSDb WITH their page chrome
+# (nav tables, <script> analytics, a shoutbox widget) and <b>/<pre> formatting. Strip it: drop
+# <script>/<style> blocks, drop tags, unescape entities, collapse runs of blanks. (Audit 2026-09-20:
+# 1048/2000 cached rows had tags; 12% of their characters were markup.)
+_BLOCK = re.compile(r"<(script|style)\b.*?</\1>", re.I | re.S)
+_TAG = re.compile(r"<[^>]{1,300}>")
+
+
+def _strip_html(t: str) -> str:
+    t = _BLOCK.sub(" ", t)
+    t = _TAG.sub(" ", t)
+    t = html.unescape(t)
+    t = re.sub(r"[ \t]+", " ", t)
+    t = re.sub(r"\n\s*\n\s*(\n\s*)+", "\n\n", t)
+    return t.strip()
 
 N = int(os.environ.get("N", "2000"))          # target kept candidates
 MAX_SEEN = int(os.environ.get("MAX_SEEN", "9000"))  # bound streamed rows (bandwidth/time)
@@ -43,7 +61,7 @@ with open(out, "w", encoding="utf-8") as f:
     for ex in ds:
         seen += 1
         q = ex["question"]["text"].strip()
-        text = ex["document"]["text"]
+        text = _strip_html(ex["document"]["text"])
         text_lc = text.lower()
         ans = _pick_short_verbatim([a["text"] for a in ex["answers"]], text_lc)
         if ans:
