@@ -207,8 +207,17 @@ class VtNovelOracle(ScaffoldOracle):
                 "reassigned later")
 
     def _shape_reason(self) -> str:
-        return ("The question is about variables' FINAL values, so the accumulator is the current value of "
-                "every variable seen so far (a later assignment overwrites an earlier one).")
+        # Contrastive on purpose: the tempting state is the one the QUESTION names (the VARs holding the
+        # target value / the one VAR asked about). Run 9w on RULER vt: roots wrote "the set of variables
+        # assigned the value X" and lost every chain. The right accumulator is never what the question names.
+        if self.qtype == "final_value":
+            return (f"The question asks one VAR's final value, but a VAR gets its value by copying another VAR's "
+                    f"value at that moment, so the accumulator carries the current value of EVERY variable seen so "
+                    f"far — not just VAR {self.query_var}.")
+        return (f"The question asks which VARs finish with the value {self.target}, but that is only known at the "
+                f"end and a value reaches a VAR through copies, so the accumulator carries the current value of "
+                f"EVERY variable seen so far — not just the VARs currently holding {self.target} (a later "
+                f"assignment overwrites an earlier one).")
 
     def _op_phrase(self) -> str:
         return "applying each VAR assignment in order (VAR A = VAR B copies B's current value)"

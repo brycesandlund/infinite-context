@@ -832,3 +832,27 @@ form but make the fold state reasons CONTRASTIVE the way the binary ones are ("�
 variable's current value — not just the variables currently holding X, since which ones end with X is only known
 at the end"), and give the retrieval tasks (niah_novel/narrativeqa) the same three-move opener so "search" is a
 named alternative to "tally" in slot 2. (A) first is the cleaner experiment.
+
+## sft_general10w (run 10, warm start from sft_general8w) — 2026-09-21 — PLANNED
+Run 9's recipe and corpus, warm from **8w again** (not 9w — its vt/niah roots drifted), with the two fixes the run-9
+post-mortem asked for. Verified 8/8 per task at doc 6k/14k (`scratchpad verify_G`), narrativeqa 6/8 = the known
+scripted-leaf cases.
+1. **Contrastive fold state reasons.** Every fold task's state sentence now names the tempting wrong state and rejects
+   it, the way the binary ones do ("…not a per-label one"): vt_novel — *"The question asks which VARs finish with the
+   value 91816, but that is only known at the end and a value reaches a VAR through copies, so the accumulator
+   carries the current value of EVERY variable seen so far — not just the VARs currently holding 91816"*; varchain —
+   "…not just the one asked about"; peak — "the final total alone would lose the peak"; streak — "a plain count of
+   flag=Y records would not do"; adjacent — "the count alone cannot judge the next record"; first_exceed /
+   first_reach — "the total/count alone forgets whether and where…"; runreset — "not a per-grp tally and not a count
+   of resets". Rationale: the state slot is filled by the model on an unseen question; run 9 filled it with the state
+   the QUESTION names (a filter). We want the training state regardless of the question's wording, so the training
+   sentence must show the question-shaped state being rejected.
+2. **Retrieval roots make the same three moves** (BookQAOracle → niah_novel, narrativeqa): *"The answer is stated in
+   one place, and where it sits does not depend on the order of the sentences, so disjoint ranges can be searched
+   independently and the one that finds it wins. The question asks for one fact, so the state is that fact once
+   found (or none) — not a tally: nothing is counted, and a range with no relevant sentence contributes nothing. I
+   therefore split…"*; the leaf contract adds "search it for a sentence that states the answer (there is nothing to
+   count)". So "one fact once found" / "set of facts" (niah_multi) / "pruned tally" (topk) / "per-key tally" are
+   four named alternatives in the same slot, instead of the 55 retrieval roots having a different-looking opener
+   that loses to the 619 tally roots on frequency.
+Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).

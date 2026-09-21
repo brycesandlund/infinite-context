@@ -307,7 +307,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v3"   # v3: narrativeqa corpus HTML-stripped; BookQA subtask/clip/joiner fixes (2026-09-20)
+_CACHE_VERSION = "v4"   # v4: BookQA three-move root preamble + leaf "nothing to count" contract (2026-09-21); v3: narrativeqa HTML-stripped, subtask/clip/joiner fixes
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name) -> str:

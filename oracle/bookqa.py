@@ -83,9 +83,10 @@ class BookQAOracle(ScaffoldOracle):
             f'Find the answer to the question "{self.q_core}" within the document range in '
             f"tokens {a}..{b}. Recursively split the range at its midpoint, delegating each "
             f"half to a subagent, until the range is less than {L} tokens. When the range is "
-            f"less than {L} tokens, read it directly. If this range contains the answer, return "
-            f"it with the sentence that states it; otherwise return any relevant information you "
-            f'find, or say "No relevant information in this range." and return `none` if there is none.'
+            f"less than {L} tokens, read it and search it for a sentence that states the answer "
+            f"(there is nothing to count). If this range contains the answer, return it with the "
+            f"sentence that states it; otherwise return any relevant information you find, or say "
+            f'"No relevant information in this range." and return `none` if there is none.'
         )
 
     # -- result (answer / context / none) <-> string through \boxed{} -----------
@@ -184,10 +185,20 @@ class BookQAOracle(ScaffoldOracle):
             if ns == 0:
                 m = self.doc_len // 2
                 return AssistantTurn(
-                    text=(f"This document is {self.doc_len} tokens — too long to read in one "
-                          f"context. I'll split it in half recursively, search each half for the "
-                          f"answer to the question (or any relevant context), and combine; once a "
-                          f"half reports the answer, I read it off from the sentence that states it."),
+                    # Same three moves as every other root (order relation → state + why → plan), so
+                    # "search for one stated fact" is a named alternative to "tally" in the state slot.
+                    # Run 9w: RULER niah roots emitted the tally opener ("does not depend on the order of
+                    # the hidden number's occurrences"), then a tally state and a records-style leaf
+                    # contract; the leaf that READ the needle returned "0 occurrences → none".
+                    text=(f"This document is {self.doc_len} tokens — too long to read in one context. "
+                          f"The answer is stated in one place, and where it sits does not depend on the "
+                          f"order of the sentences, so disjoint ranges can be searched independently and "
+                          f"the one that finds it wins. The question asks for one fact, so the state is "
+                          f"that fact once found (or none) — not a tally: nothing is counted, and a range "
+                          f"with no relevant sentence contributes nothing. I therefore split the range in "
+                          f"half recursively, having a subagent search each half for the sentence that "
+                          f"states the answer (or any relevant context) and combining; once a half reports "
+                          f"the answer, I read it off from the sentence that states it."),
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(0, m)}),
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(m, self.doc_len)}),
