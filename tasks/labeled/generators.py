@@ -213,7 +213,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         grading, params = "exact", {"qlabel": L, "qdate": D}
         q = head + (f"Was `{L}` more common, less common, or the same frequency among items dated before {D} as "
                     f"compared to items dated on or after {D}? 'Common' means the share of that period's items "
-                    f"with the label. Answer with exactly one of: more common / less common / the same frequency, in \\boxed{{}}.")
+                    f"with the label. Answer with exactly one of: more common / less common / the same frequency. Put it in \\boxed{{}}.")
     else:  # author_most
         au = rng.choice(authors)
         c = Counter(r["label"] for r in recs if r["au"] == au)

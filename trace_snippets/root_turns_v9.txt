@@ -1,0 +1,661 @@
+##########################################################################################
+# task=synth_peak seed=2000000 dataset=None qtype=None gold=['66'] answer='66' term=answered score=1.000
+# Q: Process the records in order, keeping a running total of 'amt' (starting at 0). What is the HIGHEST value the running total ever reaches (0 if it never goes positive)? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=3 termination=answered answer='66'
+============================================================================
+[system] You are a long-document assistant. The document is 5981 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of records, one per line, each formatted as:
+  [<index>] id=<int> grp=<K1|K2|K3|K4|RST> amt=<signed int> flag=<Y|N>
+Records are 0-indexed and appear in order.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Process the records in order, keeping a running total of 'amt' (starting at 0). What is the HIGHEST value the running total ever reaches (0 if it never goes positive)? Give the single integer in \boxed{}.
+[assistant] This document is 5981 tokens — too long to read in one context. This task is order-dependent: the peak is a property of the running total's path, which depends on every record before it, so the document has to be processed left to right. The peak is the highest value the running total ever reaches, so the accumulator carries the running total and the highest total so far. I therefore process the document left to right with a running accumulator: read the first slice and update the accumulator by adding each 'amt' to the running total and tracking the highest total reached, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+Reading the first 400 tokens (0..400) of this range to fold, then the next 200 tokens to finish the last record (its line may run past 400).
+  -> CALLS: read_chunk({'start': 0, 'end': 400}); read_chunk({'start': 400, 'end': 600})
+[tool:read_chunk] [0000] id=2381 grp=K2 amt=+20 flag=N
+[0001] id=7970 grp=K3 amt=-13 flag=N
+[0002] id=3627 grp=K1 amt=+2 flag=N
+[0003] id=3222 grp=K1 amt=-15 flag=Y
+[0004] id=3581 grp=K2 amt=-16 flag=Y
+[0005] id=1265 grp=K2 amt=+15 flag=Y
+[0006] id=3519 grp= …[152 chars clipped]… -15 flag=N
+[0011] id=4513 grp=K3 amt=-2 flag=Y
+[0012] id=6877 grp=K3 amt=+15 flag=N
+[0013] id=5849 grp=K1 amt=-10 flag=N
+[0014] id=8216 grp=K3 amt=+2 flag=Y
+[0015] id=3987 grp=K4 amt=-5 flag=N
+[0016] id=5650 grp=K2 amt=-19 flag=Y
+[0017] id=
+[tool:read_chunk] 6672 grp=K1 amt=+13 flag=Y
+[0018] id=8678 grp=K2 amt=+19 flag=Y
+[0019] id=9966 grp=K3 amt=+8 flag=Y
+[0020] id=3971 grp=K3 amt=+13 flag=Y
+[0021] id=7501 grp=K3 amt=-10 flag=N
+[0022] id=9244 grp=K4 amt=+8 flag=Y
+[0023] id=5065 grp=K2 amt=-6 flag=N
+[0024] id=9784 grp=K3 amt=-10 flag=N
+[0025] id=2195 grp=K1 amt=-8 flag=N
+[assistant] Folding the 18 records whose line STARTS in 0..400 into the accumulator (in order):
+- [0000] amt=+20  → total=20, peak=20  (new peak)
+- [0001] amt=-13  → total=7, peak=20
+- [0002] amt=+2  → total=9, peak=20
+- [0003] amt=-15  → total=-6, peak=20
+- [0004] amt=-16  → total=-22, peak=20
+- [0005] amt=+15  → total=-7, peak=20
+- [0006] amt=-15  → total=-22, peak=20
+- [0007] amt=+4  → total=-18, peak=20
+- [0008] amt=+0  → total=-18, peak=20
+- [0009] amt=+6  → total=-12, peak=20
+- [0010] amt=-15  → total=-27, peak=20
+- [0011] amt=-2  → total=-29, peak=20
+- [0012] amt=+15  → total=-14, peak=20
+- [0013] amt=-10  → total=-24, peak=20
+- [0014] amt=+2  → total=-22, peak=20
+- [0015] amt=-5  → total=-27, peak=20
+- [0016] amt=-19  → total=-46, peak=20
+- [0017] amt=+13  → total=-33, peak=20
+→ accumulator = peak=20|total=-33. Delegating the rest 400..5981 with the updated accumulator.
+  -> CALLS: spawn_subagent({'subtask': "Continue the running accumulator by adding each 'amt' to the running total and tracking the highest total reached, over the records STARTING in tokens 400..5981.\naccumulator so far = peak=20|total=-33\nRead the first 400 tokens and update the accumulator over the records STARTING in tokens 400..5981, then delegate the rest of the range to one subagent with the updated accumulator. When the range is less than 400 tokens, process it directly and return the final accumulator."})
+[tool:spawn_subagent] peak=66|total=-13
+[assistant] The chain returned its final accumulator.
+Highest running total reached: 66 (final total -13).
+\boxed{66}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=synth_first_exceed seed=2300000 dataset=None qtype=None gold=['230'] answer='230' term=answered score=1.000
+# Q: Process the records in order, keeping a running total of 'amt'. What is the INDEX of the FIRST record at which the running total exceeds 111 (is strictly greater than 111)? If it never does, answer none. Give the index (or none) in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=3 termination=answered answer='230'
+============================================================================
+[system] You are a long-document assistant. The document is 5983 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of records, one per line, each formatted as:
+  [<index>] id=<int> grp=<K1|K2|K3|K4|RST> amt=<signed int> flag=<Y|N>
+Records are 0-indexed and appear in order.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Process the records in order, keeping a running total of 'amt'. What is the INDEX of the FIRST record at which the running total exceeds 111 (is strictly greater than 111)? If it never does, answer none. Give the index (or none) in \boxed{}.
+[assistant] This document is 5983 tokens — too long to read in one context. This task is order-dependent: the answer is the FIRST index where the running total crosses the threshold, which depends on all earlier records, so the document has to be processed left to right. The answer is the first index at which the running total exceeds 111, so the accumulator carries the running total and that first index (-1 until it happens). I therefore process the document left to right with a running accumulator: read the first slice and update the accumulator by adding each 'amt' to the running total and noting the first index at which it exceeds 111, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+Reading the first 400 tokens (0..400) of this range to fold, then the next 200 tokens to finish the last record (its line may run past 400).
+  -> CALLS: read_chunk({'start': 0, 'end': 400}); read_chunk({'start': 400, 'end': 600})
+[tool:read_chunk] [0000] id=6814 grp=K4 amt=+12 flag=N
+[0001] id=7691 grp=K1 amt=+18 flag=Y
+[0002] id=9211 grp=K2 amt=-4 flag=N
+[0003] id=1388 grp=K3 amt=+5 flag=Y
+[0004] id=9919 grp=K2 amt=+8 flag=Y
+[0005] id=2300 grp=K4 amt=-14 flag=Y
+[0006] id=5935 grp=K3 …[146 chars clipped]… amt=+11 flag=Y
+[0011] id=8925 grp=K3 amt=-16 flag=Y
+[0012] id=1861 grp=K2 amt=+17 flag=Y
+[0013] id=3193 grp=K1 amt=-19 flag=N
+[0014] id=2772 grp=K1 amt=+15 flag=Y
+[0015] id=5731 grp=K3 amt=+13 flag=N
+[0016] id=9801 grp=K2 amt=+8 flag=Y
+[001
+[tool:read_chunk] 7] id=8242 grp=K1 amt=+4 flag=Y
+[0018] id=1865 grp=K3 amt=-5 flag=N
+[0019] id=2185 grp=K3 amt=-8 flag=N
+[0020] id=4047 grp=K3 amt=+18 flag=N
+[0021] id=8940 grp=K1 amt=-15 flag=Y
+[0022] id=4987 grp=K3 amt=+12 flag=N
+[0023] id=9073 grp=K1 amt=-20 flag=N
+[0024] id=4484 grp=K4 amt=-8 flag=Y
+[0025] id=1570 grp=K1 amt=+2 flag
+[assistant] Folding the 18 records whose line STARTS in 0..400 into the accumulator (in order):
+- [0000] amt=+12  → total=12 (not > 111; first=-1 means not yet)
+- [0001] amt=+18  → total=30 (not > 111; first=-1 means not yet)
+- [0002] amt=-4  → total=26 (not > 111; first=-1 means not yet)
+- [0003] amt=+5  → total=31 (not > 111; first=-1 means not yet)
+- [0004] amt=+8  → total=39 (not > 111; first=-1 means not yet)
+- [0005] amt=-14  → total=25 (not > 111; first=-1 means not yet)
+- [0006] amt=+1  → total=26 (not > 111; first=-1 means not yet)
+- [0007] amt=+4  → total=30 (not > 111; first=-1 means not yet)
+- [0008] amt=-3  → total=27 (not > 111; first=-1 means not yet)
+- [0009] amt=+16  → total=43 (not > 111; first=-1 means not yet)
+- [0010] amt=+11  → total=54 (not > 111; first=-1 means not yet)
+- [0011] amt=-16  → total=38 (not > 111; first=-1 means not yet)
+- [0012] amt=+17  → total=55 (not > 111; first=-1 means not yet)
+- [0013] amt=-19  → total=36 (not > 111; first=-1 means not yet)
+- [0014] amt=+15  → total=51 (not > 111; first=-1 means not yet)
+- [0015] amt=+13  → total=64 (not > 111; first=-1 means not yet)
+- [0016] amt=+8  → total=72 (not > 111; first=-1 means not yet)
+- [0017] amt=+4  → total=76 (not > 111; first=-1 means not yet)
+→ accumulator = first=-1|total=76. Delegating the rest 400..5983 with the updated accumulator.
+  -> CALLS: spawn_subagent({'subtask': "Continue the running accumulator by adding each 'amt' to the running total and noting the first index at which it exceeds 111, over the records STARTING in tokens 400..5983.\naccumulator so far = first=-1|total=76\nRead the first 400 tokens and update the accumulator over the records STARTING in tokens 400..5983, then delegate the rest of the range to one subagent with the updated accumulator. When the range is less than 400 tokens, process it directly and return the final accumulator."})
+[tool:spawn_subagent] first=230|total=47
+[assistant] The chain returned its final accumulator.
+The running total first exceeds 111 at index 230.
+\boxed{230}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=synth_varchain seed=1900000 dataset=None qtype=None gold=['40'] answer='40' term=answered score=1.000
+# Q: Track the variable assignments in order ('set B = A' copies A's current value). What is the FINAL value of variable C? Give the integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=3 termination=answered answer='40'
+============================================================================
+[system] You are a long-document assistant. The document is 5996 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of variable-assignment records, one per line, formatted as:
+  [<index>] set <VAR> = <integer or another VAR>
+Records execute in order; 'set B = A' copies A's CURRENT value into B.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Track the variable assignments in order ('set B = A' copies A's current value). What is the FINAL value of variable C? Give the integer in \boxed{}.
+[assistant] This document is 5996 tokens — too long to read in one context. This task is order-dependent: a `set B = A` copies A's value AT THAT POINT, and assignments must be applied in order, so the document has to be processed left to right. The answer is a variable's final value, so the accumulator is the current value of every variable. I therefore process the document left to right with a running accumulator: read the first slice and update the accumulator by applying each assignment in order (a `= VAR` copies that variable's current value), then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+Reading the first 400 tokens (0..400) of this range to fold, then the next 200 tokens to finish the last record (its line may run past 400).
+  -> CALLS: read_chunk({'start': 0, 'end': 400}); read_chunk({'start': 400, 'end': 600})
+[tool:read_chunk] [0000] set D = 78
+[0001] set A = D
+[0002] set A = 53
+[0003] set C = 51
+[0004] set D = A
+[0005] set E = 23
+[0006] set C = 64
+[0007] set E = E
+[0008] set B = A
+[0009] set A = 54
+[0010] set B = E
+[0011] set D = 66
+[0012] set A = 4
+[0013] set C …[98 chars clipped]… set D = 98
+[0020] set D = A
+[0021] set A = 48
+[0022] set B = 81
+[0023] set C = 25
+[0024] set B = 83
+[0025] set A = A
+[0026] set C = 17
+[0027] set D = A
+[0028] set E = 89
+[0029] set B = 91
+[0030] set B = A
+[0031] set D = 10
+[0032] set B = 92
+[tool:read_chunk] [0033] set A = D
+[0034] set C = 68
+[0035] set B = D
+[0036] set B = D
+[0037] set E = 99
+[0038] set C = 74
+[0039] set C = E
+[0040] set A = 56
+[0041] set C = 44
+[0042] set D = 5
+[0043] set A = 80
+[0044] set D = 52
+[0045] set E = 22
+[0046] set A = 55
+[0047] set B = 85
+[0048] set A = 84
+[assistant] Folding the 33 records whose line STARTS in 0..400 into the accumulator (in order):
+- [0000] set D = 78  → D=78
+- [0001] set A = D  → A=78 (copied D's current value)
+- [0002] set A = 53  → A=53
+- [0003] set C = 51  → C=51
+- [0004] set D = A  → D=53 (copied A's current value)
+- [0005] set E = 23  → E=23
+- [0006] set C = 64  → C=64
+- [0007] set E = E  → E=23 (copied E's current value)
+- [0008] set B = A  → B=53 (copied A's current value)
+- [0009] set A = 54  → A=54
+- [0010] set B = E  → B=23 (copied E's current value)
+- [0011] set D = 66  → D=66
+- [0012] set A = 4  → A=4
+- [0013] set C = 6  → C=6
+- [0014] set A = B  → A=23 (copied B's current value)
+- [0015] set C = C  → C=6 (copied C's current value)
+- [0016] set B = 22  → B=22
+- [0017] set C = D  → C=66 (copied D's current value)
+- [0018] set D = B  → D=22 (copied B's current value)
+- [0019] set D = 98  → D=98
+- [0020] set D = A  → D=23 (copied A's current value)
+- [0021] set A = 48  → A=48
+- [0022] set B = 81  → B=81
+- [0023] set C = 25  → C=25
+- [0024] set B = 83  → B=83
+- [0025] set A = A  → A=48 (copied A's current value)
+- [0026] set C = 17  → C=17
+- [0027] set D = A  → D=48 (copied A's current value)
+- [0028] set E = 89  → E=89
+- [0029] set B = 91  → B=91
+- [0030] set B = A  → B=48 (copied A's current value)
+- [0031] set D = 10  → D=10
+- [0032] set B = 92  → B=92
+→ accumulator = A=48|B=92|C=17|D=10|E=89. Delegating the rest 400..5996 with the updated accumulator.
+  -> CALLS: spawn_subagent({'subtask': "Continue the running accumulator by applying each assignment in order (a `= VAR` copies that variable's current value), over the records STARTING in tokens 400..5996.\naccumulator so far = A=48|B=92|C=17|D=10|E=89\nRead the first 400 tokens and update the accumulator over the records STARTING in tokens 400..5996, then delegate the rest of the range to one subagent with the updated accumulator. When the range is less than 400 tokens, process it directly and return the final accumulator."})
+[tool:spawn_subagent] A=40|B=64|C=40|D=37|E=16
+[assistant] The chain returned its final accumulator.
+Final value of C: 40.
+\boxed{40}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=vt_novel seed=3300001 dataset=None qtype=None gold=['ADTNT', 'BBFOJ', 'DFXOD'] answer='ADTNT, BBFOJ, DFXOD' term=answered score=1.000
+# Q: Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). Which VARs finish with the value 59918? Give all of them, comma-separated. Give it in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=3 termination=answered answer='ADTNT, BBFOJ, DFXOD'
+============================================================================
+[system] You are a long-document assistant. The document is 15038 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a long passage of text with short 'VAR ... = ...' assignment lines hidden inside it, in order. Answer the question using ONLY this passage.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). Which VARs finish with the value 59918? Give all of them, comma-separated. Give it in \boxed{}.
+[assistant] This document is 15038 tokens — too long to read in one context. This task is order-dependent: a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be reassigned later, so the document has to be processed left to right. The question is about variables' FINAL values, so the accumulator is the current value of every variable seen so far (a later assignment overwrites an earlier one). I therefore process the document left to right with a running accumulator: read the first slice and update the accumulator by applying each VAR assignment in order (VAR A = VAR B copies B's current value), then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+Reading the first 400 tokens (0..400) of this range to fold, then the next 200 tokens to finish the last record (its line may run past 400).
+  -> CALLS: read_chunk({'start': 0, 'end': 400}); read_chunk({'start': 400, 'end': 600})
+[tool:read_chunk] The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here …[1020 chars clipped]… The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here
+[tool:read_chunk] we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is  …[268 chars clipped]… s blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again.
+[assistant] No VAR assignment lines start in 0..400 — the accumulator is unchanged.
+→ accumulator = none. Delegating the rest 400..15038 with the unchanged accumulator.
+  -> CALLS: spawn_subagent({'subtask': "Continue the running accumulator by applying each VAR assignment in order (VAR A = VAR B copies B's current value), over the VAR assignment lines STARTING in tokens 400..15038.\naccumulator so far = none\nRead the first 400 tokens and update the accumulator over the VAR assignment lines STARTING in tokens 400..15038, then delegate the rest of the range to one subagent with the updated accumulator. When the range is less than 400 tokens, process it directly and return the final accumulator."})
+[tool:spawn_subagent] ADTNT=59918|BBFOJ=59918|DFXOD=59918|DOBDT=60982|HFCMT=60982|PCIUS=60982|RMOPH=17248|SWLBY=60982|XDZWH=60982
+[assistant] The chain returned its final accumulator.
+Variables whose final value is 59918: ADTNT, BBFOJ, DFXOD.
+\boxed{ADTNT, BBFOJ, DFXOD}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=long_records seed=2700002 dataset=None qtype=None gold=['21'] answer='21' term=answered score=1.000
+# Q: Go through the entries in order, keeping a running count of entries with topic=sports. What is the number of the FIRST entry at which that running count reaches 8? If it never reaches 8, answer none. Give the entry number (or none) in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=3 termination=answered answer='21'
+============================================================================
+[system] You are a long-document assistant. The document is 8258 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a sequence of multi-line entries separated by blank lines. Each entry starts with three header lines:
+  Entry: <n>
+  Region: <north|south|east|west>
+  Topic: <finance|health|sports|tech>
+followed by one or more paragraphs of body text (real prose). Entries are numbered in order starting at 1. The region values are listed above in their natural order.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Go through the entries in order, keeping a running count of entries with topic=sports. What is the number of the FIRST entry at which that running count reaches 8? If it never reaches 8, answer none. Give the entry number (or none) in \boxed{}.
+[assistant] This document is 8258 tokens — too long to read in one context. This task is order-dependent: the answer is the FIRST entry at which a running count reaches 8, which depends on every entry before it, so the document has to be processed left to right. The answer is the entry at which the running count of topic=sports entries first reaches 8, so the accumulator carries the running count and that entry once it is reached. I therefore process the document left to right with a running accumulator: read the first slice and update the accumulator by counting topic=sports entries in order and noting the first entry at which the count reaches 8, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+Reading the first 400 tokens (0..400) of this range to fold, then the next 200 tokens to finish the last entry's body (it may run well past 400).
+  -> CALLS: read_chunk({'start': 0, 'end': 400}); read_chunk({'start': 400, 'end': 600})
+[tool:read_chunk] Entry: 1
+Region: east
+Topic: tech
+and one or two "make the fund" by succeeding spectacularly. So if they miss just a few of the most promising opportunities, it could hose the whole fund.[7] The attitude of a running back doesn't translate  …[1115 chars clipped]… ll them to. One of the most surprising things I discovered during my brief business career was the existence of the PR industry, lurking like a huge, quiet submarine beneath the news. Of the stories you read in traditional media that aren't
+[tool:read_chunk] about politics, crimes, or disasters, more than half probably come from PR firms.I know because I spent years hunting such "press hits."  Our startup spent its entire marketing budget on PR: at a time when we were assembling our own compute …[350 chars clipped]…  press hits in over 60 different publications. And we weren't the only ones they did great things for.
+
+Entry: 5
+Region: south
+Topic: sports
+In 1997 I got a call from another startup founder considering hiring them to promote his company. I
+[assistant] Folding the 3 entries whose HEADER STARTS in 0..400 into the accumulator (in order):
+- entry 1 (topic=tech) (no) → count=0
+- entry 2 (topic=health) (no) → count=0
+- entry 3 (topic=health) (no) → count=0
+→ accumulator = count=0. Delegating the rest 400..8258 with the updated accumulator.
+  -> CALLS: spawn_subagent({'subtask': 'Continue the running accumulator by counting topic=sports entries in order and noting the first entry at which the count reaches 8, over the entries STARTING in tokens 400..8258.\naccumulator so far = count=0\nRead the first 400 tokens and update the accumulator over the entries STARTING in tokens 400..8258, then delegate the rest of the range to one subagent with the updated accumulator. When the range is less than 400 tokens, process it directly and return the final accumulator.'})
+[tool:spawn_subagent] count=8|first=21
+[assistant] The chain returned its final accumulator.
+The cumulative count of topic=sports entries first reaches 8 at entry 21.
+\boxed{21}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=labeled_records seed=2900000 dataset=claims qtype=None gold=['74'] answer='74' term=answered score=1.000
+# Q: Judge each item's label (one of: False, True). How many items are labelled `True`? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='74'
+============================================================================
+[system] You are a long-document assistant. The document is 5996 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: False, True). How many items are labelled `True`? Give the single integer in \boxed{}.
+[assistant] This document is 5996 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so disjoint ranges can be computed independently and merged. The question asks for one label's total, so the state is a single count of `True` items. I therefore split the range in half recursively, having a subagent compute how many items are `True` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5996 is not below 500; splitting at midpoint 2998.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2998, compute how many items are `True` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `True` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2998..5996, compute how many items are `True` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `True` (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
+[tool:spawn_subagent] 42
+[tool:spawn_subagent] 32
+[assistant] Sum my children [42, 32] -> 74.
+\boxed{74}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=labeled_records seed=2900018 dataset=yelp qtype=None gold=['S3'] answer='S3' term=answered score=1.000
+# Q: Judge each item's label (one of: negative, positive). Which section has the MOST `negative` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='S3'
+============================================================================
+[system] You are a long-document assistant. The document is 8094 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <name>]`, followed by the item's text. Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: negative, positive). Which section has the MOST `negative` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
+[assistant] This document is 8094 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..8094 is not below 500; splitting at midpoint 4047.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..4047, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 4047..8094, compute the per-(section, label) tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is exactly one of `negative`, `positive`; `none` if no item starts in the range."})
+[tool:spawn_subagent] S1/negative=2|S1/positive=2|S2/negative=2|S2/positive=1|S3/negative=3
+[tool:spawn_subagent] S4/negative=1|S4/positive=2|S5/negative=3|S5/positive=1|S6/negative=1|S6/positive=1
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/negative=2|S1/positive=2|S2/negative=2|S2/positive=1|S3/negative=3|S4/negative=1|S4/positive=2|S5/negative=3|S5/positive=1|S6/negative=1|S6/positive=1.
+`negative` per section: S1=2, S2=2, S3=3, S4=1, S5=3, S6=1; the most is S3 (3).
+\boxed{S3}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=labeled_records seed=2900016 dataset=yelp qtype=None gold=['Answer: more common'] answer='Answer: more common' term=answered score=1.000
+# Q: Judge each item's label (one of: negative, positive). Was `positive` more common, less common, or the same frequency among items dated before Jul 13, 2024 as compared to items dated on or after Jul 13, 2024? 'Common' means the share of that period's items with the label. Answer with exactly one of: more common / less common / the same frequency. Give your final answer in the form 'Answer: [X]', where [X] is the answer; put it inside \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='Answer: more common'
+============================================================================
+[system] You are a long-document assistant. The document is 5914 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <name>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: negative, positive.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: negative, positive). Was `positive` more common, less common, or the same frequency among items dated before Jul 13, 2024 as compared to items dated on or after Jul 13, 2024? 'Common' means the share of that period's items with the label. Answer with exactly one of: more common / less common / the same frequency. Give your final answer in the form 'Answer: [X]', where [X] is the answer; put it inside \boxed{}.
+[assistant] This document is 5914 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so disjoint ranges can be computed independently and merged. The question compares the label's share before vs on/after Jul 13, 2024, so the state keeps two periods x (`positive` vs other) — four counts — not one overall tally. I therefore split the range in half recursively, having a subagent compute the before/on-or-after Jul 13, 2024 tally of `positive` vs other labels (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5914 is not below 500; splitting at midpoint 2957.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2957, compute the before/on-or-after Jul 13, 2024 tally of `positive` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Jul 13, 2024 tally of `positive` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Jul 13, 2024) and `<which>` is `positive` or `other`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2957..5914, compute the before/on-or-after Jul 13, 2024 tally of `positive` vs other labels (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the before/on-or-after Jul 13, 2024 tally of `positive` vs other labels (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or `on_or_after` (relative to Jul 13, 2024) and `<which>` is `positive` or `other`; `none` if no item starts in the range."})
+[tool:spawn_subagent] before/other=5|before/positive=11|on_or_after/other=15|on_or_after/positive=5
+[tool:spawn_subagent] before/other=10|before/positive=11|on_or_after/other=8|on_or_after/positive=8
+[assistant] Merge (add per period/which key) my two children's tallies (above) -> before/other=15|before/positive=22|on_or_after/other=23|on_or_after/positive=13.
+Before Jul 13, 2024: 22 of 37 items are `positive` (59%); on/after: 13 of 36 (36%). Comparing shares, `positive` was more common before.
+The question asks for the form 'Answer: [X]', so I box it that way.
+\boxed{Answer: more common}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=labeled_records seed=2900019 dataset=dbpedia qtype=None gold=['Athlete'] answer='Athlete' term=answered score=1.000
+# Q: Judge each item's label (one of: Album, Animal, Athlete, Company, WrittenWork). Among ONLY the items with author = Ivanov (the `[by Ivanov]` tag), which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. Album) in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='Athlete'
+============================================================================
+[system] You are a long-document assistant. The document is 13995 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <name>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: Album, Animal, Athlete, Company, WrittenWork.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: Album, Animal, Athlete, Company, WrittenWork). Among ONLY the items with author = Ivanov (the `[by Ivanov]` tag), which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. Album) in \boxed{}.
+[assistant] This document is 13995 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so disjoint ranges can be computed independently and merged. The question is restricted to author Ivanov's items, so the state is a per-label tally over those items only. I therefore split the range in half recursively, having a subagent compute the per-label tally over ONLY author Ivanov's items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..13995 is not below 500; splitting at midpoint 6997.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..6997, compute the per-label tally over ONLY author Ivanov's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Ivanov's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Album`, `Animal`, `Athlete`, `Company`, `WrittenWork`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 6997..13995, compute the per-label tally over ONLY author Ivanov's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Ivanov's items (judging each item's label) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Album`, `Animal`, `Athlete`, `Company`, `WrittenWork`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Album:5|Animal:7|Athlete:6|Company:3|WrittenWork:9
+[tool:spawn_subagent] Album:5|Animal:4|Athlete:8|Company:6|WrittenWork:2
+[assistant] Merge my two children's tallies (above) -> Album:10|Animal:11|Athlete:14|Company:9|WrittenWork:11.
+Label tally over author Ivanov's items: Album=10, Animal=11, Athlete=14, Company=9, WrittenWork=11; most common is Athlete (14).
+\boxed{Athlete}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=rule_label seed=2800004 dataset=None qtype=None gold=['0'] answer='0' term=answered score=1.000
+# Q: Label each sentence by the rule (`named` if it contains a capitalized word that is NOT its first word, otherwise `unnamed`). In how many sections are there STRICTLY more `named` sentences than `unnamed` sentences? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='0'
+============================================================================
+[system] You are a long-document assistant. The document is 5976 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is real prose, ONE sentence per line. Each line starts with its section tag `[S<n>]` (sections are numbered from 1 and appear in order). Label every sentence by the rule: it is `named` if it contains a capitalized word that is NOT its first word, otherwise `unnamed`. The label is not written in the text — you must apply the rule to each sentence yourself.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Label each sentence by the rule (`named` if it contains a capitalized word that is NOT its first word, otherwise `unnamed`). In how many sections are there STRICTLY more `named` sentences than `unnamed` sentences? Give the single integer in \boxed{}.
+[assistant] This document is 5976 tokens — too long to read in one context. The result over a range does not depend on the order of the sentences, so disjoint ranges can be computed independently and merged. The question compares labels WITHIN each section, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (labelling each sentence `named` if it contains a capitalized word that is NOT its first word, else `unnamed`) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5976 is not below 500; splitting at midpoint 2988.
+  -> CALLS: spawn_subagent({'subtask': "Over the sentences STARTING in tokens 0..2988, compute the per-(section, label) tally (labelling each sentence `named` if it contains a capitalized word that is NOT its first word, else `unnamed`). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (labelling each sentence `named` if it contains a capitalized word that is NOT its first word, else `unnamed`) over the sentences STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag and `<label>` is exactly `named` or `unnamed`; `none` if no sentence starts in the range."}); spawn_subagent({'subtask': "Over the sentences STARTING in tokens 2988..5976, compute the per-(section, label) tally (labelling each sentence `named` if it contains a capitalized word that is NOT its first word, else `unnamed`). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally (labelling each sentence `named` if it contains a capitalized word that is NOT its first word, else `unnamed`) over the sentences STARTING in the range. Put the result in \\boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag and `<label>` is exactly `named` or `unnamed`; `none` if no sentence starts in the range."})
+[tool:spawn_subagent] S1/named=19|S1/unnamed=22|S2/named=19|S2/unnamed=22|S3/named=4|S3/unnamed=8
+[tool:spawn_subagent] S3/named=14|S3/unnamed=15|S4/named=20|S4/unnamed=21|S5/named=8|S5/unnamed=11
+[assistant] Merge (add per section/label key) my two children's tallies (above) -> S1/named=19|S1/unnamed=22|S2/named=19|S2/unnamed=22|S3/named=18|S3/unnamed=23|S4/named=20|S4/unnamed=21|S5/named=8|S5/unnamed=11.
+Per section, named > unnamed?
+  S1: named=19 vs unnamed=22: no
+  S2: named=19 vs unnamed=22: no
+  S3: named=18 vs unnamed=23: no
+  S4: named=20 vs unnamed=21: no
+  S5: named=8 vs unnamed=11: no
+Sections where yes: none → 0.
+\boxed{0}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=synth_2d seed=2500000 dataset=None qtype=None gold=['widget'] answer='widget' term=answered score=1.000
+# Q: Among ONLY the records with region=west, which product value is the MOST common? Break ties by the alphabetically first product. Give the product (e.g. gizmo) in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='widget'
+============================================================================
+[system] You are a long-document assistant. The document is 5977 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of records, one per line, each formatted as:
+  [<index>] id=<int> region=<south|east|west> product=<gadget|gizmo|widget> amt=<signed int> flag=<Y|N>
+Records are 0-indexed and appear in order. The region values are listed above in their natural order.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Among ONLY the records with region=west, which product value is the MOST common? Break ties by the alphabetically first product. Give the product (e.g. gizmo) in \boxed{}.
+[assistant] This document is 5977 tokens — too long to read in one context. The result over a range does not depend on the order of the records, so disjoint ranges can be computed independently and merged. The question is about product values WITHIN each region, so the state is a per-(region, product) tally, not a per-product one. I therefore split the range in half recursively, having a subagent compute the per-(region, product) tally (how many records have each region AND product combination) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5977 is not below 500; splitting at midpoint 2988.
+  -> CALLS: spawn_subagent({'subtask': 'Over the records STARTING in tokens 0..2988, compute the per-(region, product) tally (how many records have each region AND product combination). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(region, product) tally (how many records have each region AND product combination) over the records STARTING in the range. Put the result in \\boxed{}: the partial tally as `<region>/<product>=<count>` entries joined by `|`, where `<region>` is one of south, east, west and `<product>` is one of gadget, gizmo, widget; `none` if no record starts in the range.'}); spawn_subagent({'subtask': 'Over the records STARTING in tokens 2988..5977, compute the per-(region, product) tally (how many records have each region AND product combination). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(region, product) tally (how many records have each region AND product combination) over the records STARTING in the range. Put the result in \\boxed{}: the partial tally as `<region>/<product>=<count>` entries joined by `|`, where `<region>` is one of south, east, west and `<product>` is one of gadget, gizmo, widget; `none` if no record starts in the range.'})
+[tool:spawn_subagent] east/gadget=15|east/gizmo=13|east/widget=17|south/gadget=10|south/gizmo=13|south/widget=13|west/gadget=9|west/gizmo=13|west/widget=15
+[tool:spawn_subagent] east/gadget=12|east/gizmo=8|east/widget=11|south/gadget=11|south/gizmo=15|south/widget=12|west/gadget=13|west/gizmo=12|west/widget=23
+[assistant] Merge (add per region/product key) my two children's tallies (above) -> east/gadget=27|east/gizmo=21|east/widget=28|south/gadget=21|south/gizmo=28|south/widget=25|west/gadget=22|west/gizmo=25|west/widget=38.
+Tally for region=west: gadget=22, gizmo=25, widget=38; most common is widget (38).
+\boxed{widget}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=synth_topk seed=2600000 dataset=None qtype=None gold=['artifacts', 'trap', 'lunch', 'wants', 'laws'] answer='artifacts, trap, lunch, wants, laws' term=answered score=1.000
+# Q: Which 5 words appear MOST often in the document? Ignore the list numbers. List the 5 words, comma-separated, in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='artifacts, trap, lunch, wants, laws'
+============================================================================
+[system] You are a long-document assistant. The document is 5997 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a numbered list of words: each entry is `<n>. <word>` and several entries appear on each line. The numbers are positions, not words.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Which 5 words appear MOST often in the document? Ignore the list numbers. List the 5 words, comma-separated, in \boxed{}.
+[assistant] This document is 5997 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so disjoint ranges can be computed independently and merged. The question asks for the most frequent words over an open vocabulary, so each partial is a pruned `word:count` tally (never a bare word list) and only the root ranks. I therefore split the range in half recursively, having a subagent compute the per-word tally of the words seen 2+ times over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5997 is not below 500; splitting at midpoint 2998.
+  -> CALLS: spawn_subagent({'subtask': 'Over the words STARTING in tokens 0..2998, compute the per-word tally of the words seen 2+ times. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the words seen 2+ times over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the most frequent words seen 2+ times in the range (at most 10; exact counts; one-off words dropped) — a tally with counts, never a bare word list, and never list numbers as words; `none` if no word starts in the range.'}); spawn_subagent({'subtask': 'Over the words STARTING in tokens 2998..5997, compute the per-word tally of the words seen 2+ times. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the words seen 2+ times over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the most frequent words seen 2+ times in the range (at most 10; exact counts; one-off words dropped) — a tally with counts, never a bare word list, and never list numbers as words; `none` if no word starts in the range.'})
+[tool:spawn_subagent] trap:28|lunch:27|artifacts:26|wants:26|laws:23|eliminate:14|finally:11|prose:4|fred:3|post:3
+[tool:spawn_subagent] artifacts:29|trap:25|lunch:24|wants:24|laws:23|eliminate:4|stopped:4|costs:3|finally:3|paintings:3
+[assistant] Merge (add per word) my two children's tallies (above) -> artifacts:55|trap:53|lunch:51|wants:50|laws:46|eliminate:18|finally:14|prose:4|stopped:4|costs:3.
+Ranking the merged counts: top 5 = artifacts (55), trap (53), lunch (51), wants (50), laws (46); next: eliminate (18).
+\boxed{artifacts, trap, lunch, wants, laws}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=niah_multi seed=3200002 dataset=None qtype=None gold=['99bdd3bd-95b9-ac13-bf11-495ee7376461'] answer='99bdd3bd-95b9-ac13-bf11-495ee7376461' term=answered score=1.000
+# Q: Read carefully — a detail in this passage matters later. This document hides several sentences, each stating the special magic uuid for some key, and ONE sentence saying which key you must look up. Find that instruction, then report the magic uuid for that key. Put the answer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='99bdd3bd-95b9-ac13-bf11-495ee7376461'
+============================================================================
+[system] You are a long-document assistant. The document is 8546 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Read carefully — a detail in this passage matters later. This document hides several sentences, each stating the special magic uuid for some key, and ONE sentence saying which key you must look up. Find that instruction, then report the magic uuid for that key. Put the answer in \boxed{}.
+[assistant] This document is 8546 tokens — too long to read in one context. The result over a range does not depend on the order of the hidden fact sentences, so disjoint ranges can be computed independently and merged. The question asks for the magic uuid of a key that only a hidden lookup instruction names, so the state is the set of collected key=value facts plus that instruction, resolved only at the root. I therefore split the range in half recursively, having a subagent collect the hidden facts (each key's magic uuid, plus any lookup instruction) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..8546 is not below 500; splitting at midpoint 4273.
+  -> CALLS: spawn_subagent({'subtask': "Over the hidden fact sentences STARTING in tokens 0..4273, collect the hidden facts (each key's magic uuid, plus any lookup instruction). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and collect the hidden facts (each key's magic uuid, plus any lookup instruction) over the hidden fact sentences STARTING in the range. Put the result in \\boxed{}: the collected facts as `<key>=<magic uuid>` entries joined by `|` (several values for one key comma-joined: `<key>=<v1>,<v2>`), where each `<key>` is the key name exactly as written in the text, and a lookup instruction as `QUERY=<key>`; `none` if no hidden fact sentence starts in the range."}); spawn_subagent({'subtask': "Over the hidden fact sentences STARTING in tokens 4273..8546, collect the hidden facts (each key's magic uuid, plus any lookup instruction). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and collect the hidden facts (each key's magic uuid, plus any lookup instruction) over the hidden fact sentences STARTING in the range. Put the result in \\boxed{}: the collected facts as `<key>=<magic uuid>` entries joined by `|` (several values for one key comma-joined: `<key>=<v1>,<v2>`), where each `<key>` is the key name exactly as written in the text, and a lookup instruction as `QUERY=<key>`; `none` if no hidden fact sentence starts in the range."})
+[tool:spawn_subagent] ember=f8edbf95-1050-c409-94a9-900bbfde7357|juniper=99bdd3bd-95b9-ac13-bf11-495ee7376461
+[tool:spawn_subagent] QUERY=juniper|verdigris=ed406bb1-d661-5ad9-e997-cc644e5c1e03
+[assistant] Merge my two children's tallies (above) -> QUERY=juniper|ember=f8edbf95-1050-c409-94a9-900bbfde7357|juniper=99bdd3bd-95b9-ac13-bf11-495ee7376461|verdigris=ed406bb1-d661-5ad9-e997-cc644e5c1e03.
+The lookup instruction names juniper; the magic uuid for juniper is 99bdd3bd-95b9-ac13-bf11-495ee7376461.
+\boxed{99bdd3bd-95b9-ac13-bf11-495ee7376461}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=realdoc_count seed=3000000 dataset=None qtype=None gold=['5'] answer='5' term=answered score=1.000
+# Q: How many times does the word 'Jerry' appear in the document below? Count whole-word, case-sensitive occurrences. Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='5'
+============================================================================
+[system] You are a long-document assistant. The document is 6000 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a contiguous passage from a public-domain novel (real prose, running text). Answer the question about this passage only.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] How many times does the word 'Jerry' appear in the document below? Count whole-word, case-sensitive occurrences. Give the single integer in \boxed{}.
+[assistant] This document is 6000 tokens — too long to read in one context. The result over a range does not depend on the order of the occurrences of the word 'Jerry', so disjoint ranges can be computed independently and merged. The question asks for one total over the whole document, so the state is a single count of 'Jerry' occurrences. I therefore split the range in half recursively, having a subagent compute the total count over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..6000 is not below 500; splitting at midpoint 3000.
+  -> CALLS: spawn_subagent({'subtask': "Over the occurrences of the word 'Jerry' STARTING in tokens 0..3000, compute the total count. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the total count over the occurrences of the word 'Jerry' STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."}); spawn_subagent({'subtask': "Over the occurrences of the word 'Jerry' STARTING in tokens 3000..6000, compute the total count. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the total count over the occurrences of the word 'Jerry' STARTING in the range. Put the result in \\boxed{}: the partial as a single integer."})
+[tool:spawn_subagent] 1
+[tool:spawn_subagent] 4
+[assistant] Combine my children [1, 4] -> 5.
+\boxed{5}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=niah_novel seed=3100000 dataset=None qtype=None gold=['7076816'] answer='7076816' term=answered score=1.000
+# Q: You will be asked about a detail from this text. One sentence names the special magic number for willow — what is it? Reply with just the value inside \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='7076816'
+============================================================================
+[system] You are a long-document assistant. The document is 6020 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a long passage of text with a single factual sentence hidden inside it. Answer the question using ONLY this passage.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] You will be asked about a detail from this text. One sentence names the special magic number for willow — what is it? Reply with just the value inside \boxed{}.
+[assistant] This document is 6020 tokens — too long to read in one context. I'll split it in half recursively, search each half for the answer to the question (or any relevant context), and combine; once a half reports the answer, I read it off from the sentence that states it.
+  -> CALLS: spawn_subagent({'subtask': 'Find the answer to the question "What is the special magic number for willow?" within the document range in tokens 0..3010. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it directly. If this range contains the answer, return it with the sentence that states it; otherwise return any relevant information you find, or say "No relevant information in this range." and return `none` if there is none.'}); spawn_subagent({'subtask': 'Find the answer to the question "What is the special magic number for willow?" within the document range in tokens 3010..6020. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it directly. If this range contains the answer, return it with the sentence that states it; otherwise return any relevant information you find, or say "No relevant information in this range." and return `none` if there is none.'})
+[tool:spawn_subagent] ANSWER ⟐ 7076816 ⟐ One of the special magic numbers for willow is: 7076816.
+[tool:spawn_subagent] none
+[assistant] A subagent located the answer; the sentence that states it:
+  «One of the special magic numbers for willow is: 7076816.»
+So the answer is:
+\boxed{7076816}
+
+
+====================================================================================================
+
+##########################################################################################
+# task=narrativeqa seed=3400003 dataset=None qtype=None gold=['Shah Amurath'] answer='Shah Amurath' term=answered score=1.000
+# Q: What was the name of Olivia's former master that she was escaping from?
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='Shah Amurath'
+============================================================================
+[system] You are a long-document assistant. The document is 6216 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a passage from a novel or script. Answer the question using ONLY this passage.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] What was the name of Olivia's former master that she was escaping from?
+[assistant] This document is 6216 tokens — too long to read in one context. I'll split it in half recursively, search each half for the answer to the question (or any relevant context), and combine; once a half reports the answer, I read it off from the sentence that states it.
+  -> CALLS: spawn_subagent({'subtask': 'Find the answer to the question "What was the name of Olivia\'s former master that she was escaping from?" within the document range in tokens 0..3108. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it directly. If this range contains the answer, return it with the sentence that states it; otherwise return any relevant information you find, or say "No relevant information in this range." and return `none` if there is none.'}); spawn_subagent({'subtask': 'Find the answer to the question "What was the name of Olivia\'s former master that she was escaping from?" within the document range in tokens 3108..6216. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it directly. If this range contains the answer, return it with the sentence that states it; otherwise return any relevant information you find, or say "No relevant information in this range." and return `none` if there is none.'})
+[tool:spawn_subagent] ANSWER ⟐ Shah Amurath ⟐ "Stand back!' her voice shrilled with terror. 'Touch me not, Shah Amurath, or I will throw myself into the water and drown!'" and "No, you will not drown, Olivia, daughter of confusion, for the marge is too shallow, and I can catch you before you can reach the deeps."
+[tool:spawn_subagent] none
+[assistant] A subagent located the answer; the sentence that states it:
+  «"Stand back!' her voice shrilled with terror. 'Touch me not, Shah Amurath, or I will throw myself into the water and drown!'" and "No, you will not drown, Olivia, daughter of confusion, for the marge is too shallow, and I can catch you before you can reach the deeps."»
+So the answer is:
+\boxed{Shah Amurath}
+

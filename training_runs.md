@@ -782,6 +782,19 @@ vendored generator) and the model compared counts; yahoo root chose a 1-D tally 
    - BookQA/niah_novel: the subtask embeds the bare question (`q_core` metadata) instead of the full prompt with its
      preface and `\boxed{}` directive; empty-leaf sentinel says what to return; evidence/snippet clipping at word
      boundaries (`_clip`); passed-up context joined with ` ‖ ` so ` ⟐ ` means only the ANSWER record.
+8. **Uniform root preamble (2026-09-20, after reading the dry run).** Binary roots opened with a SHAPE sentence
+   ("The question compares labels WITHIN each month, so the state is a per-(month, label) tally…") and fold roots
+   with an ORDER sentence — so the sentence type after "too long to read in one context" WAS the strategy choice,
+   made through vocabulary that only appeared on one side (619 binary vs 180 fold roots). Fold roots also never
+   reasoned about the accumulator's shape. Both strategies now make the same three moves in the same slots:
+   (1) order relation, no state committed — "…does not depend on the order of the items, so disjoint ranges can be
+   computed independently and merged" / "This task is order-dependent: {reason}, so the document has to be
+   processed left to right"; (2) why the state has its shape, then the state — binary `_shape_reason` as before,
+   and NEW accumulator reasons for every fold task (peak: "…so the accumulator carries the running total and the
+   highest total so far"; vt_novel: "…the accumulator is the current value of every variable seen so far (a later
+   assignment overwrites an earlier one)"); (3) the plan sentence, unchanged. realdoc_count gained a state sentence
+   (it was the only tally task without one). Complete root episodes, one per task/qtype, straight from the dry run:
+   `trace_snippets/root_turns_v9.txt` (`scripts/extract_roots.py`).
    Not fixed (cosmetic, in source prose): PG-essay scrape artifacts ("close.The way"), read_chunk clips mid-header.
    narrativeqa verify shows 9/12 with the SCRIPTED leaf — pre-existing (these are the gold-rejection-sampled cases;
    SFT uses the haiku leaf).
