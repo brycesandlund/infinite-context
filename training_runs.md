@@ -789,7 +789,8 @@ vendored generator) and the model compared counts; yahoo root chose a 1-D tally 
    reasoned about the accumulator's shape. Both strategies now make the same three moves in the same slots:
    (1) order relation, no state committed — "…does not depend on the order of the items, so disjoint ranges can be
    computed independently and merged" / "This task is order-dependent: {reason}, so the document has to be
-   processed left to right"; (2) why the state has its shape, then the state — binary `_shape_reason` as before,
+   processed sequentially, in document order" (not "left to right" — a page-layout idiom, not a property of a token
+   sequence; the plan sentence says "from the start"); (2) why the state has its shape, then the state — binary `_shape_reason` as before,
    and NEW accumulator reasons for every fold task (peak: "…so the accumulator carries the running total and the
    highest total so far"; vt_novel: "…the accumulator is the current value of every variable seen so far (a later
    assignment overwrites an earlier one)"); (3) the plan sentence, unchanged. realdoc_count gained a state sentence

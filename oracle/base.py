@@ -312,7 +312,7 @@ class ScaffoldOracle(ModelBackend):
         # after the opener is about ORDER (a property of the task), not about state shape:
         #   1. order relation, stated without committing to a state;
         #   2. why the state has its shape, then the state;
-        #   3. the plan (split-and-merge / left-to-right accumulator) using that state.
+        #   3. the plan (split-and-merge / sequential accumulator) using that state.
         # Before this, binary roots opened with a shape sentence and fold roots with an order
         # sentence — so the sentence choice WAS the strategy choice, made through vocabulary that
         # only ever appeared on one side (619 binary vs 180 fold roots in the run-9 dry run).
@@ -322,7 +322,7 @@ class ScaffoldOracle(ModelBackend):
             return (
                 f"This document is {n} tokens — too long to read in one context. This task is "
                 f"order-dependent: {self._sequential_reason()}, so the document has to be processed "
-                f"left to right.{shape} I therefore process the document left to right with a running "
+                f"sequentially, in document order.{shape} I therefore process the document from the start with a running "
                 f"accumulator: read the first slice and update the "
                 f"accumulator by {self._op_phrase()}, then hand the rest of the document plus the "
                 f"accumulator to a subagent to continue the same way. Once the final slice is "
