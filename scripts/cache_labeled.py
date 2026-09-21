@@ -40,7 +40,10 @@ for name, (path, split, tcol, lcol) in SPECS.items():
         lab = names[r[lcol]]
         if name == "yelp":                       # HF feature names are "1"/"2"
             lab = {"1": "negative", "2": "positive"}[lab]
-        rows.append({"text": text, "label": lab})
+        row = {"text": text, "label": lab}
+        if name == "yelp":                       # long form for the long-item regime (~400-700 tokens)
+            row["text_long"] = clip(r[tcol], max_words=480)
+        rows.append(row)
     with open(f"{OUT}/{name}.jsonl", "w") as f:
         for r in rows:
             f.write(json.dumps(r) + "\n")

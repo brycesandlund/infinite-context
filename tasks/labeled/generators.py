@@ -71,7 +71,17 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         raise ValueError(f"Unknown labeled task: {task!r}")
     rng = random.Random(seed)
     name = rng.choice(["dbpedia", "emotion", "emotion", "yelp", "yelp"])
+    # Long-item regime: 20% of problems use full-length yelp reviews (up to ~700 tokens), so a leaf
+    # owns at most one item, must extend its read 2-3 times to finish it, and neighbouring leaves see
+    # only a fragment they do not own — the OOLONG-imdb shape that broke ownership in run 8w.
+    long_items = rng.random() < 0.2
+    if long_items:
+        name = "yelp"
     rows = _rows(name)
+    text_key = "text"
+    if long_items and rows and "text_long" in rows[0]:
+        text_key = "text_long"
+        rows = [r for r in rows if len(r["text_long"].split()) >= 220]   # genuinely long reviews (~300-700 tokens)
     labels = sorted({r["label"] for r in rows})
     # Restrict dbpedia to a random subset of 4-6 of its 14 classes per problem (a 14-way tally is
     # too wide for the budget and rarely what a question is about); items are drawn from those.
@@ -104,13 +114,13 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
             outer = rng.choice(months)
             date = rng.choice(date_pool[outer])
             tag = f"[{date}]"
-        line = f"{tag} [by {au}] {r['text']}\n"
+        line = f"{tag} [by {au}] {r[text_key]}\n"
         toks = tokenizer.encode(line, add_special_tokens=False)
         if doc_tokens and len(doc_tokens) + len(toks) > doc_size_tokens:
             break
         start = len(doc_tokens)
         doc_tokens.extend(toks)
-        t = r["text"]
+        t = r[text_key]
         recs.append({"idx": i, "sec": outer, "au": au, "label": r["label"], "date": date,
                      "snip": (t[:32] + "…") if len(t) > 35 else t, "start": start, "end": len(doc_tokens)})
     if key_mode == "section":
@@ -192,6 +202,6 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         task_context=_context(name, labels, key_mode), grading_mode=grading,
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype,
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
-                  "key_mode": key_mode, "answer_form": answer_form,
+                  "key_mode": key_mode, "answer_form": answer_form, "long_items": long_items,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},
     )

@@ -65,11 +65,14 @@ def _render(layout: str, n: int, a: str, b: str, body: str, fa: str, fb: str) ->
     return f"Entry: {n}\n{fa.capitalize()}: {a}\n{fb.capitalize()}: {b}\n{body}\n\n"
 
 
-def _bodies(rng: random.Random, sentences: list[str], tokenizer):
-    """Yield prose bodies of ~60-250 tokens (1-2 paragraphs) from a sentence stream."""
+def _bodies(rng: random.Random, sentences: list[str], tokenizer, long_frac: float = 0.0):
+    """Yield prose bodies of ~60-250 tokens (1-2 paragraphs) from a sentence stream. With
+    probability `long_frac` a body is 400-700 tokens: longer than a leaf's range + first overlap,
+    so the leaf must EXTEND its read 2-3 times to finish the entry it owns, and neighbouring leaves
+    see only a fragment they do not own (the imdb-review regime; ~1 such entry per leaf at most)."""
     i = 0
     while i < len(sentences):
-        target = rng.randint(60, 250)
+        target = rng.randint(400, 700) if rng.random() < long_frac else rng.randint(60, 250)
         picked, ntok = [], 0
         while i < len(sentences) and ntok < target:
             s = sentences[i].strip()
@@ -190,7 +193,9 @@ def make_longrec_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     sentences = _SENT.split(prose)
 
     doc_tokens, recs, spans = [], [], []
-    for body in _bodies(rng, sentences, tokenizer):
+    # 40% of problems carry LONG entries (30% of their bodies at 400-700 tokens); the rest stay short.
+    long_frac = 0.3 if rng.random() < 0.4 else 0.0
+    for body in _bodies(rng, sentences, tokenizer, long_frac):
         n = len(recs) + 1
         src, tag = rng.choice(a_vals), rng.choice(b_vals)
         toks = tokenizer.encode(_render(layout, n, src, tag, body, fa, fb), add_special_tokens=False)
@@ -211,6 +216,6 @@ def make_longrec_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         metadata={"family": "stateful" if qtype == "first_reach" else "bounded",
                   "strategy_default": "left_fold" if qtype == "first_reach" else "binary", "task": task,
                   "qtype": qtype, "layout": layout, "prose": prose_kind,
-                  "fa": fa, "a_vals": a_vals, "fb": fb, "b_vals": b_vals,
+                  "fa": fa, "a_vals": a_vals, "fb": fb, "b_vals": b_vals, "long_frac": long_frac,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},
     )

@@ -715,3 +715,15 @@ include id-like answers ("User: [X]" where the doc writes `User 30140`), not jus
 **Next from-base run** should carry: synth_topk, answer-form templates incl. ids, labeled_records at full
 weight — and use batch 16 / peak 2e-5 with linear decay. Recipe note: with the curriculum now stable, that
 run is the first candidate for a "freeze".
+
+**Long-item regime (2026-09-20, after the 10K fresh-seed eval).** The per-item audit of A8 showed imdb
+counting failing at 92% per-item label accuracy: reviews are 300–700 tokens, a 250-token leaf owns ≤1 and
+SEES a fragment of a neighbour's, and 8 leaves labelled fragments they did not own (24 items → 32 votes).
+Training had 336 single-extension leaves and exactly ONE leaf with 2+ consecutive "still cut off → read
+the next 200" extensions (long_records bodies ≤250 tokens), so the repeated-extension loop and the
+fragment-only leaf were essentially undemonstrated (they were routine in the OOLONG-only SFT, whose items
+were ~450 tokens). Now: `long_records` — 40% of problems carry bodies of 400–700 tokens on 30% of entries;
+`labeled_records` — 20% of problems use full-length yelp reviews (≥220 words, 677 rows; `text_long` added
+by scripts/cache_labeled.py). Verified 160/160 at 1.00 (doc 6k/14k), max ctx 2851; in a 30-trace sample:
+46 extension turns, 12 leaves with 2+ consecutive extensions, 15 fragment-only leaves. Leaf size stays a
+constant 500 (leaf ≈ range + one item; items up to ~1,000 tokens fit a 3K budget).
