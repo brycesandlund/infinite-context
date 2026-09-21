@@ -112,6 +112,12 @@ _Q_VT_WHICH = [
     "After all assignments, which variables hold the value {t_val}? List them all, comma-separated.",
     "Name every variable whose final value is {t_val}, comma-separated.",
     "Which VARs finish with the value {t_val}? Give all of them, comma-separated.",
+    # FILTER-phrased forms (no "final"/"end up" cue): the question names the variables holding one value,
+    # but the accumulator must still carry every variable — this is the phrasing family whose root the
+    # run-9w model answered with a set filter on RULER vt. The contrastive state sentence needs
+    # questions that look like this to bite on.
+    "Which variables are assigned the value {t_val}, directly or through a chain of copies? List them all, comma-separated.",
+    "Find every variable that ends up with the value {t_val} (a copy passes the value along). List them, comma-separated.",
 ]
 _Q_VT_FINAL = [
     "What is the final value of VAR {qvar}? Give the integer.",
@@ -121,8 +127,16 @@ _Q_VT_FINAL = [
 ]
 
 
-def _phrase(rng, forms, **kw) -> str:
-    return rng.choice(_PREFACES) + rng.choice(forms).format(**kw) + " " + rng.choice(_ANSWER_TAILS)
+_LIST_TAILS = [   # for questions whose answer is a LIST of names — "the value" would be the wrong noun
+    "Give them in \\boxed{}.",
+    "Put the list in \\boxed{}.",
+    "Reply with just the answers, comma-separated, inside \\boxed{}.",
+    "Answer with the list inside \\boxed{}.",
+]
+
+
+def _phrase(rng, forms, tails=None, **kw) -> str:
+    return rng.choice(_PREFACES) + rng.choice(forms).format(**kw) + " " + rng.choice(tails or _ANSWER_TAILS)
 _CONTEXT = (
     "The document is a long passage of text with a single factual sentence hidden inside it. "
     "Answer the question using ONLY this passage."
@@ -303,11 +317,11 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
         grading = "qa_part"
     elif mode == "multiquery":
         ks = ", ".join(target_keys[:-1]) + f" and {target_keys[-1]}"
-        question = _phrase(rng, _Q_MULTIQUERY, vword=vword, ks=ks)
+        question = _phrase(rng, _Q_MULTIQUERY, tails=_LIST_TAILS, vword=vword, ks=ks)
         gold = [v for k, v, q in facts]
         grading = "set"
     else:  # multivalue
-        question = _phrase(rng, _Q_MULTIVALUE, vword=vword, key=target_keys[0])
+        question = _phrase(rng, _Q_MULTIVALUE, tails=_LIST_TAILS, vword=vword, key=target_keys[0])
         gold = [v for k, v, q in facts]
         grading = "set"
     return Problem(
@@ -377,7 +391,7 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
     t_val = vals[0]
     holders = sorted(n for n, v in binding.items() if v == t_val)
     if qtype == "which_vars":
-        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, t_val=t_val)
+        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, t_val=t_val)
         gold, grading, qvar = (holders or ["none"]), "set", None
     else:
         qvar = rng.choice([n for n, _, _ in chains[0]])

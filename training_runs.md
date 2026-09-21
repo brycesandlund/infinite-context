@@ -869,4 +869,11 @@ scripted-leaf cases.
    Now the root makes ONE decision at sentence two (the fixed binary sentence, or "This task is order-dependent:
    {reason}, so…") and all task specifics live in the state sentence; retrieval's plan sentence keeps "search each
    half … the one that finds it wins".
+5. **vt_novel: filter-phrased question forms + more fold mass.** Every training ask said "finish / end up / final /
+   after all assignments"; RULER's says "Find all variables that are assigned the value X" (no finality cue) — the
+   phrasing family the run-9 root answered with a set filter. Added two forms that phrase it as a filter while
+   staying a paraphrase: "Which variables are assigned the value X, directly or through a chain of copies? List
+   them all, comma-separated." / "Find every variable that ends up with the value X (a copy passes the value
+   along). List them, comma-separated." (6 forms for which_vars, 4 for final_value; RULER's sentence and its
+   "Question:" layout are NOT copied.) vt_novel 100 → 150 roots, fold share ≈ 21% → 27%.
 Script: `scripts/run_sft10_warm.sh` (SAVE_NAME sft_general10w, eval → /tmp/eval_general10w).
