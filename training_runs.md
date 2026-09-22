@@ -929,7 +929,7 @@ built from the question's mentions — the open-set author contract in training 
 **Best checkpoint remains 8w (0.758).** Best-of-per-task oracle across all runs is now 0.874 (counting 0.71 / user
 0.75 / temporal 0.46 / vt 0.88 / fwe 1.00 / rest 1.00).
 
-## sft_general11w (run 11, warm start from sft_general8w) — 2026-09-21 — PLANNED
+## sft_general11w (run 11, warm start from sft_general8w) — 2026-09-21 — held-out 0.709, diagnostics 0.958
 Run 10's corpus (14 labeled qtypes incl. author_cmp, vt_novel 150 with filter forms, list tails, open-set author
 contract) with ONE change: the root preamble goes back to 8w's ORDER OF COMMITMENT. An autoregressive root commits in
 token order, so sentence two IS the fold-vs-binary decision:
@@ -953,3 +953,43 @@ fe62245, 10w, and the run-11 text):
 `trace_snippets/preamble_comparison_8w_10w_11.txt`; audit `trace_snippets/root_audit_v11.txt` (0 of 240 roots carry a
 state sentence). Verified 240/240 (30 tasks × 8) at doc 6k. Trace cache v5 (BookQA root text changed; ~$10 haiku regen).
 Script: `scripts/run_sft11_warm.sh`.
+
+**Run 11w results — 2026-09-21 — held-out 0.709 (8w 0.758, 9w 0.646, 10w 0.711), diagnostics 0.958 (23/24).**
+(ckpt `tinker://a316bf8b-51dd-586b-b3a9-09c47b08c531:train:0/weights/sft_general11w`; 944 traces / 39,973 datums /
+68.6M tokens, 2,499 batches at batch 16, LR 5e-6, NLL 0.0046; SFT 17:11→20:04 (2.9 h), eval 8 min. Raw
+`eval_results/raw/sft_general11w.{jsonl,txt}`; rollouts of interest `trace_snippets/run11_failures.txt`.)
+
+| held-out | 8w | 10w | **11w** | note |
+|---|---|---|---|---|
+| **vt** | 0.88 | 0.36 | **0.88** | **5/5 roots FOLD** (10w: 1/5) — the commitment-order hypothesis confirmed: with sentence two task-specific, fold wins. 4 perfect; seed 2016004 folded but with a malformed hand-off (2 agents) → 2/5 vars |
+| oolong_user | 0.60 | 0.55 | **0.64** | **yahoo finally correct**: root wrote the OPEN-set contract "`<user>` is the user ID exactly as written in the data" and boxed `User: 30140` (author_cmp / open-set author contract transferred, on the 5th try); negation "most common user": root enumerated an invented `U0..U4` key space again (1-D per-user count — the open-set contract transferred for the 2-D tally, not the 1-D one); agnews: filter dropped |
+| oolong_counting | 0.36 | 0.50 | 0.57 | negation: leaves labelled all 73 sentences True → 0; trec 22 vs 14; agnews 16 vs 17 |
+| oolong_temporal | 0.25 | 0.21 | 0.20 | 3 overflows: trec and negation roots chose the right 2-D per-(month,label) state but the merged tally (many months × labels, `2023-10/numeric value=3|…`) blew the root budget; yahoo root emitted its spawn as raw `<tool_call>` text (1 agent) — that glitch has hit exactly one root per run since 9w |
+| niah_single_1 | 1.00 | 1.00 | 1.00 | root subtask dropped the key ("Find the magic number in the document range") but a single needle is unambiguous |
+| **niah_multikey_1** | 0.80 | 0.80 | **0.40** | **root subtask dropped the KEY on 4/5 roots** ("Find the magic number in the document range in tokens 0..2000") → leaves returned whichever key's number they saw (9042295 for overrated-merit, 8819265 for capable-cereal) and the leaf holding the true needle said "No relevant information". 10w carried the key on 5/5 (quoted question in the subtask); 8w on 4/5 |
+| niah_multiquery | 1.00 | 1.00 | 0.70 | same drop on 1/5 ("Find the answer to the user's question"), two partial collections |
+| cwe / fwe | 1.00 / 0.93 | 0.98 / 1.00 | 1.00 / 1.00 | |
+| diagnostics | 0.958 | 1.000 | 0.958 | one labeled_records before_after miss |
+
+**Reading.** Two clean results. (1) The fold decision is governed by sentence two: 8w-form sentence two → 5/5 fold and vt 0.88; 10w's generic
+sentence → 1/5. That closes the vt question. (2) The retrieval regression has one mechanism, visible in the root subtasks: the run-11
+retrieval opener is GENERIC ("The answer is stated in one place, so I split … search each half for the sentence that states the answer")
+and the model instantiated "the answer" as "the magic number" and wrote a subtask with no key — the same slot-filling failure as 9w's
+unit noun and 10w's fixed sentence, now on the retrieval side. 10w's retrieval opener named the question ("The question asks for one
+fact…") and its subtasks carried the quoted question 5/5. So the design rule is confirmed in both directions: sentence two must carry the
+task's specifics (order relation AND goal, with the key/question inside it); any generic slot gets filled from the question's surface.
+The yahoo User-form fix landed via the open-set contract; the negation user seed did not — author_count in training already uses
+the open-set wording for its 1-D per-author count, so that is a transfer failure on one seed, not a missing template. 8w remains the
+best single checkpoint at 0.758; 11w has the best vt+user profile and the worst niah profile.
+
+**Run 12 candidate (one line):** the retrieval root names the question in sentence two — "…having a subagent search each half for
+the sentence that states the answer to the question \"{q_core}\"…" — so the key rides in the commitment sentence exactly as the tally
+goal does. Expected: vt 0.88 held, niah_multikey back to ≥0.8, multiquery ~1.0 → SCORE ≈ 0.77–0.80.
+
+## sft_general12w (run 12, warm start from sft_general8w) — PREPARED 2026-09-21, not launched
+Run 11 corpus and pure-8w preamble, plus one line: the retrieval root (niah_novel, narrativeqa) names the question in
+sentence two — *"The answer to the question \"What is the special magic number for pewter?\" is stated in one place, so I
+split the range in half recursively, having a subagent search each half for the sentence that answers it…"* — so the
+key rides in the commitment sentence the way a tally root's goal noun does. Verified niah_novel 8/8 at doc 6k/14k
+(narrativeqa 6/8 = the known scripted-leaf cases). Trace cache v6. Script: `scripts/run_sft12_warm.sh`.
+

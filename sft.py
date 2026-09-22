@@ -307,7 +307,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v5"   # v5: pure 8w root preamble (no state sentence; retrieval opener shortened) (2026-09-21); v4: three-move BookQA root; v3: narrativeqa HTML-stripped
+_CACHE_VERSION = "v6"   # v6: retrieval root names the question in sentence two (2026-09-21); v5: pure 8w preamble; v4: three-move BookQA root; v3: narrativeqa HTML-stripped
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name) -> str:

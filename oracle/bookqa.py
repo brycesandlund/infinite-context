@@ -192,11 +192,16 @@ class BookQAOracle(ScaffoldOracle):
                     # contract; the leaf that READ the needle returned "0 occurrences → none".
                     # Task-specific sentence two (no generic slot): the search plan is the commitment,
                     # and "nothing is counted" is the justification that follows it.
+                    # Sentence two carries the task's specifics — the QUESTION itself — the way a tally root
+                    # names its goal. Run 11w: with the generic "…states the answer", the root instantiated
+                    # "the answer" as "the magic number" and its subtask dropped the KEY on 4/5 RULER
+                    # multikey roots (leaves then returned other keys' numbers). 10w, whose root text named
+                    # the question, carried the key 5/5.
                     text=(f"This document is {self.doc_len} tokens — too long to read in one context. "
-                          f"The answer is stated in one place, so I split the range in half recursively, "
-                          f"having a subagent search each half for the sentence that states the answer (or "
-                          f"any relevant context) and combining — the one that finds it wins; once a half "
-                          f"reports the answer, I read it off from the sentence that states it."),
+                          f"The answer to the question \"{self.q_core}\" is stated in one place, so I split "
+                          f"the range in half recursively, having a subagent search each half for the sentence "
+                          f"that answers it (or any relevant context) and combining — the one that finds it "
+                          f"wins; once a half reports the answer, I read it off from the sentence that states it."),
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(0, m)}),
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(m, self.doc_len)}),

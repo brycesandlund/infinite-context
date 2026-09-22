@@ -135,3 +135,483 @@ publisher={MIT Press}
   url     = {https://www.quantamagazine.org/ai-has-solved-one-of-maths-1-million-millennium-prize-problems-20260908/},
   note    = {Reporting on the OpenAI result and the concurrent Buckmaster--Alp{\"o}ge announcement}
 }
+
+% ---- long-context harnesses: literature review (added 2026-09-21) ----------------------------
+% Effective vs claimed context
+@article{liu2024lostmiddle,
+  title   = {Lost in the Middle: How Language Models Use Long Contexts},
+  author  = {Liu, Nelson F. and Lin, Kevin and Hewitt, John and Paranjape, Ashwin and Bevilacqua, Michele and Petroni, Fabio and Liang, Percy},
+  journal = {Transactions of the Association for Computational Linguistics},
+  volume  = {12},
+  year    = {2024},
+  url     = {https://arxiv.org/abs/2307.03172}
+}
+@inproceedings{hsieh2024ruler,
+  title     = {{RULER}: What's the Real Context Size of Your Long-Context Language Models?},
+  author    = {Hsieh, Cheng-Ping and Sun, Simeng and Kriman, Samuel and Acharya, Shantanu and Rekesh, Dima and Jia, Fei and Zhang, Yang and Ginsburg, Boris},
+  booktitle = {First Conference on Language Modeling (COLM)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2404.06654}
+}
+@inproceedings{modarressi2025nolima,
+  title     = {{NoLiMa}: Long-Context Evaluation Beyond Literal Matching},
+  author    = {Modarressi, Ali and Deilamsalehy, Hanieh and Dernoncourt, Franck and Bui, Trung and Rossi, Ryan A. and Yoon, Seunghyun and Sch{\"u}tze, Hinrich},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2502.05167}
+}
+@inproceedings{kuratov2024babilong,
+  title     = {{BABILong}: Testing the Limits of {LLMs} with Long Context Reasoning-in-a-Haystack},
+  author    = {Kuratov, Yuri and Bulatov, Aydar and Anokhin, Petr and Rodkin, Ivan and Sorokin, Dmitry and Sorokin, Artyom and Burtsev, Mikhail},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS), Datasets and Benchmarks Track},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2406.10149}
+}
+@inproceedings{yen2025helmet,
+  title     = {{HELMET}: How to Evaluate Long-Context Language Models Effectively and Thoroughly},
+  author    = {Yen, Howard and Gao, Tianyu and Hou, Minmin and Ding, Ke and Fleischer, Daniel and Izsak, Peter and Wasserblat, Moshe and Chen, Danqi},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2410.02694}
+}
+@misc{bai2024longbenchv2,
+  title         = {{LongBench} v2: Towards Deeper Understanding and Reasoning on Realistic Long-context Multitasks},
+  author        = {Bai, Yushi and Tu, Shangqing and Zhang, Jiajie and others},
+  year          = {2024},
+  eprint        = {2412.15204},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2412.15204}
+}
+@misc{bertsch2025oolong,
+  title         = {{Oolong}: Evaluating Long Context Reasoning and Aggregation Capabilities},
+  author        = {Bertsch, Amanda and Pratapa, Adithya and Mitamura, Teruko and Neubig, Graham and Gormley, Matthew R.},
+  year          = {2025},
+  eprint        = {2511.02817},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2511.02817}
+}
+@misc{chroma2025contextrot,
+  title        = {Context Rot: How Increasing Input Tokens Impacts {LLM} Performance},
+  author       = {Hong, Kelly and Troynikov, Anton and Huber, Jeff},
+  year         = {2025},
+  month        = jul,
+  howpublished = {Chroma technical report},
+  url          = {https://www.trychroma.com/research/context-rot}
+}
+@inproceedings{xu2025divideconquer,
+  title     = {When Does Divide and Conquer Work for Long Context {LLM}? A Noise Decomposition Framework},
+  author    = {Xu, Zhen and Zhu, Shang and Wang, Jue and Wang, Junlin and Athiwaratkun, Ben and Wang, Chi and Zou, James and Zhang, Ce},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2506.16411}
+}
+% Native scaling and architectural memory (contrast)
+@misc{chen2023pi,
+  title         = {Extending Context Window of Large Language Models via Positional Interpolation},
+  author        = {Chen, Shouyuan and Wong, Sherman and Chen, Liangjian and Tian, Yuandong},
+  year          = {2023},
+  eprint        = {2306.15595},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2306.15595}
+}
+@inproceedings{peng2024yarn,
+  title     = {{YaRN}: Efficient Context Window Extension of Large Language Models},
+  author    = {Peng, Bowen and Quesnelle, Jeffrey and Fan, Honglu and Shippole, Enrico},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2309.00071}
+}
+@misc{ding2024longrope,
+  title         = {{LongRoPE}: Extending {LLM} Context Window Beyond 2 Million Tokens},
+  author        = {Ding, Yiran and Zhang, Li Lyna and Zhang, Chengruidong and Xu, Yuanyuan and Shang, Ning and Xu, Jiahang and Yang, Fan and Yang, Mao},
+  year          = {2024},
+  eprint        = {2402.13753},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2402.13753}
+}
+@inproceedings{liu2024ringattention,
+  title     = {Ring Attention with Blockwise Transformers for Near-Infinite Context},
+  author    = {Liu, Hao and Zaharia, Matei and Abbeel, Pieter},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2310.01889}
+}
+@misc{xiong2023effective,
+  title         = {Effective Long-Context Scaling of Foundation Models},
+  author        = {Xiong, Wenhan and Liu, Jingyu and Molybog, Igor and Zhang, Hejia and Bhargava, Prajjwal and Hou, Rui and Martin, Louis and Rungta, Rashi and Sankararaman, Karthik Abinav and Oguz, Barlas and Khabsa, Madian and Fang, Han and Mehdad, Yashar and Narang, Sharan and Malik, Kshitiz and Fan, Angela and Bhosale, Shruti and Edunov, Sergey and Lewis, Mike and Wang, Sinong and Ma, Hao},
+  year          = {2023},
+  eprint        = {2309.16039},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2309.16039}
+}
+@inproceedings{fu2024dataengineering,
+  title     = {Data Engineering for Scaling Language Models to 128K Context},
+  author    = {Fu, Yao and Panda, Rameswar and Niu, Xinyao and Yue, Xiang and Hajishirzi, Hannaneh and Kim, Yoon and Peng, Hao},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2402.10171}
+}
+@inproceedings{gao2025prolong,
+  title     = {How to Train Long-Context Language Models (Effectively)},
+  author    = {Gao, Tianyu and Wettig, Alexander and Yen, Howard and Chen, Danqi},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2410.02660}
+}
+@misc{geminiteam2024gemini15,
+  title         = {{Gemini} 1.5: Unlocking Multimodal Understanding Across Millions of Tokens of Context},
+  author        = {{Gemini Team, Google}},
+  year          = {2024},
+  eprint        = {2403.05530},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2403.05530}
+}
+@inproceedings{xiao2024streamingllm,
+  title     = {Efficient Streaming Language Models with Attention Sinks},
+  author    = {Xiao, Guangxuan and Tian, Yuandong and Chen, Beidi and Han, Song and Lewis, Mike},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2309.17453}
+}
+@misc{munkhdalai2024infini,
+  title         = {Leave No Context Behind: Efficient Infinite Context Transformers with Infini-attention},
+  author        = {Munkhdalai, Tsendsuren and Faruqui, Manaal and Gopal, Siddharth},
+  year          = {2024},
+  eprint        = {2404.07143},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2404.07143}
+}
+% Retrieval-first harnesses
+@inproceedings{sarthi2024raptor,
+  title     = {{RAPTOR}: Recursive Abstractive Processing for Tree-Organized Retrieval},
+  author    = {Sarthi, Parth and Abdullah, Salman and Tuli, Aditi and Khanna, Shubh and Goldie, Anna and Manning, Christopher D.},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2401.18059}
+}
+@inproceedings{li2024selfroute,
+  title     = {Retrieval Augmented Generation or Long-Context {LLMs}? A Comprehensive Study and Hybrid Approach},
+  author    = {Li, Zhuowan and Li, Cheng and Zhang, Mingyang and Mei, Qiaozhu and Bendersky, Michael},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP), Industry Track},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2407.16833}
+}
+@inproceedings{yue2025inferencescaling,
+  title     = {Inference Scaling for Long-Context Retrieval Augmented Generation},
+  author    = {Yue, Zhenrui and Zhuang, Honglei and Bai, Aijun and Hui, Kai and Jagerman, Rolf and Zeng, Hansi and Qin, Zhen and Wang, Dong and Wang, Xuanhui and Bendersky, Michael},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2410.04343}
+}
+@misc{qian2024lcboost,
+  title         = {Are Long-{LLMs} A Necessity For Long-Context Tasks?},
+  author        = {Qian, Hongjin and Liu, Zheng and Zhang, Peitian and Mao, Kelong and Zhou, Yujia and Chen, Xu and Dou, Zhicheng},
+  year          = {2024},
+  eprint        = {2405.15318},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2405.15318}
+}
+% Chunk-and-aggregate
+@misc{wu2021recursive,
+  title         = {Recursively Summarizing Books with Human Feedback},
+  author        = {Wu, Jeff and Ouyang, Long and Ziegler, Daniel M. and Stiennon, Nisan and Lowe, Ryan and Leike, Jan and Christiano, Paul},
+  year          = {2021},
+  eprint        = {2109.10862},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2109.10862}
+}
+@inproceedings{zhang2022summn,
+  title     = {{Summ\textasciicircum{}N}: A Multi-Stage Summarization Framework for Long Input Dialogues and Documents},
+  author    = {Zhang, Yusen and Ni, Ansong and Mao, Ziming and Wu, Chen Henry and Zhu, Chenguang and Deb, Budhaditya and Awadallah, Ahmed H. and Radev, Dragomir and Zhang, Rui},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2022},
+  url       = {https://arxiv.org/abs/2110.10150}
+}
+@inproceedings{ratner2023pcw,
+  title     = {Parallel Context Windows for Large Language Models},
+  author    = {Ratner, Nir and Levine, Yoav and Belinkov, Yonatan and Ram, Ori and Magar, Inbal and Abend, Omri and Karpas, Ehud and Shashua, Amnon and Leyton-Brown, Kevin and Shoham, Yoav},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2212.10947}
+}
+@inproceedings{zhou2024mapreduce,
+  title     = {{LLM}$\times${MapReduce}: Simplified Long-Sequence Processing using Large Language Models},
+  author    = {Zhou, Zihan and Li, Chong and Chen, Xinyi and Wang, Shuo and Chao, Yu and Li, Zhili and Wang, Haoyu and An, Rongqiao and Shi, Qi and Tan, Zhixing and Han, Xu and Shi, Xiaodong and Liu, Zhiyuan and Sun, Maosong},
+  booktitle = {Annual Meeting of the Association for Computational Linguistics (ACL)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2410.09342}
+}
+@inproceedings{guo2025tom,
+  title     = {{ToM}: Leveraging Tree-oriented {MapReduce} for Long-Context Reasoning in Large Language Models},
+  author    = {Guo, Jiani and Li, Zuchao and Wu, Jie and Wang, Qianren and Li, Yun and Zhang, Lefei and Zhao, Hai and Yang, Yujiu},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2511.00489}
+}
+@inproceedings{ou2025hierarchical,
+  title     = {Context-Aware Hierarchical Merging for Long Document Summarization},
+  author    = {Ou, Litu and Lapata, Mirella},
+  booktitle = {Findings of the Association for Computational Linguistics (ACL)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2502.00977}
+}
+@misc{xiao2025xpanda,
+  title         = {Long Context Scaling: Divide and Conquer via Multi-Agent Question-driven Collaboration},
+  author        = {Xiao, Sibo and Lin, Zixin and Gao, Wenyang and Chen, Hui and Zhang, Yue},
+  year          = {2025},
+  eprint        = {2505.20625},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2505.20625}
+}
+% Sequential / memory harnesses
+@inproceedings{zhang2024coa,
+  title     = {Chain of Agents: Large Language Models Collaborating on Long-Context Tasks},
+  author    = {Zhang, Yusen and Sun, Ruoxi and Chen, Yanfei and Pfister, Tomas and Zhang, Rui and Ar{\i}k, Sercan {\"O}.},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2406.02818}
+}
+@misc{zhou2023recurrentgpt,
+  title         = {{RecurrentGPT}: Interactive Generation of (Arbitrarily) Long Text},
+  author        = {Zhou, Wangchunshu and Jiang, Yuchen Eleanor and Cui, Peng and Wang, Tiannan and Xiao, Zhenxin and Hou, Yifan and Cotterell, Ryan and Sachan, Mrinmaya},
+  year          = {2023},
+  eprint        = {2305.13304},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2305.13304}
+}
+@misc{packer2023memgpt,
+  title         = {{MemGPT}: Towards {LLMs} as Operating Systems},
+  author        = {Packer, Charles and Wooders, Sarah and Lin, Kevin and Fang, Vivian and Patil, Shishir G. and Stoica, Ion and Gonzalez, Joseph E.},
+  year          = {2023},
+  eprint        = {2310.08560},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2310.08560}
+}
+@inproceedings{jayalath2025prism,
+  title     = {{PRISM}: Efficient Long-Range Reasoning With Short-Context {LLMs}},
+  author    = {Jayalath, Dulhan and Wendt, James Bradley and Monath, Nicholas and Tata, Sandeep and Gunel, Beliz},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2025},
+  url       = {https://arxiv.org/abs/2412.18914}
+}
+@misc{gupta2025cosmir,
+  title         = {{COSMIR}: Chain Orchestrated Structured Memory for Iterative Reasoning over Long Context},
+  author        = {Gupta, Naman and Gowaikar, Shreeyash and Iyer, Arun and Shiragur, Kirankumar and Bairi, Ramakrishna B. and Maurya, Rishikesh and Maiti, Ritabrata and Damle, Sankarshan and Gupta, Shachee Mishra},
+  year          = {2025},
+  eprint        = {2510.04568},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2510.04568}
+}
+@inproceedings{yu2025memagent,
+  title     = {{MemAgent}: Reshaping Long-Context {LLM} with Multi-Conv {RL}-based Memory Agent},
+  author    = {Yu, Hongli and Chen, Tinghong and Feng, Jiangtao and Chen, Jiangjie and Dai, Weinan and Yu, Qiying and Zhang, Ya-Qin and Ma, Wei-Ying and Liu, Jingjing and Wang, Mingxuan and Zhou, Hao},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2507.02259}
+}
+@misc{zhou2025mem1,
+  title         = {{MEM1}: Learning to Synergize Memory and Reasoning for Efficient Long-Horizon Agents},
+  author        = {Zhou, Zijian and Qu, Ao and Wu, Zhaoxuan and Kim, Sunghwan and Prakash, Alok and Rus, Daniela and Zhao, Jinhua and Low, Bryan Kian Hsiang and Liang, Paul Pu},
+  year          = {2025},
+  eprint        = {2506.15841},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2506.15841}
+}
+@misc{han2026infomem,
+  title         = {{InfoMem}: Training Long-Context Memory Agents with Answer-Conditioned Information Gain},
+  author        = {Han, Tiancheng and Li, Yong and Yu, Wuzhou and Zhang, Qiaosheng and Shao, Wenqi},
+  year          = {2026},
+  eprint        = {2606.03329},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.03329}
+}
+@inproceedings{sun2025contextfolding,
+  title     = {Scaling Long-Horizon {LLM} Agent via Context-Folding},
+  author    = {Sun, Weiwei and Lu, Miao and Ling, Zhan and Liu, Kang and Yao, Xuesong and Yang, Yiming and Chen, Jiecao},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2510.11967}
+}
+@inproceedings{kang2025acon,
+  title     = {{ACON}: Optimizing Context Compression for Long-horizon {LLM} Agents},
+  author    = {Kang, Minki and Chen, Wei-Ning and Han, Dongge and Inan, Huseyin A. and Wutschitz, Lukas and Chen, Yanzhi and Sim, Robert and Rajmohan, Saravan},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2510.00615}
+}
+@misc{li2026compactionrl,
+  title         = {{CompactionRL}: Reinforcement Learning with Context Compaction for Long-Horizon Agents},
+  author        = {Li, Yujiang and Hou, Zhenyu and Jing, Yi and Tang, Jie and Dong, Yuxiao},
+  year          = {2026},
+  eprint        = {2607.05378},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2607.05378}
+}
+@misc{yi2026adacom,
+  title         = {Learning Agent-Compatible Context Management for Long-Horizon Tasks},
+  author        = {Yi, Lu and Lei, Runlin and Yao, Liuyi and Xie, Yuexiang and Li, Yuyang and Zhang, Wenhao and Wei, Zhewei and Li, Yaliang and Nie, Jian-Yun},
+  year          = {2026},
+  eprint        = {2605.30785},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2605.30785}
+}
+@misc{chen2026longrlvr,
+  title         = {{LongRLVR}: Long-Context Reinforcement Learning Requires Verifiable Context Rewards},
+  author        = {Chen, Guanzheng and Shieh, Michael Qizhe and Bing, Lidong},
+  year          = {2026},
+  eprint        = {2603.02146},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2603.02146}
+}
+% Navigational / agentic reading
+@misc{chen2023memwalker,
+  title         = {Walking Down the Memory Maze: Beyond Context Limit through Interactive Reading},
+  author        = {Chen, Howard and Pasunuru, Ramakanth and Weston, Jason and Celikyilmaz, Asli},
+  year          = {2023},
+  eprint        = {2310.05029},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2310.05029}
+}
+@inproceedings{lee2024readagent,
+  title     = {A Human-Inspired Reading Agent with Gist Memory of Very Long Contexts},
+  author    = {Lee, Kuang-Huei and Chen, Xinyun and Furuta, Hiroki and Canny, John and Fischer, Ian},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2402.09727}
+}
+@inproceedings{li2024graphreader,
+  title     = {{GraphReader}: Building Graph-based Agent to Enhance Long-Context Abilities of Large Language Models},
+  author    = {Li, Shilong and He, Yancheng and Guo, Hangyu and Bu, Xingyuan and Bai, Ge and Liu, Jie and Liu, Jiaheng and Qu, Xingwei and Li, Yangguang and Ouyang, Wanli and Su, Wenbo and Zheng, Bo},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2024},
+  url       = {https://arxiv.org/abs/2406.14550}
+}
+@misc{zhao2024longagent,
+  title         = {{LongAgent}: Scaling Language Models to 128k Context through Multi-Agent Collaboration},
+  author        = {Zhao, Jun and Zu, Can and Xu, Haotian and Lu, Yi and He, Wei and Ding, Yiwen and Gui, Tao and Zhang, Qi and Huang, Xuanjing},
+  year          = {2024},
+  eprint        = {2402.11550},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2402.11550}
+}
+% Recursive self-invocation
+@inproceedings{lee2023rot,
+  title     = {Recursion of Thought: A Divide-and-Conquer Approach to Multi-Context Reasoning with Language Models},
+  author    = {Lee, Soochan and Kim, Gunhee},
+  booktitle = {Findings of the Association for Computational Linguistics (ACL)},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2306.06891}
+}
+@inproceedings{khot2023decomposed,
+  title     = {Decomposed Prompting: A Modular Approach for Solving Complex Tasks},
+  author    = {Khot, Tushar and Trivedi, Harsh and Finlayson, Matthew and Fu, Yao and Richardson, Kyle and Clark, Peter and Sabharwal, Ashish},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  url       = {https://arxiv.org/abs/2210.02406}
+}
+@misc{zhang2025rlm,
+  title         = {Recursive Language Models},
+  author        = {Zhang, Alex L. and Kraska, Tim and Khattab, Omar},
+  year          = {2025},
+  eprint        = {2512.24601},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2512.24601},
+  note          = {v1 December 2025; revised May 2026 with the SFT-trained RLM-Qwen3-8B}
+}
+@misc{alizadeh2026srlm,
+  title         = {Recursive Language Models Meet Uncertainty: The Surprising Effectiveness of Self-Reflective Program Search for Long Context},
+  author        = {Alizadeh, Keivan and Shojaee, Parshin and Cho, Minsik and Farajtabar, Mehrdad},
+  year          = {2026},
+  eprint        = {2603.15653},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2603.15653}
+}
+@misc{roy2026lambdarlm,
+  title         = {The {Y}-Combinator for {LLMs}: Solving Long-Context Rot with $\lambda$-Calculus},
+  author        = {Roy, Amartya and Tutunov, Rasul and Ji, Xiaotong and Zimmer, Matthieu and Bou-Ammar, Haitham},
+  year          = {2026},
+  eprint        = {2603.20105},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2603.20105}
+}
+@misc{lumer2026rah,
+  title         = {Recursive Agent Harnesses},
+  author        = {Lumer, Elias and Sen, Sahil and Paul, Kevin and Subbiah, Vamse Kumar},
+  year          = {2026},
+  eprint        = {2606.13643},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.13643}
+}
+@misc{lan2026searchswarm,
+  title         = {{SearchSwarm}: Towards Delegation Intelligence in Agentic {LLMs} for Long-Horizon Deep Research},
+  author        = {Lan, Xiaochong and Chen, Quan and Tao, Kun and Tang, Xinyu and Wang, Tianshu and Cao, Qianggang and Kong, Xinyu and Wen, Zujie and Zhang, Zhiqiang and Zhou, Jun},
+  year          = {2026},
+  eprint        = {2606.09730},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.09730}
+}
+@misc{kim2026reinforcingrlm,
+  title        = {Reinforcing Recursive Language Models},
+  author       = {Kim, Daniel and Ahmad, Rehaan},
+  year         = {2026},
+  month        = may,
+  howpublished = {alphaXiv blog post},
+  url          = {https://www.alphaxiv.org/blog/reinforcement-learning-for-rlms}
+}
+@misc{primeintellect2026rlm,
+  title        = {Recursive Language Models: The Paradigm of 2026},
+  author       = {{Prime Intellect}},
+  year         = {2026},
+  month        = jan,
+  howpublished = {Blog post},
+  url          = {https://www.primeintellect.ai/blog/rlm}
+}
+@misc{xu2026vista,
+  title         = {{LLM} Agents Are Latent Context Managers: Eliciting Self-Managed Context via State Proprioception},
+  author        = {Xu, Binyan and Li, Haitao and Zhang, Kehuan},
+  year          = {2026},
+  eprint        = {2606.30005},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.30005}
+}
+@misc{mao2026delm,
+  title         = {Decentralized Multi-Agent Systems with Shared Context},
+  author        = {Mao, Yuzhen and Mirhoseini, Azalia},
+  year          = {2026},
+  eprint        = {2606.10662},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.10662}
+}
+% Practitioner reports and cautions
+@misc{anthropic2025multiagent,
+  title        = {How We Built Our Multi-Agent Research System},
+  author       = {{Anthropic}},
+  year         = {2025},
+  month        = jun,
+  howpublished = {Engineering blog post},
+  url          = {https://www.anthropic.com/engineering/multi-agent-research-system}
+}
+@misc{yan2025dontbuild,
+  title        = {Don't Build Multi-Agents},
+  author       = {Yan, Walden},
+  year         = {2025},
+  month        = jun,
+  howpublished = {Cognition blog post},
+  url          = {https://cognition.com/blog/dont-build-multi-agents}
+}
+@misc{laban2026delegate52,
+  title         = {{LLMs} Corrupt Your Documents When You Delegate},
+  author        = {Laban, Philippe and Schnabel, Tobias and Neville, Jennifer},
+  year          = {2026},
+  eprint        = {2604.15597},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2604.15597}
+}
+@misc{liu2025survey,
+  title         = {A Comprehensive Survey on Long Context Language Modeling},
+  author        = {Liu, Jiaheng and Zhu, Dawei and Bai, Zhiqi and others},
+  year          = {2025},
+  eprint        = {2503.17407},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2503.17407}
+}
