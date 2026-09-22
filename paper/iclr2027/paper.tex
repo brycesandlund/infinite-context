@@ -48,7 +48,7 @@ As language models boast impressive breakthroughs~\citep{luong2025imogold,wei202
 
 While native context scaling is appealing as a concrete engineering problem, it is not the only approach to producing a model capable of processing long documents. In 2021, OpenAI fine-tuned GPT-3 to summarize sections of books, and then summarize those summaries, achieving competitive performance with human book summaries on a model with a context length of just 2,048 tokens~\citep{wu2021recursive}. As the field has matured, agentic harnesses have become viable. MemGPT treats context similarly to an operating system, relying on LLM-invoked function calls to push relevant information in and out of the context window to external memory, effectively achieving expanded virtual context~\citep{packer2023memgpt}. More recently, Recursive Language Models introduced a harness that utilizes LLM's coding prior to call itself in a REPL environment, achieving stronger performance than base models on retrieval and aggregation tasks both within context limits, but also beyond it, expanding effective context by ${\sim}$4x~\citep{zhang2025rlm}.
 
-While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the ICPC World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases well beyond context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
+While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
 We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below.
 
@@ -61,36 +61,65 @@ Our harness has two tools:
   \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
 \end{enumerate}
 
-Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition as well as the original prompt\footnote{The full system prompt and harness environment is elucidated in Appendix~\ref}; child agents' user prompt is specified by the calling model.
+Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition as well as the original prompt\footnote{The full system prompt and harness environment is elucidated in Appendix~\ref{app:harness}.}; child agents' user prompt is specified by the calling model.
 
 \subsection{Results}
 
 We finetune Qwen3.6-35B-A3B on the above harness and achieve the following results:
-
-
-
-We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, with two tools:
 \begin{enumerate}
-  \item \verb|read_chunk(start, end)|: Read a slice of the document and return the decoded text of tokens [\verb|start|, \verb|end|).
-  \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
+  \item blah
+  \item blah blah
 \end{enumerate}
-We train a model on this harness to answer unmodified long-context prompts over a document accessed via the above harness.
+
+\subsection{Paper Organization}
+
+In the next section, we frame our work amongst others. We believe related work belongs at the \emph{start} of a paper, where it is most useful in articulating where our contributions fit in the literature. In Section~\ref{methods}, we describe our training methodology. In Section~\ref{experiments}, we discuss all our experiments, and we conclude in Section~\ref{conclude}.
+
+\section{Related Work}
+\label{related}
+
+Long-context LLM work can be broken into a few distinct categories: \emph{native long context models}, \emph{context compaction}, and \emph{long context harnesses}, both trained and untrained. We discuss the first two briefly and the last at greater length, as it is most relevant to this work.
+
+\subsection{Native Long Context Models}
+
+\section{Methodology}
+\label{methods}
+
+\section{Experiments}
+\label{experiments}
+
+\section{Conclusion}
+\label{conclude}
+
+\subsection*{AI use statement}
+
+In this work, we used generative AI tools to write all our code, administer experiments, create figures, search and analyze relevant literature, format references, generate synthetic data sets, propose or refine hypotheses/brainstorming, design or provide feedback on research methodology/experiments, clean and reformat data, support qualitative and thematic data analysis, and interpret results. We have not used generative AI tools to draft parts of this research paper, and the following topics are not applicable to this work: help develop theoretical models or conceptual frameworks, formulate mathematical claims, provide critical ingredients for proving mathematical claims, assist in the writing of proofs, and assist with translation. We have reviewed our AI-assisted work, for example, by reviewing AI code and conducting manual audits of synthetic data. We take responsibility for the final content of this work,
+including text, claims or artifacts produced with the aid of generative AI.
+
+%
+%We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, with two tools:
+%\begin{enumerate}
+%  \item \verb|read_chunk(start, end)|: Read a slice of the document and return the decoded text of tokens [\verb|start|, \verb|end|).
+%  \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
+%\end{enumerate}
+%We train a model on this harness to answer unmodified long-context prompts over a document accessed via the above harness.
+%
+%We propagate the system prompt to subagents, which 
 
 
 
 
-We propagate the system prompt to subagents, which 
 
-
-
-
-
-
+\bibliography{iclr2027_conference}
+\bibliographystyle{iclr2027_conference}
 
 \appendix
+\section{Harness and prompts}
+\label{app:harness}
+You may include other additional sections here.
 
 
-
+\iffalse
 
 
 
@@ -487,12 +516,7 @@ Use unnumbered third level headings for the acknowledgments. All
 acknowledgments, including those to funding agencies, go at the end of the paper.
 
 
-\bibliography{iclr2027_conference}
-\bibliographystyle{iclr2027_conference}
 
-\appendix
-\section{Appendix}
-You may include other additional sections here.
-
+\fi
 
 \end{document}
