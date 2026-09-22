@@ -190,14 +190,12 @@ class BookQAOracle(ScaffoldOracle):
                     # Run 9w: RULER niah roots emitted the tally opener ("does not depend on the order of
                     # the hidden number's occurrences"), then a tally state and a records-style leaf
                     # contract; the leaf that READ the needle returned "0 occurrences → none".
+                    # Task-specific sentence two (no generic slot): the search plan is the commitment,
+                    # and "nothing is counted" is the justification that follows it.
                     text=(f"This document is {self.doc_len} tokens — too long to read in one context. "
-                          f"The result over a range does not depend on the order in which the document is "
-                          f"read, so disjoint ranges can be computed independently and merged. The question "
-                          f"asks for one fact stated in one place, so the state is that fact once found (or "
-                          f"none) — not a tally: nothing is counted, and a range with no relevant sentence "
-                          f"contributes nothing. I therefore split the range in half recursively, having a "
-                          f"subagent search each half for the sentence that states the answer (or any "
-                          f"relevant context) and combining — the one that finds it wins; once a half "
+                          f"The answer is stated in one place, so I split the range in half recursively, "
+                          f"having a subagent search each half for the sentence that states the answer (or "
+                          f"any relevant context) and combining — the one that finds it wins; once a half "
                           f"reports the answer, I read it off from the sentence that states it."),
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(0, m)}),

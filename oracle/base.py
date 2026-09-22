@@ -308,38 +308,37 @@ class ScaffoldOracle(ModelBackend):
         # The strategy is a property of the task, and the root SAYS WHY it picks one: sequential
         # (order-dependent) tasks fold, order-independent tasks split. Stating the reason is what
         # turns the correlation into a rule the model can apply to an unseen question.
-        # Both strategies open with the SAME three moves in the same slots, so the first decision
-        # after the opener is about ORDER (a property of the task), not about state shape:
-        #   1. order relation, stated without committing to a state;
-        #   2. why the state has its shape, then the state;
-        #   3. the plan (split-and-merge / sequential accumulator) using that state.
-        # Before this, binary roots opened with a shape sentence and fold roots with an order
-        # sentence — so the sentence choice WAS the strategy choice, made through vocabulary that
-        # only ever appeared on one side (619 binary vs 180 fold roots in the run-9 dry run).
-        shape = self._shape_reason()
-        shape = f" {shape}" if shape else ""
+        #
+        # ORDER OF COMMITMENT (runs 8w/9w/10w). An autoregressive root commits in token order, so
+        # sentence two IS the fold-vs-binary decision. 8w: sentence two was task-specific in both
+        # strategies (order relation fused with the split/fold plan and the GOAL noun) and there was
+        # no separate state sentence — vt 0.88. 9w put a state sentence BEFORE the plan with a per-task
+        # unit noun; the root filled both from the question's surface on RULER vt (filter state) —
+        # 0.16. 10w made sentence two a fixed generic sentence shared by 71% of roots; it became the
+        # zero-effort continuation and 4/5 vt roots went binary — 0.36. So: sentence two names the
+        # task's order relation AND the goal (no generic slot, no deferral), and the shape reasoning
+        # follows as justification of the goal already named — it explains the commitment, it cannot
+        # redirect it.
+        # Run 11: PURE 8w preamble — no state-reasoning sentence at all. The shape reasoning (9w/10w)
+        # never showed a measurable gain (temporal 0.25 → 0.37 → 0.21 over three runs of five seeds) and
+        # cost fold on vt whenever it preceded the commitment. Keep the root simple; the state is named
+        # in the goal phrase. `_shape_reason` hooks stay in the oracles for a later experiment.
+        shape = ""
         if self.strategy == "left_fold":
             return (
                 f"This document is {n} tokens — too long to read in one context. This task is "
-                f"order-dependent: {self._sequential_reason()}, so the document has to be processed "
-                f"sequentially, in document order.{shape} I therefore process the document from the start with a running "
-                f"accumulator: read the first slice and update the "
-                f"accumulator by {self._op_phrase()}, then hand the rest of the document plus the "
-                f"accumulator to a subagent to continue the same way. Once the final slice is "
-                f"folded in, the accumulator holds the whole-document result and I turn it into "
-                f"the final answer."
+                f"order-dependent: {self._sequential_reason()} — so I process the document from the "
+                f"start with a running accumulator: read the first slice and update the accumulator by "
+                f"{self._op_phrase()}, then hand the rest of the document plus the accumulator to a "
+                f"subagent to continue the same way.{shape} Once the final slice is folded in, the "
+                f"accumulator holds the whole-document result and I turn it into the final answer."
             )
         return (
-            # FIXED text, byte-identical in every binary root (retrieval included): the order relation
-            # is a property of the task, not of a noun. Run 9w filled a per-task unit slot here from the
-            # question's surface ("the order of the hidden number's occurrences") and that noun cascaded
-            # into the subtask and the leaf template. Specifics live in the state sentence.
             f"This document is {n} tokens — too long to read in one context. The result over a range "
-            f"does not depend on the order in which the document is read, so disjoint ranges can be "
-            f"computed independently and merged.{shape} I therefore split the range in half recursively, having a "
-            f"subagent {self._verb()} {self._goal_phrase()} over "
-            f"each half and combining the two partials. Once I have it for the whole document, I turn "
-            f"the combined result into the final answer."
+            f"does not depend on the order of the {self._unit()}, so I split the range in half "
+            f"recursively, having a subagent {self._verb()} {self._goal_phrase()} over each half and "
+            f"combining the two partials.{shape} Once I have it for the whole document, I turn the "
+            f"combined result into the final answer."
         )
 
     def _box_text(self, state, is_root):

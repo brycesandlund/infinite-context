@@ -929,3 +929,27 @@ built from the question's mentions — the open-set author contract in training 
 **Best checkpoint remains 8w (0.758).** Best-of-per-task oracle across all runs is now 0.874 (counting 0.71 / user
 0.75 / temporal 0.46 / vt 0.88 / fwe 1.00 / rest 1.00).
 
+## sft_general11w (run 11, warm start from sft_general8w) — 2026-09-21 — PLANNED
+Run 10's corpus (14 labeled qtypes incl. author_cmp, vt_novel 150 with filter forms, list tails, open-set author
+contract) with ONE change: the root preamble goes back to 8w's ORDER OF COMMITMENT. An autoregressive root commits in
+token order, so sentence two IS the fold-vs-binary decision:
+- 8w: sentence two task-specific in both strategies (order relation fused with the plan and the GOAL noun), no
+  separate state sentence → vt 0.88 (4/5 fold).
+- 9w: state sentence BEFORE the plan, per-task unit noun in sentence two → root filled both from the question's
+  surface on RULER vt (filter state) → 0.16.
+- 10w: sentence two a FIXED generic sentence shared by 71% of roots → zero-effort continuation, 4/5 vt roots binary
+  → 0.36 (the one fold root scored 1.00, so execution is fine; the CHOICE is what fails).
+Run 11 form — the PURE 8w preamble, no state-reasoning sentence at all (decision 2026-09-21: keep the root simple to
+learn; off-policy state-reasoning text has not shown a measurable gain — temporal 0.25 / 0.37 / 0.21 over 8w / 9w /
+10w — and cost fold on vt whenever it preceded the commitment). Binary: "The result over a range does not depend on
+the order of the {unit}, so I split the range in half recursively, having a subagent compute {goal} over each half
+and combining the two partials. Once I have it…"; fold: "This task is order-dependent: {reason} — so I process the
+document from the start with a running accumulator: … Once the final slice…"; retrieval: "The answer is stated in one
+place, so I split … search each half … the one that finds it wins; once a half reports the answer, I read it off…".
+The `_shape_reason` hooks stay in the oracles (unused) for a later experiment. Differences from 8w's actual text:
+"from the start" instead of "left to right"; the reason strings and everything below the root (contracts, `none`
+clause, plurals, natural-order tallies, audit fixes) are run 10's. Three-era side-by-side (8w regenerated from commit
+fe62245, 10w, and the run-11 text):
+`trace_snippets/preamble_comparison_8w_10w_11.txt`; audit `trace_snippets/root_audit_v11.txt` (0 of 240 roots carry a
+state sentence). Verified 240/240 (30 tasks × 8) at doc 6k. Trace cache v5 (BookQA root text changed; ~$10 haiku regen).
+Script: `scripts/run_sft11_warm.sh`.

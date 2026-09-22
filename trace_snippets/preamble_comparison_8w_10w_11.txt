@@ -1,0 +1,113 @@
+# Root preamble, three eras, same task (seeds differ across eras — compare the TEXT SHAPE, not the numbers).
+#  8w  = the oracle code 8w trained on (commit fe62245, regenerated) — asymmetric opener, no state sentence; vt 0.88
+#  10w = run 10 corpus — fixed generic sentence two + contrastive state sentence BEFORE the plan; vt 0.36
+#  11w = run 11 corpus — the pure 8w preamble again (no state sentence; 'from the start' instead of 'left to right'), on run 10's corpus
+
+==============================================================================================================
+BINARY int  —  synth_count
+==============================================================================================================
+[8w] Q: Each record has a 'flag' field that is Y or N. How many records have flag=Y? Give the single integer in \boxed{}.
+[8w] This document is 5992 tokens — too long to read in one context. The result over a range does not depend on the order of the records, so I split the range in half recursively, having a subagent compute how many have flag=Y over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[10w] Q: Each record has a 'flag' field that is Y or N. How many records have flag=Y? Give the single integer in \boxed{}.
+[10w] This document is 5995 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one number over the whole document, so the state is a single running count/sum. I therefore split the range in half recursively, having a subagent compute how many have flag=Y over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[11w] Q: Each record has a 'flag' field that is Y or N. How many records have flag=Y? Give the single integer in \boxed{}.
+[11w] This document is 5992 tokens — too long to read in one context. The result over a range does not depend on the order of the records, so I split the range in half recursively, having a subagent compute how many have flag=Y over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+==============================================================================================================
+BINARY 2-D tally  —  labeled_records
+==============================================================================================================
+[8w] Q: Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which section has the MOST `surprise` items? Break ties by the earlier section. Give the section (e.g. S1) in \boxed{}.
+[8w] This document is 5977 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[10w] Q: Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which section has the MOST `joy` items? Break ties by the earlier section. Give your final answer in the form 'Section: [X]', where [X] is the answer; put it inside \boxed{}.
+[10w] This document is 5972 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one. I therefore split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[11w] Q: Judge each item's label (one of: negative, positive). For how many sections is `positive` the single most common label — i.e. that section has STRICTLY more `positive` items than items of any other one label? Give the single integer in \boxed{}.
+[11w] This document is 5769 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(section, label) tally (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+==============================================================================================================
+BINARY 2-D synth  —  synth_2d
+==============================================================================================================
+[8w] Q: For how many period values are there STRICTLY more label=Business records than label=Sci/Tech records? Give the single integer in \boxed{}.
+[8w] This document is 5994 tokens — too long to read in one context. The result over a range does not depend on the order of the records, so I split the range in half recursively, having a subagent compute the per-(period, label) tally (how many records have each period AND label combination) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[10w] Q: Among ONLY the records with region=west, which product value is the MOST common? Break ties by the alphabetically first product. Give the product (e.g. gizmo) in \boxed{}.
+[10w] This document is 5977 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question is about product values WITHIN each region, so the state is a per-(region, product) tally, not a per-product one. I therefore split the range in half recursively, having a subagent compute the per-(region, product) tally (how many records have each region AND product combination) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[11w] Q: For how many period values are there STRICTLY more label=Business records than label=Sci/Tech records? Give the single integer in \boxed{}.
+[11w] This document is 5994 tokens — too long to read in one context. The result over a range does not depend on the order of the records, so I split the range in half recursively, having a subagent compute the per-(period, label) tally (how many records have each period AND label combination) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+==============================================================================================================
+BINARY open-vocab  —  synth_topk
+==============================================================================================================
+[8w] Q: Which 5 words appear MOST often in the document? Ignore the list numbers. List the 5 words, comma-separated, in \boxed{}.
+[8w] This document is 5958 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so I split the range in half recursively, having a subagent compute the per-word tally of the words seen 2+ times over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[10w] Q: Which 5 words appear MOST often in the document? Ignore the list numbers. List the 5 words, comma-separated, in \boxed{}.
+[10w] This document is 5997 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for the most frequent words over an open vocabulary, so each partial is a pruned `word:count` tally (never a bare word list) and only the root ranks. I therefore split the range in half recursively, having a subagent compute the per-word tally of the words seen 2+ times over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[11w] Q: Which 3 words appear MOST often in the document? Ignore the list numbers. List the 3 words, comma-separated, in \boxed{}.
+[11w] This document is 5938 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so I split the range in half recursively, having a subagent compute the per-word tally of the words seen 2+ times over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+==============================================================================================================
+BINARY collect  —  niah_multi
+==============================================================================================================
+[8w] Q: You will be asked about a detail from this text. The passage names a key to look up and, elsewhere, the special magic number of several keys. Report the magic number of the named key. Put the answer in \boxed{}.
+[8w] This document is 6095 tokens — too long to read in one context. The result over a range does not depend on the order of the hidden fact sentences, so I split the range in half recursively, having a subagent collect the hidden facts (each key's magic number, plus any lookup instruction) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[10w] Q: Somewhere in the text, one sentence tells you which key to look up; other sentences give each key's special magic number. What is the magic number for the key you are told to look up? Answer with the value, inside \boxed{}.
+[10w] This document is 6145 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for the magic number of a key that only a hidden lookup instruction names, so the state is the set of collected key=value facts plus that instruction, resolved only at the root. I therefore split the range in half recursively, having a subagent collect the hidden facts (each key's magic number, plus any lookup instruction) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+[11w] Q: You will be asked about a detail from this text. The passage names a key to look up and, elsewhere, the special magic number of several keys. Report the magic number of the named key. Put the answer in \boxed{}.
+[11w] This document is 6095 tokens — too long to read in one context. The result over a range does not depend on the order of the hidden fact sentences, so I split the range in half recursively, having a subagent collect the hidden facts (each key's magic number, plus any lookup instruction) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+
+==============================================================================================================
+RETRIEVAL  —  niah_novel
+==============================================================================================================
+[8w] Q: Keep track of any special values you come across. According to the text, what is the special magic number for meadow? Give it in \boxed{}.
+[8w] This document is 6020 tokens — too long to read in one context. I'll split it in half recursively, search each half for the answer to the question (or any relevant context), and combine; once a half reports the answer, I read it off from the sentence that states it.
+
+[10w] Q: You will be asked about a detail from this text. One sentence names the special magic number for willow — what is it? Reply with just the value inside \boxed{}.
+[10w] This document is 6020 tokens — too long to read in one context. The result over a range does not depend on the order in which the document is read, so disjoint ranges can be computed independently and merged. The question asks for one fact stated in one place, so the state is that fact once found (or none) — not a tally: nothing is counted, and a range with no relevant sentence contributes nothing. I therefore split the range in half recursively, having a subagent search each half for the sentence that states the answer (or any relevant context) and combining — the one that finds it wins; once a half reports the answer, I read it off from the sentence that states it.
+
+[11w] Q: Keep track of any special values you come across. According to the text, what is the special magic number for meadow? Give it in \boxed{}.
+[11w] This document is 6020 tokens — too long to read in one context. The answer is stated in one place, so I split the range in half recursively, having a subagent search each half for the sentence that states the answer (or any relevant context) and combining — the one that finds it wins; once a half reports the answer, I read it off from the sentence that states it.
+
+==============================================================================================================
+FOLD peak  —  synth_peak
+==============================================================================================================
+[8w] Q: Process the records in order, keeping a running total of 'amt' (starting at 0). What is the HIGHEST value the running total ever reaches (0 if it never goes positive)? Give the single integer in \boxed{}.
+[8w] This document is 5992 tokens — too long to read in one context. This task is order-dependent: the peak is a property of the running total's path, which depends on every record before — so I process the document left to right with a running accumulator: read the first slice and update the accumulator by adding each 'amt' to the running total and tracking the highest total reached, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+[10w] Q: Process the records in order, keeping a running total of 'amt' (starting at 0). What is the HIGHEST value the running total ever reaches (0 if it never goes positive)? Give the single integer in \boxed{}.
+[10w] This document is 5981 tokens — too long to read in one context. This task is order-dependent: the peak is a property of the running total's path, which depends on every record before it, so the document has to be processed sequentially, in document order. The peak is the highest value the running total ever reaches, so the accumulator carries the running total and the highest total so far — the final total alone would lose the peak. I therefore process the document from the start with a running accumulator: read the first slice and update the accumulator by adding each 'amt' to the running total and tracking the highest total reached, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+[11w] Q: Process the records in order, keeping a running total of 'amt' (starting at 0). What is the HIGHEST value the running total ever reaches (0 if it never goes positive)? Give the single integer in \boxed{}.
+[11w] This document is 5992 tokens — too long to read in one context. This task is order-dependent: the peak is a property of the running total's path, which depends on every record before it — so I process the document from the start with a running accumulator: read the first slice and update the accumulator by adding each 'amt' to the running total and tracking the highest total reached, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+==============================================================================================================
+FOLD vt_novel (which VARs)  —  vt_novel
+==============================================================================================================
+[8w] Q: Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). A note about this passage: it contains a few planted facts. Which VARs finish with the value 45575? Give all of them, comma-separated. Reply with just the value inside \b
+[8w] This document is 6488 tokens — too long to read in one context. This task is order-dependent: a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be reassigned later, so the bindings must be applied in document order — so I process the document left to right with a running accumulator: read the first slice and update the accumulator by applying each VAR assignment in order (VAR A = VAR B copies B's current value), then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+[10w] Q: Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). Which VARs finish with the value 99271? Give all of them, comma-separated. Reply with just the answers, comma-separated, inside \boxed{}.
+[10w] This document is 6164 tokens — too long to read in one context. This task is order-dependent: a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be reassigned later, so the document has to be processed sequentially, in document order. The question asks which VARs finish with the value 99271, but that is only known at the end and a value reaches a VAR through copies, so the accumulator carries the current value of EVERY variable seen so far — not just the VARs currently holding 99271 (a later assignment overwrites an earlier one). I therefore process the document from the start with a running accumulator: read the first slice and update the accumulator by applying each VAR assignment in order (VAR A = VAR B copies B's current value), then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+[11w] Q: Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). Keep a running picture of every variable's current value as you go. Which VARs finish with the value 45575? Give all of them, comma-separated. Answer with the list inside
+[11w] This document is 6488 tokens — too long to read in one context. This task is order-dependent: a `VAR A = VAR B` line copies B's value AT THAT POINT, and a variable can be reassigned later — so I process the document from the start with a running accumulator: read the first slice and update the accumulator by applying each VAR assignment in order (VAR A = VAR B copies B's current value), then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+==============================================================================================================
+FOLD first_reach  —  long_records
+==============================================================================================================
+[8w] Q: —
+[8w] — (qtype did not exist in this era)
+
+[10w] Q: Go through the entries in order, keeping a running count of entries with topic=sports. What is the number of the FIRST entry at which that running count reaches 8? If it never reaches 8, answer none. Give the entry number (or none) in \boxed{}.
+[10w] This document is 8258 tokens — too long to read in one context. This task is order-dependent: the answer is the FIRST entry at which a running count reaches 8, which depends on every entry before it, so the document has to be processed sequentially, in document order. The answer is the entry at which the running count of topic=sports entries first reaches 8, so the accumulator carries the running count and that entry once it is reached — the count alone forgets when it happened. I therefore process the document from the start with a running accumulator: read the first slice and update the accumulator by counting topic=sports entries in order and noting the first entry at which the count reaches 8, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
+[11w] Q: Go through the entries in order, keeping a running count of entries with status=pending. What is the number of the FIRST entry at which that running count reaches 3? If it never reaches 3, answer none. Give the entry number (or none) in \boxed{}.
+[11w] This document is 5714 tokens — too long to read in one context. This task is order-dependent: the answer is the FIRST entry at which a running count reaches 3, which depends on every entry before it — so I process the document from the start with a running accumulator: read the first slice and update the accumulator by counting status=pending entries in order and noting the first entry at which the count reaches 3, then hand the rest of the document plus the accumulator to a subagent to continue the same way. Once the final slice is folded in, the accumulator holds the whole-document result and I turn it into the final answer.
+
