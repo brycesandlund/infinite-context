@@ -1059,4 +1059,16 @@ that learned the enumerated form; a from-base run on this corpus is the clean te
 is the retrieval opener over-firing on multi-key questions — a "one fact stated in one place" sentence applied to a four-key
 question; the fix would be for the multi-key training questions (niah_multi multiquery mode) to be the ones whose opener the
 model reaches for, i.e. give niah_multi's opener the same quoted-question form so the two families are distinguished by the
-question text rather than by which opener the model happens to pick. **Best-of-per-task oracle across runs: 0.891.**
+question text rather than by which opener the model happens to pick. **Best-of-per-task oracle across runs: 0.876** (recomputed from the raw jsonl; see `paper/results_across_runs.md`).
+
+## sft_general13 (run 13, FROM BASE) — launched 2026-09-22 09:54 — the single-stage reference
+Corrected run 7's recipe on the run-12 oracle text, at run-7 scale with today's tasks: base count 40 for the 19 plain
+synth tasks; labeled_records 400 (14 qtypes), vt_novel 300, synth_topk 120, long_records / rule_label / realdoc_count 160,
+niah_multi 120, niah_novel 100, narrativeqa 80, synth_2d 80, synth_filter_argmax 60 → ≈2,500 traces, ≈170M tokens.
+**Batch 16, constant LR 1e-5 (sft.py default), 1 epoch, LoRA rank 32, Adam β 0.9/0.95** — decided against batch 8 (NLL has
+not tracked eval: 7w2 batch 8 NLL 0.0027 → 0.666; 8w batch 16 NLL 0.0136 → 0.758; the one from-base batch-16 data point,
+run 7's first attempt at 0.573, was confounded by INTERNAL_KEEP 0.3) and against an LR schedule (keep the run-7 optimizer
+so the difference from 0.662 is the corpus; the 5e-6 warm stage is the documented "settle" if wanted). Comparisons:
+vs run 7 (0.662) = the corpus work, batch confound accepted; vs 12w (0.760) = single stage vs the three-stage chain
+(run 7 → 8w → 12w, ≈3,700 traces of exposure in total). Script `scripts/run_sft13_base.sh`; log `/tmp/sft13_eval.log`;
+eval → `/tmp/eval_general13`. Expected ≈13 h + 8 min eval, ≈$200 + ≈$30 haiku for narrativeqa at 80.
