@@ -1,0 +1,143 @@
+# Item 1 — open-set month key: the COMPLETE ROOT episode before vs after, same seeds (seeds 2900000+, doc 6k).
+# Only the root's contract changed (enumerated month list -> the key's form); leaves and internal nodes are identical.
+
+==============================================================================================================
+SEED 2900007 — BEFORE (enumerated months)
+==============================================================================================================
+##########################################################################################
+# task=labeled_records[binary] seed=2900007 dataset=None qtype=section_mode_count gold=['2'] answer='2' term=answered score=1.000
+# Q: Judge each item's label (one of: False, True). For how many months is `False` the single most common label — i.e. that month has STRICTLY more `False` items than items of any other one label? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='2'
+============================================================================
+[system] You are a long-document assistant. The document is 5983 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: False, True). For how many months is `False` the single most common label — i.e. that month has STRICTLY more `False` items than items of any other one label? Give the single integer in \boxed{}.
+[assistant] This document is 5983 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5983 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2022`, `Apr 2022`, `Mar 2023`, `Feb 2024`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5983, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Mar 2022`, `Apr 2022`, `Mar 2023`, `Feb 2024`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Apr 2022/False=8|Apr 2022/True=4|Feb 2024/False=7|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=5|Mar 2023/False=10|Mar 2023/True=15
+[tool:spawn_subagent] Apr 2022/False=9|Apr 2022/True=7|Feb 2024/False=10|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=12|Mar 2023/False=9|Mar 2023/True=5
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Apr 2022/False=17|Apr 2022/True=11|Feb 2024/False=17|Feb 2024/True=14|Mar 2022/False=16|Mar 2022/True=17|Mar 2023/False=19|Mar 2023/True=20.
+Per month, is `False` strictly the most common label?
+  Mar 2022: False=16 vs best other 17: no
+  Apr 2022: False=17 vs best other 11: yes
+  Mar 2023: False=19 vs best other 20: no
+  Feb 2024: False=17 vs best other 14: yes
+Months where yes: Apr 2022, Feb 2024 → 2.
+\boxed{2}
+
+==============================================================================================================
+SEED 2900007 — AFTER (open-set month key)
+==============================================================================================================
+##########################################################################################
+# task=labeled_records[binary] seed=2900007 dataset=None qtype=section_mode_count gold=['2'] answer='2' term=answered score=1.000
+# Q: Judge each item's label (one of: False, True). For how many months is `False` the single most common label — i.e. that month has STRICTLY more `False` items than items of any other one label? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='2'
+============================================================================
+[system] You are a long-document assistant. The document is 5983 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: False, True). For how many months is `False` the single most common label — i.e. that month has STRICTLY more `False` items than items of any other one label? Give the single integer in \boxed{}.
+[assistant] This document is 5983 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5983 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5983, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Apr 2022/False=8|Apr 2022/True=4|Feb 2024/False=7|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=5|Mar 2023/False=10|Mar 2023/True=15
+[tool:spawn_subagent] Apr 2022/False=9|Apr 2022/True=7|Feb 2024/False=10|Feb 2024/True=7|Mar 2022/False=8|Mar 2022/True=12|Mar 2023/False=9|Mar 2023/True=5
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Apr 2022/False=17|Apr 2022/True=11|Feb 2024/False=17|Feb 2024/True=14|Mar 2022/False=16|Mar 2022/True=17|Mar 2023/False=19|Mar 2023/True=20.
+Per month, is `False` strictly the most common label?
+  Mar 2022: False=16 vs best other 17: no
+  Apr 2022: False=17 vs best other 11: yes
+  Mar 2023: False=19 vs best other 20: no
+  Feb 2024: False=17 vs best other 14: yes
+Months where yes: Apr 2022, Feb 2024 → 2.
+\boxed{2}
+
+==============================================================================================================
+SEED 2900008 — BEFORE (enumerated months)
+==============================================================================================================
+##########################################################################################
+# task=labeled_records[binary] seed=2900008 dataset=None qtype=sections_cmp gold=['3'] answer='3' term=answered score=1.000
+# Q: Judge each item's label (one of: False, True). In how many months are there STRICTLY more `False` items than `True` items? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='3'
+============================================================================
+[system] You are a long-document assistant. The document is 5982 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: False, True). In how many months are there STRICTLY more `False` items than `True` items? Give the single integer in \boxed{}.
+[assistant] This document is 5982 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5982 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Jan 2023`, `Mar 2024`, `May 2024`, `Jan 2025`, `May 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5982, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month and year of the item's date, one of `Sep 2022`, `Jan 2023`, `Mar 2024`, `May 2024`, `Jan 2025`, `May 2025`; and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Jan 2023/False=3|Jan 2023/True=7|Jan 2025/False=2|Jan 2025/True=5|Mar 2024/False=5|Mar 2024/True=5|May 2024/False=10|May 2024/True=5|May 2025/False=3|May 2025/True=5|Sep 2022/False=10|Sep 2022/True=5
+[tool:spawn_subagent] Jan 2023/False=11|Jan 2023/True=7|Jan 2025/False=3|Jan 2025/True=4|Mar 2024/False=6|Mar 2024/True=1|May 2024/False=7|May 2024/True=5|May 2025/False=4|May 2025/True=7|Sep 2022/False=8|Sep 2022/True=4
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Jan 2023/False=14|Jan 2023/True=14|Jan 2025/False=5|Jan 2025/True=9|Mar 2024/False=11|Mar 2024/True=6|May 2024/False=17|May 2024/True=10|May 2025/False=7|May 2025/True=12|Sep 2022/False=18|Sep 2022/True=9.
+Per month, False > True?
+  Sep 2022: False=18 vs True=9: yes
+  Jan 2023: False=14 vs True=14: no
+  Mar 2024: False=11 vs True=6: yes
+  May 2024: False=17 vs True=10: yes
+  Jan 2025: False=5 vs True=9: no
+  May 2025: False=7 vs True=12: no
+Months where yes: Sep 2022, Mar 2024, May 2024 → 3.
+\boxed{3}
+
+==============================================================================================================
+SEED 2900008 — AFTER (open-set month key)
+==============================================================================================================
+##########################################################################################
+# task=labeled_records[binary] seed=2900008 dataset=None qtype=sections_cmp gold=['3'] answer='3' term=answered score=1.000
+# Q: Judge each item's label (one of: False, True). In how many months are there STRICTLY more `False` items than `True` items? Give the single integer in \boxed{}.
+##########################################################################################
+============================================================================
+[depth=0] turns=2 termination=answered answer='3'
+============================================================================
+[system] You are a long-document assistant. The document is 5982 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: False, True.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+[user] Judge each item's label (one of: False, True). In how many months are there STRICTLY more `False` items than `True` items? Give the single integer in \boxed{}.
+[assistant] This document is 5982 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..5982 is not below 500; splitting at midpoint 2991.
+  -> CALLS: spawn_subagent({'subtask': "Over the items STARTING in tokens 0..2991, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."}); spawn_subagent({'subtask': "Over the items STARTING in tokens 2991..5982, compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \\boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is exactly one of `False`, `True`; `none` if no item starts in the range."})
+[tool:spawn_subagent] Jan 2023/False=3|Jan 2023/True=7|Jan 2025/False=2|Jan 2025/True=5|Mar 2024/False=5|Mar 2024/True=5|May 2024/False=10|May 2024/True=5|May 2025/False=3|May 2025/True=5|Sep 2022/False=10|Sep 2022/True=5
+[tool:spawn_subagent] Jan 2023/False=11|Jan 2023/True=7|Jan 2025/False=3|Jan 2025/True=4|Mar 2024/False=6|Mar 2024/True=1|May 2024/False=7|May 2024/True=5|May 2025/False=4|May 2025/True=7|Sep 2022/False=8|Sep 2022/True=4
+[assistant] Merge (add per month/label key) my two children's tallies (above) -> Jan 2023/False=14|Jan 2023/True=14|Jan 2025/False=5|Jan 2025/True=9|Mar 2024/False=11|Mar 2024/True=6|May 2024/False=17|May 2024/True=10|May 2025/False=7|May 2025/True=12|Sep 2022/False=18|Sep 2022/True=9.
+Per month, False > True?
+  Sep 2022: False=18 vs True=9: yes
+  Jan 2023: False=14 vs True=14: no
+  Mar 2024: False=11 vs True=6: yes
+  May 2024: False=17 vs True=10: yes
+  Jan 2025: False=5 vs True=9: no
+  May 2025: False=7 vs True=12: no
+Months where yes: Sep 2022, Mar 2024, May 2024 → 3.
+\boxed{3}
+

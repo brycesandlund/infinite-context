@@ -231,11 +231,17 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     elif qtype == "dates_rep_k":
         # Scoped to ONE month so the per-date tally stays <= ~14 keys (a whole-document per-date dict
         # overflowed the root); the leaf must derive each item's month to decide whether it counts.
-        mon = rng.choice(sections)
-        dc = Counter(r["date"] for r in recs if r["sec"] == mon)
+        # Whole-document variant (run 12): OOLONG asks "how many dates are represented exactly k times" over the
+        # WHOLE document, and the 11w root had to improvise the contract (one leaf then returned a scalar
+        # `dates=10`). Taught when the document's distinct dates fit the budget (<= 40); otherwise month-scoped.
+        all_dates = Counter(r["date"] for r in recs)
+        whole = len(all_dates) <= 40 and rng.random() < 0.5
+        mon = None if whole else rng.choice(sections)
+        dc = all_dates if whole else Counter(r["date"] for r in recs if r["sec"] == mon)
         k = rng.choice([1, 1, 2, 3])
         gold, grading, params = sum(1 for v in dc.values() if v == k), "numeric", {"qk": k, "qmon": mon}
-        q = (f"Considering only items dated in {mon}: how many distinct dates are represented exactly {k} "
+        scope = "In the whole document" if whole else f"Considering only items dated in {mon}"
+        q = (f"{scope}: how many distinct dates are represented exactly {k} "
              f"time{'s' if k != 1 else ''} (i.e. exactly {k} item{'s carry' if k != 1 else ' carries'} that exact date)? "
              f"Give the single integer in \\boxed{{}}.")
     elif qtype == "first_month_cmp":

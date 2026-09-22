@@ -992,4 +992,45 @@ sentence two — *"The answer to the question \"What is the special magic number
 split the range in half recursively, having a subagent search each half for the sentence that answers it…"* — so the
 key rides in the commitment sentence the way a tally root's goal noun does. Verified niah_novel 8/8 at doc 6k/14k
 (narrativeqa 6/8 = the known scripted-leaf cases). Trace cache v6. Script: `scripts/run_sft12_warm.sh`.
+Plus two labeled_records contract changes from the temporal audit (verified 80/80 at doc 6k and 14k):
+- **Open-set month key.** Date-mode contract no longer enumerates the document's months ("one of `Mar 2022`, `Apr 2022`, …")
+  — the root cannot know them before reading, and at eval it improvised ("the month name as written", "a number 1..12")
+  and collapsed 38 month-years into 12 buckets. Now: "`<month>` is the month AND year of the item's date, written `Mon YYYY`
+  exactly as in the date (e.g. `Jul 2022`)". Leaves unchanged ("[Apr 24, 2022 → Apr 2022]").
+- **Whole-document dates_rep_k.** OOLONG asks "how many dates are represented exactly k times" over the WHOLE document;
+  training only had the one-month scope, and the 11w root improvised a garbled contract (one leaf returned the scalar
+  `dates=10`). Added the unscoped variant ("In the whole document: …") when the document has ≤ 40 distinct dates (50% of
+  dates_rep_k draws at the 6k tier), contract "`<date>` is the item's date exactly as written in its tag (`Mon DD, YYYY`)".
 
+## oolong_temporal across all runs (2026-09-21 audit)
+| seed | dataset / question | run6 | run7 | 7w | 7w2 | 8w | 9w | 10w | 11w |
+|---|---|---|---|---|---|---|---|---|---|
+| trec — months where `location` is the single most common label (gold 8) | 6 labels × **38 months** | 0.32 (1-D, 4) | 0.10 (2-D, 0) | 0.13 (1-D) | 0.02 (1-D) | **OVF** (2-D) | 0.10 (1-D) | 0.10 (1-D) | **OVF** (2-D) |
+| imdb — months where `positive` is most common (gold 4) | 2 labels × 7 months | 0.75 | 0.42 | 0.32 | 0.32 | 0.32 (1-D) | 0.75 (2-D, 3) | 0.75 (2-D, 3) | 0.42 (1-D) |
+| agnews — months where World > Sports (gold 6) | 4 labels × 22 months | **1.00** (2-D) | 0.42 | 0.18 | 0.24 | 0.32 (2-D, 2) | 0.56 (4) | 0.00 (1-D, "No") | 0.56 (2-D, 4) |
+| negation — dates represented exactly once (gold 75) | **72 distinct dates** | 0.00 (27) | OVF | 0.00 (27) | OVF | 0.04 (64) | OVF | OVF | OVF |
+| yahoo — months where Politics > Computers (gold 6) | 10 labels × 28 months | 0.24 | 0.42 (2-D, 3) | 0.24 | 0.18 | 0.56 (2-D, 4) | 0.42 (2-D, 3) | 0.18 (1-D) | OVF (raw tool_call glitch) |
+| **mean** | | **0.46** | 0.27 | 0.17 | 0.15 | 0.25 | 0.37 | 0.21 | 0.20 |
+
+**Two failure classes, not one.** (a) *State choice*: 1-D per-label tally for a per-month question — the run-7 to 10w seesaw; the
+pure-8w preamble in 11w picked 2-D on trec/agnews/yahoo. (b) *Budget*: when 2-D IS chosen, trec (38 months × 6 labels) and negation
+(72 dates) overflow the ROOT every time — measured on 11w: children return 399+433 tokens (trec) / 493+352 (negation) and the root's
+merge line RESTATES the merged tally (647 / 887 tokens) before the per-month rows, on top of ~900 tokens of fixed overhead → >3000.
+The OOLONG documents are NOT date-sorted (adjacent-pair sortedness ≈ 0.5), so a date-ordered fold is not available; the 2-D tally is
+the right state and it has to fit. Nothing consumes the root's restated merged tally — the finalize rows are derived from the two
+children's boxes — so the fix is to drop the restatement AT THE ROOT ONLY (internal nodes still box the merged state for their parent).
+A root-only "merge per key and read the answer off" line was tried and REVERTED the same day: every other root states its
+operation and shows the result ("Sum my children [4, 6] -> 10", "Merge … -> merged tally"), and a root that says merge without
+showing the merge breaks that pattern. The budget problem on trec/negation is therefore open; see the options below. imdb/agnews/yahoo are leaf-accuracy undercounts (3 vs 4, 4 vs 6, 4 vs 6), not structural.
+
+**11w at a 5,000-token budget, same five temporal problems (2026-09-21):** mean 0.32 vs 0.20 at 3K. Raw
+`eval_results/raw/sft_general11w_temporal_b5k.jsonl`.
+| seed | gold | 3K | 5K | what changed |
+|---|---|---|---|---|
+| trec | 8 | overflow | 2 (0.18) | fits now, but the root keyed months by NAME (12 keys) instead of month-year (38) — lossy, so the count is wrong |
+| imdb | 4 | 1 (1-D) | 0 (1-D) | state-choice flip, budget-independent |
+| agnews | 6 | 4 | 3 | month-name keys again |
+| negation | 75 | overflow | **68 (0.13)** | the per-date merge fits at 5K; 68 of 75 — budget was the whole problem here |
+| yahoo | 6 | overflow (raw tool-call glitch) | 4 (0.56) | same as 8w's best on this seed |
+Reading: negation was purely budget; trec is budget AND the open-set month key (with month-year keys a faithful
+trec state is ≈2,250 tokens at the root — fits 5K, not 3K); imdb is the 1-D/2-D flip.

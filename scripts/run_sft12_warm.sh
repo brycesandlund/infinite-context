@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run 12 as a WARM START from sft_general8w: run 11 (pure 8w preamble) + the retrieval root names the QUESTION in
 # sentence two (11w: generic "states the answer" → 4/5 multikey roots dropped the key). vt 0.88 in 11w.
+# Also: open-set month key contract + whole-document dates_rep_k variant in labeled_records (temporal audit).
 #   nohup caffeinate -is bash scripts/run_sft12_warm.sh > /tmp/sft12_eval.log 2>&1 &
 # Full from-base runs remain the reference (scripts/run_sft7_eval.sh); this is the fast iteration path.
 cd "$(dirname "$0")/.."

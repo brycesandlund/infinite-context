@@ -87,7 +87,7 @@ class LabeledOracle(ScaffoldOracle):
             acc = {**acc, key: acc.get(key, 0) + 1}
             return acc, f"- [{date} → {side} {self.qdate}] \"{snip}\" → label: {label} → {key}={acc[key]}"
         if q == "dates_rep_k":
-            if outer != self.qmon:
+            if self.qmon is not None and outer != self.qmon:
                 return acc, f"- [{date} → {outer}] \"{snip}\" (not {self.qmon}, skip)"
             acc = {**acc, date: acc.get(date, 0) + 1}
             return acc, f"- [{date} → {outer}] \"{snip}\" → date {date} seen {acc[date]}x"
@@ -177,7 +177,7 @@ class LabeledOracle(ScaffoldOracle):
             c = state or {}
             hits = sorted(d for d, n in c.items() if n == self.qk)
             shown = ", ".join(hits[:12]) + (f", … (+{len(hits) - 12} more)" if len(hits) > 12 else "")
-            return str(len(hits)), (f"\nDistinct {self.qmon} dates: {len(c)}; represented exactly {self.qk}x: "
+            return str(len(hits)), (f"\nDistinct {self.qmon + ' ' if self.qmon else ''}dates: {len(c)}; represented exactly {self.qk}x: "
                                     f"{shown or 'none'} → {len(hits)}.")
         if q == "before_after":
             c = state or {}
@@ -243,7 +243,8 @@ class LabeledOracle(ScaffoldOracle):
             "section_mode_count": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
             "sections_cmp": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
             "section_most": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
-            "dates_rep_k": f"tallying how many items carry each exact date, for items dated in {self.qmon} only",
+            "dates_rep_k": (f"tallying how many items carry each exact date, for items dated in {self.qmon} only" if self.qmon
+                            else "tallying how many items carry each exact date"),
             "first_month_cmp": f"{self._labelling()} and tallying each (month, label) pair (an item's month is the month and year of its date)",
             "before_after": f"{self._labelling()} and tallying, separately for items dated before {self.qdate} and on/after it, how many are `{self.qlabel}` and how many are any other label",
         }[self.qtype]
@@ -261,7 +262,8 @@ class LabeledOracle(ScaffoldOracle):
             "section_mode_count": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
             "sections_cmp": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
             "section_most": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
-            "dates_rep_k": f"the per-date tally over ONLY items dated in {self.qmon} (how many items carry each exact date)",
+            "dates_rep_k": (f"the per-date tally over ONLY items dated in {self.qmon} (how many items carry each exact date)" if self.qmon
+                            else "the per-date tally (how many items carry each exact date)"),
             "first_month_cmp": f"the per-(month, label) tally ({self._labelling()}; an item's month is the month and year of its date)",
             "before_after": f"the before/on-or-after {self.qdate} tally of `{self.qlabel}` vs other labels ({self._labelling()})",
         }[self.qtype]
@@ -292,7 +294,8 @@ class LabeledOracle(ScaffoldOracle):
         if q == "author_most":
             return f"The question is restricted to author {self.qauthor}'s items, so the state is a per-label tally over those items only."
         if q == "dates_rep_k":
-            return f"The question asks how many dates in {self.qmon} appear exactly {self.qk} time{'s' if self.qk != 1 else ''}, so the state is a per-DATE count, reduced at the root."
+            where = f" in {self.qmon}" if self.qmon else ""
+            return f"The question asks how many dates{where} appear exactly {self.qk} time{'s' if self.qk != 1 else ''}, so the state is a per-DATE count, reduced at the root."
         if q == "count":
             return f"The question asks for one label's total, so the state is a single count of `{self.qlabel}` items."
         return "The question asks about labels over the whole document, so a per-label tally is the right state."
@@ -310,12 +313,18 @@ class LabeledOracle(ScaffoldOracle):
             return (f"the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author "
                     f"exactly as written in the item's `[by …]` tag")
         if q == "dates_rep_k":
-            return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in {self.qmon} written exactly as in the item's tag"
+            if self.qmon:
+                return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in {self.qmon} written exactly as in the item's tag"
+            return "the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is the item's date exactly as written in its tag (`Mon DD, YYYY`)"
         if q == "before_after":
             return (f"the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or "
                     f"`on_or_after` (relative to {self.qdate}) and `<which>` is `{self.qlabel}` or `other`")
+        # OPEN key space for months: the root cannot know the document's months before reading, so the
+        # contract states the FORM of the key, never a list. (Enumerating the months trained the root to
+        # improvise a list at eval — 11w OOLONG-temporal roots wrote "the month name as written" / "a number
+        # 1..12" and collapsed 38 month-years into 12 buckets.)
         outer = (f"the line's `S<n>` tag" if self.key_mode == "section"
-                 else "the month and year of the item's date, one of " + ", ".join(f"`{m}`" for m in self.sections))
+                 else "the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`)")
         return (f"the partial tally as `<{self.unit_word}>/<label>=<count>` entries joined by `|`, where "
                 f"`<{self.unit_word}>` is {outer}; and `<label>` is exactly one of {labs}")
 
