@@ -44,7 +44,7 @@ We study long context language models. Instead of training long context natively
 
 \section{Introduction}
 
-As language models continue impressive breakthroughs, increasing focus is placed on their limitations. The most salient resource constraint of a language models is its context length. Models can process and produce tokens within this limit, but are incapable of scaling beyond it. Model producers have identified this constraint and placed great emphasis of extending it as large as possible, with some model builders touting 10M and even 100M token context lengths (for reference, the length of the first Harry Potter book is about 100\,000 tokens, the full U.S. tax code roughly 3M, and the Linux kernel source code about 300M).
+As language models boast impressive breakthroughs~\citep{luong2025imogold,wei2025imogold,openai2025icpc,lin2025icpcgold,openai2026tenadvances,openai2026navierstokes}, increasing focus is placed on their limitations. The most salient resource constraint of a language model is its context length. Models can process and produce tokens within this limit, but the limit is hard. Model producers have identified this constraint and placed great emphasis on extending it as large as possible, with some model builders touting 10M~\citep{dangel2026subq,meta2025llama4,zhu2026pokeeisaac} and even 100M~\citep{magic2024ltm2mini} token context lengths (for reference, the length of the first Harry Potter book is about 100,000 tokens, the full U.S. tax code roughly 3M, and the Linux kernel source code about 300M).
 
 While native context scaling is appealing as a concrete engineering problem, it is not the only approach to producing a model capable of processing long documents. Long context harnesses 
 
