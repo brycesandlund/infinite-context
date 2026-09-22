@@ -986,7 +986,7 @@ best single checkpoint at 0.758; 11w has the best vt+user profile and the worst 
 the sentence that states the answer to the question \"{q_core}\"…" — so the key rides in the commitment sentence exactly as the tally
 goal does. Expected: vt 0.88 held, niah_multikey back to ≥0.8, multiquery ~1.0 → SCORE ≈ 0.77–0.80.
 
-## sft_general12w (run 12, warm start from sft_general8w) — PREPARED 2026-09-21, not launched
+## sft_general12w (run 12, warm start from sft_general8w) — 2026-09-22 — held-out **0.760** (best), diagnostics 1.000
 Run 11 corpus and pure-8w preamble, plus one line: the retrieval root (niah_novel, narrativeqa) names the question in
 sentence two — *"The answer to the question \"What is the special magic number for pewter?\" is stated in one place, so I
 split the range in half recursively, having a subagent search each half for the sentence that answers it…"* — so the
@@ -1034,3 +1034,29 @@ showing the merge breaks that pattern. The budget problem on trec/negation is th
 | yahoo | 6 | overflow (raw tool-call glitch) | 4 (0.56) | same as 8w's best on this seed |
 Reading: negation was purely budget; trec is budget AND the open-set month key (with month-year keys a faithful
 trec state is ≈2,250 tokens at the root — fits 5K, not 3K); imdb is the 1-D/2-D flip.
+
+**Run 12w results — 2026-09-22 — held-out 0.760 (8w 0.758, 11w 0.709), diagnostics 1.000 (24/24).**
+(ckpt `tinker://a8b5c74c-a05e-52cc-9cbc-797739ee23c5:train:0/weights/sft_general12w`; 944 traces / 39,954 datums /
+68.6M tokens, 2,498 batches at batch 16, LR 5e-6, NLL 0.0044; SFT 23:58→02:54 (2.9 h), eval 8 min. Raw
+`eval_results/raw/sft_general12w.{jsonl,txt}`; rollouts of interest `trace_snippets/run12_failures.txt`.)
+
+| held-out | 8w | 11w | **12w** | note |
+|---|---|---|---|---|
+| **vt** | 0.88 | 0.88 | **0.96** | 5/5 fold; 4 perfect, seed 2016004 4/5 vars (one name garbled `UMZGAG`) — best vt of any run |
+| **oolong_user** | 0.60 | 0.64 | **0.75** | yahoo `User: 30140` correct again (open-set user contract, 2 runs running); negation "most common user" still `none` (root invented a closed key space); agnews 2 vs 1 |
+| oolong_counting | 0.36 | 0.57 | 0.42 | trec 23 vs 14, negation 0 vs 23 (leaves labelled everything True), yahoo compare wrong — leaf noise, same three seeds as always |
+| oolong_temporal | 0.25 | 0.20 | 0.21 | **the month-year contract did NOT transfer**: roots wrote "the example's month (a number)", "the month name exactly as written" — same as 11w; trec overflow; negation root wrote the garbled `<count>` contract again (whole-document dates_rep_k was ~6 traces in the corpus — too few to override the month-scoped template) |
+| **niah_multikey_1** | 0.80 | 0.40 | **0.80** | **key carried in the root subtask 5/5** (11w: 1/5) — the quoted-question opener did its job; the one miss is seed 2014003's digit truncation (278069 vs 2780693), the same miss in 10w and 11w |
+| niah_multiquery | 1.00 | 0.70 | 0.70 | the retrieval opener now fires on 4-key questions ("The answer to the question "…4 keys…" is stated in one place") and the root writes a hybrid: one told its child to chain ("When done, call spawn_subagent … Continue") → 2-agent overflow; one dropped the STARTING ownership clause → 150-node runaway → half credit. 8w/10w multiquery roots used the niah_multi opener |
+| niah_single_1 / cwe / fwe | 1.00 / 1.00 / 0.93 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | |
+| diagnostics | 0.958 | 0.958 | **1.000** | |
+
+**Reading.** First run above 8w, by a hair, with a clean mechanism behind each move: fold holds (5/5) with the 8w sentence two;
+the quoted-question retrieval opener carries the key (5/5 multikey); the open-set user contract holds (yahoo 2 runs running).
+Two things did not transfer: (1) the open-set MONTH contract — roots still improvise month keys; (2) the whole-document
+dates contract — too rare in the corpus. Both are labeled_records changes that appeared in ≤240 roots against 8w's weights
+that learned the enumerated form; a from-base run on this corpus is the clean test of whether they take. Multiquery's 0.70
+is the retrieval opener over-firing on multi-key questions — a "one fact stated in one place" sentence applied to a four-key
+question; the fix would be for the multi-key training questions (niah_multi multiquery mode) to be the ones whose opener the
+model reaches for, i.e. give niah_multi's opener the same quoted-question form so the two families are distinguished by the
+question text rather than by which opener the model happens to pick. **Best-of-per-task oracle across runs: 0.891.**
