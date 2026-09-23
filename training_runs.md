@@ -1178,5 +1178,21 @@ mechanism owns it. Measured on a 120-trace dry run: vt_novel 35% RULER-matched /
 45% schema-lite / 55% full-schema; niah_novel 35% no-description. At run-14 counts that is ~70 RULER-matched
 vt_novel traces (was ~17), ~96 schema-lite labeled_records, ~40 description-free niah — all above the ~40-trace
 threshold at which synth_topk flipped cwe from 0.52 to 1.00.
+4. `QUESTION_PLACEHOLDER_FRAC = 0.3` (sft.py) — our own harness boilerplate from
+   `tasks/ruler/_common.py`, "[The relevant text is in a separate document accessible via the read_chunk
+   tool — see the system prompt for usage.] (Document length: N tokens.)", measured on **25/25 RULER eval
+   questions and 0/2500 training questions**. It is our document-presentation convention, not RULER content,
+   so training a share of questions with it is skew reduction rather than eval fitting. Keyed in the trace
+   cache (`qph`) so placeholder and plain traces are distinct artifacts.
+
+**System prompt, for the record:** the harness FRAME ("You are a long-document assistant… two tools… emit it as
+\boxed{value}") is emitted by `run_agent` and is byte-identical in training and at eval — not a mismatch. The
+mismatch is entirely in the `task_context` slot, and OOLONG's differs from every description we train in three
+structural ways: it is TWO paragraphs, it STATES THE ITEM COUNT ("86 general-knowledge questions… all 86 examples
+in this dataset"), and it carries a task-level instruction we have never trained — "Do not try to guess, estimate,
+or approximate the result. Calculate the exact answer given these datapoints." Our counting failures are precisely
+what that instruction warns against, and a stated total is a coverage check the root has never learned to use
+(children report 40+38=78 against a stated 86 → 8 items lost). NOT yet implemented; see the proposal below.
+
 Remaining known leak (not changed): author questions still name the tag, "author = Okafor (the `[by Okafor]` tag)" —
 that is task specification in the QUESTION, and OOLONG's question likewise names the user ID.

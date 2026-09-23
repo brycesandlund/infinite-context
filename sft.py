@@ -279,6 +279,16 @@ _SKIP_TMODES = {"date_most", "date_2nd"}
 _CONTEXT_DROP_TASKS = {"niah_novel", "niah_multi", "narrativeqa", "realdoc_count"}
 CONTEXT_DROP = float(os.environ.get("CONTEXT_DROP", "0"))
 
+# Our OWN harness boilerplate: tasks/ruler/_common.py splices this where RULER's template had
+# {context}, so it is on 100% of RULER eval questions (vt, cwe, fwe, all niah — measured 25/25) and
+# was on 0% of the 2,500 training questions. Not RULER's content; our document-presentation
+# convention. Train a fraction of questions with it so the convention itself is familiar.
+_QUESTION_PLACEHOLDER = (
+    "[The relevant text is in a separate document accessible via the read_chunk tool — see the "
+    "system prompt for usage.] (Document length: {n} tokens.)"
+)
+QUESTION_PLACEHOLDER_FRAC = float(os.environ.get("QUESTION_PLACEHOLDER_FRAC", "0"))
+
 
 def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     """Deterministic (task, idx) -> problem. OOLONG uses the shared oolong_spec (same
@@ -305,6 +315,10 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     if task in _CONTEXT_DROP_TASKS and CONTEXT_DROP > 0:
         if random.Random(("ctxdrop", task, seed).__hash__() & 0xFFFFFFFF).random() < CONTEXT_DROP:
             problem = dataclasses.replace(problem, task_context="")
+    if QUESTION_PLACEHOLDER_FRAC > 0:
+        if random.Random(("qph", task, seed).__hash__() & 0xFFFFFFFF).random() < QUESTION_PLACEHOLDER_FRAC:
+            line = _QUESTION_PLACEHOLDER.format(n=len(problem.document_tokens))
+            problem = dataclasses.replace(problem, question=f"{line}\n{problem.question}")
     return seed, problem
 
 
@@ -332,7 +346,7 @@ _TRACE_CACHE_DIR = os.path.expanduser(
 _CACHE_VERSION = "v7"   # v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
-def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False) -> str:
+def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False) -> str:
     from oracle.base import ScaffoldOracle
     payload = dict(
         v=_CACHE_VERSION, task=task, seed=seed, doc=doc_len, strategy=strategy or "default",
@@ -342,6 +356,7 @@ def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False) -> 
         # DIFFERENT artifact for the same (task, seed, doc) — key it, or CONTEXT_DROP silently
         # reuses described traces.
         **({"nodesc": True} if nodesc else {}),
+        **({"qph": True} if qph else {}),
     )
     return hashlib.sha1(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:20]
 
@@ -378,7 +393,8 @@ async def _cached_trace(oracle, problem, tokenizer, *, task, seed, strategy, lea
     os.makedirs(_TRACE_CACHE_DIR, exist_ok=True)
     path = os.path.join(_TRACE_CACHE_DIR, _trace_key(
         task, seed, len(problem.document_tokens), strategy, leaf_model_name,
-        nodesc=not problem.task_context) + ".json")
+        nodesc=not problem.task_context,
+        qph=problem.question.startswith("[The relevant text is in a separate document")) + ".json")
     if os.path.exists(path):
         try:
             return _deser_node(json.load(open(path)))
