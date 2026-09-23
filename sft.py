@@ -26,6 +26,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import dataclasses
 import os
 import random
 import time
@@ -269,6 +270,12 @@ def _doc_size_for(i: int, task: str | None = None) -> int:
 # literal answer and is trainable.) We skip these and draw the next index instead.
 _SKIP_TMODES = {"date_most", "date_2nd"}
 
+# Tasks whose QUESTION alone specifies the job, so the system-prompt description can be dropped
+# without making the problem ill-posed (see _make_sft_problem). Their eval counterparts (RULER
+# vt / niah_*, and the in-dist prose tasks) carry no description at all.
+_CONTEXT_DROP_TASKS = {"vt_novel", "niah_novel", "niah_multi", "narrativeqa", "realdoc_count"}
+CONTEXT_DROP = float(os.environ.get("CONTEXT_DROP", "0"))
+
 
 def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     """Deterministic (task, idx) -> problem. OOLONG uses the shared oolong_spec (same
@@ -283,7 +290,19 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
             task, corpus_tokens, tokenizer, doc, seed, dataset=dataset
         )
     seed = DATA_SEED + ti * 100_000 + i
-    return seed, make_problem(task, corpus_tokens, tokenizer, doc, seed)
+    problem = make_problem(task, corpus_tokens, tokenizer, doc, seed)
+    # FORMAT DIVERSITY: drop the system-prompt document description on a fraction of the
+    # PROSE tasks, so the root must infer the task's shape (order-dependent? one stated fact?
+    # a tally?) from the QUESTION and the text alone. Every RULER eval task ships with an empty
+    # task_context (RULER fidelity: vt, cwe, fwe, niah_*), while every training task has a
+    # description — run 13 (from base) folded 2/2 on vt_novel (description present, "...in
+    # order") and went BINARY 5/5 on RULER vt (no description). Only tasks whose QUESTION is
+    # self-sufficient are eligible; synth/labeled/long/rule_label keep theirs (the record
+    # layout and label set exist nowhere else).
+    if task in _CONTEXT_DROP_TASKS and CONTEXT_DROP > 0:
+        if random.Random(("ctxdrop", task, seed).__hash__() & 0xFFFFFFFF).random() < CONTEXT_DROP:
+            problem = dataclasses.replace(problem, task_context="")
+    return seed, problem
 
 
 async def _one_trace(oracle, problem, tokenizer):
@@ -307,15 +326,19 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v6"   # v6: retrieval root names the question in sentence two (2026-09-21); v5: pure 8w preamble; v4: three-move BookQA root; v3: narrativeqa HTML-stripped
+_CACHE_VERSION = "v7"   # v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
-def _trace_key(task, seed, doc_len, strategy, leaf_model_name) -> str:
+def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False) -> str:
     from oracle.base import ScaffoldOracle
     payload = dict(
         v=_CACHE_VERSION, task=task, seed=seed, doc=doc_len, strategy=strategy or "default",
         ctx=AGENT_CONTEXT, leaf=ScaffoldOracle.LEAF_TOKENS, fold=ScaffoldOracle.FOLD_LEAF_TOKENS,
         chunk=MAX_CHUNK_TOKENS, model=leaf_model_name,
+        # the system prompt is baked into the cached trace, so a description-dropped trace is a
+        # DIFFERENT artifact for the same (task, seed, doc) — key it, or CONTEXT_DROP silently
+        # reuses described traces.
+        **({"nodesc": True} if nodesc else {}),
     )
     return hashlib.sha1(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:20]
 
@@ -351,7 +374,8 @@ async def _cached_trace(oracle, problem, tokenizer, *, task, seed, strategy, lea
         return await _one_trace(oracle, problem, tokenizer)
     os.makedirs(_TRACE_CACHE_DIR, exist_ok=True)
     path = os.path.join(_TRACE_CACHE_DIR, _trace_key(
-        task, seed, len(problem.document_tokens), strategy, leaf_model_name) + ".json")
+        task, seed, len(problem.document_tokens), strategy, leaf_model_name,
+        nodesc=not problem.task_context) + ".json")
     if os.path.exists(path):
         try:
             return _deser_node(json.load(open(path)))

@@ -164,6 +164,13 @@ _VT_PREAMBLE = (
     "Memorize and track the chains of variable assignment hidden in the text (a line "
     "'VAR A = VAR B' copies B's current value into A). "
 )
+# BARE framing: same task, no copy-semantics gloss. The gloss ("copies B's CURRENT value") states
+# the order-dependence fact outright, and it used to be on 100% of vt_novel questions while RULER's
+# vt question states nothing about the format at all — so a root trained only on the glossed form
+# learns to be TOLD the task is sequential instead of deriving it from the VAR lines it reads.
+# Run 13 (from base) folded 2/2 in-distribution and went binary 5/5 on RULER vt.
+_VT_PREAMBLE_BARE = "Memorize and track the chains of variable assignment hidden in the text. "
+_VT_GLOSS_FRAC = 0.6      # 60% keep the gloss, 40% must infer order-dependence from the document
 
 
 # ---------------------------------------------------------------------------
@@ -400,11 +407,13 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
     t_val = vals[0]
     holders = sorted(n for n, v in binding.items() if v == t_val)
     if qtype == "which_vars":
-        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=_VT_PREFACES, t_val=t_val)
+        lead = _VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE
+        question = lead + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=_VT_PREFACES, t_val=t_val)
         gold, grading, qvar = (holders or ["none"]), "set", None
     else:
         qvar = rng.choice([n for n, _, _ in chains[0]])
-        question = _VT_PREAMBLE + _phrase(rng, _Q_VT_FINAL, prefaces=_VT_PREFACES, qvar=qvar)
+        lead = _VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE
+        question = lead + _phrase(rng, _Q_VT_FINAL, prefaces=_VT_PREFACES, qvar=qvar)
         gold, grading = [str(binding[qvar])], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",

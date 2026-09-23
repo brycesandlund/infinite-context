@@ -63,7 +63,22 @@ def _rows(name: str) -> list[dict]:
     return _ROWS[name]
 
 
-def _context(name: str, labels: list[str], key_mode: str) -> str:
+# How much of the document's SCHEMA the system prompt gives away. OOLONG — the eval this task is the
+# proxy for — describes only the item type and the label set ("86 general-knowledge questions ... one of
+# 6 categories: ..."); it never describes its `Date: … || User: … || Instance: …` columns, which the
+# model must discover by reading. We always described our `[S<n>]` / `[by <author>]` / `[Mon DD, YYYY]`
+# tags AND the month-derivation rule, so the root learned to be TOLD the key space — and at eval it
+# invented one (`U0`..`U4`, "a number 1..12", "the month name as written"). `schema_lite` matches
+# OOLONG's information content: item type + label set only.
+_SCHEMA_LITE_FRAC = 0.4
+
+
+def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False) -> str:
+    if schema_lite:
+        return (
+            f"The document is a list of text items, ONE per line. {_DESC[name]} The label is NOT written "
+            f"in the text — you must judge each item yourself. The label set is exactly: {', '.join(labels)}."
+        )
     if key_mode == "section":
         tag, note = "a section tag `[S<n>]` (sections are numbered from 1 and appear in order)", ""
     else:
@@ -290,7 +305,8 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         gold = f"{word}: {gold}"
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
-        task_context=_context(name, labels, key_mode), grading_mode=grading,
+        task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC),
+        grading_mode=grading,
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype,
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
                   "key_mode": key_mode, "answer_form": answer_form, "long_items": long_items,

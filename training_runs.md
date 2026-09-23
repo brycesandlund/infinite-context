@@ -1112,3 +1112,64 @@ the warm runs do not show.
 **Reading for the paper.** 12w (0.760) remains the headline checkpoint; run 13 is the single-stage reference and the
 corpus ablation. The honest framing: the corpus work is worth +0.06 from base, and the staged recipe is worth a
 further +0.04, all of it the fold/binary prior on vt.
+
+## Why run 13 (from base) went binary on RULER vt — diagnosis 2026-09-22
+**It is not fold mass.** Corpus fold share: run 12 (warm) **24.4%** (230/944), run 13 (base) **22.7%** (568/2500) —
+essentially the same. **It is not capability.** Run 13 folds 2/2 on vt_novel and 2/2 on synth_peak in-distribution,
+all at 1.00; it goes BINARY 5/5 on held-out RULER vt. It is a RECOGNITION failure, and the cue is in the prompt:
+
+| | system-prompt document description |
+|---|---|
+| vt_novel (training) | "The document is a long passage of text with short 'VAR ... = ...' assignment lines hidden inside it, **in order**." |
+| RULER vt (eval) | **(none — `task_context=""`, RULER fidelity)** |
+
+Every RULER eval task ships an empty description (vt, cwe, fwe, niah_single/multikey/multiquery); every training task
+ships one. Trained from base, the root learns *description → strategy*; with no description it falls back on the
+question's surface, and "Find all variables that are assigned the value X" reads as a filter → binary. The warm chain
+survives this because 8w's weights already carry the prior (three stages of fold exposure), which is exactly the
++0.04 that run 13 lacks. Same mechanism plausibly behind run 13's two 150-node niah runaways (also description-free).
+
+**Fix (format diversity in TRAINING, per the standing principle — never an eval-time guard):** `CONTEXT_DROP` in
+`sft.py` blanks `task_context` for a fraction of the traces of tasks whose QUESTION is self-sufficient —
+`vt_novel, niah_novel, niah_multi, narrativeqa, realdoc_count`. synth/labeled/long/rule_label keep theirs (their
+record layout and label set exist nowhere else; dropping those would teach hallucinated knowledge). Verified on a
+dry run: 50% of prose traces have no description, the oracle text is unchanged (the scripted root still writes the
+fold preamble), synth_peak keeps its description. **Cache-key bug found and fixed:** the system prompt is baked into
+a cached trace but `_trace_key` ignored it, so a dropped trace would silently reuse a described one — `nodesc` is now
+part of the key (described keys unchanged, so the paid narrativeqa haiku leaves stay valid).
+
+## sft_general14w (run 14, warm start from RUN 13) — PREPARED 2026-09-22, not launched
+Warm from `sft_general13` (not 8w): run 13 has the better corpus-driven profile (user 0.95, temporal 0.28,
+multiquery 1.00, cwe/fwe 1.00) and one deficit, vt. Two levers: **CONTEXT_DROP=0.5** on the five prose tasks, and a
+fold boost (vt_novel 150→200, each synth fold task 10→20) taking fold share 24%→**31%**. Everything else is run 12's
+warm replay so run 13's gains are not drifted away. 1,079 traces, batch 16, LR 5e-6, 1 epoch ≈ 3 h / ≈$65.
+Script `scripts/run_sft14_warm.sh`. If vt recovers to ~0.9 on run 13's profile the SCORE lands ≈0.78–0.80; if the
+two niah runaways also settle, ≈0.82.
+
+## Train/serve prompt mismatch — full audit 2026-09-22 (extends the vt diagnosis)
+The vt finding generalises: **our training always describes the document's schema; the evals often do not.**
+The root therefore learns *read the description → know the schema*, and when the description is absent or partial it
+FABRICATES one. Verbatim comparison:
+
+| | RULER (vt, cwe, fwe, niah_*) | OOLONG (counting/user/temporal) | our training |
+|---|---|---|---|
+| system description | **none** (`task_context=""`, RULER fidelity) | item type + label set + count + "Do not guess… Calculate the exact answer" | always present |
+| document schema in the description | — | **NEVER** — the `Date: … \|\| User: … \|\| Instance: …` columns are undescribed | **always** — `[S<n>]`, `[by <author>]`, `[Mon DD, YYYY]`, plus the month-derivation rule |
+| format gloss in the QUESTION | none ("Memorize and track the chain(s) of variable assignment hidden in the following text.") | none | vt: `_VT_PREAMBLE` was on **100%** of questions — "(a line 'VAR A = VAR B' copies B's **current** value into A)" |
+
+That single mechanism covers every open root-level failure: vt going binary (the order cue lived only in the
+description + gloss), oolong_user inventing `U0`..`U4` / `User A`..`User E` (the author key form lived only in the
+description), oolong_temporal writing "the month name as written" / "a number 1..12" (the month-key rule lived only
+in the description), and plausibly run 13's description-free niah runaways.
+
+**Three changes, all format diversity in TRAINING (`_CACHE_VERSION` → v7, questions/contexts changed for existing seeds):**
+1. `CONTEXT_DROP` (sft.py) — blanks `task_context` for a fraction of the self-sufficient prose tasks
+   (`vt_novel, niah_novel, niah_multi, narrativeqa, realdoc_count`). Cache-key bug fixed: `nodesc` is now in the key.
+2. `_VT_PREAMBLE_BARE` (60/40) — vt_novel questions drop the copy-semantics gloss 40% of the time, so the root must
+   derive order-dependence from the VAR lines it reads. Verified 30/30.
+3. `_SCHEMA_LITE_FRAC = 0.4` (labeled_records) — 40% of descriptions state only item type + label set, matching
+   OOLONG's information content; the `[S<n>]` / `[by <author>]` / `[Mon DD, YYYY]` tags and the month rule are left
+   to be discovered. Verified 30/30 (15 full-schema / 15 schema-lite).
+Combined on vt_novel: ~20% of traces have neither description nor gloss; ~9% are fully bare (no preface either).
+Remaining known leak (not changed): author questions still name the tag, "author = Okafor (the `[by Okafor]` tag)" —
+that is task specification in the QUESTION, and OOLONG's question likewise names the user ID.
