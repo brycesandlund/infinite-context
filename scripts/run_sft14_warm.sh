@@ -10,9 +10,12 @@
 #   1b. QUESTION_PLACEHOLDER_FRAC=0.3 — our OWN harness boilerplate ("[The relevant text is in a
 #      separate document accessible via the read_chunk tool...] (Document length: N tokens.)") is on
 #      100% of RULER eval questions (25/25) and was on 0% of 2,500 training questions.
-#   2. Fold mass 24% -> ~31% (vt_novel 150->200, synth fold 10->20 each) — the user's lever, kept
-#      because it is cheap and complementary. NOTE: fold SHARE was never the difference (run 12
-#      corpus 24.4% fold, run 13 corpus 22.7%).
+# NOT changed: fold mass. The original hypothesis was that run 13 underweighted fold, but the corpora
+# measure 24.4% fold (run 12, warm) vs 22.7% (run 13, base) — essentially identical — and run 13 folds
+# 2/2 in-distribution on vt_novel. Mass is not the mechanism, so the fold weights stay at run-12 warm
+# levels (vt_novel 150, each synth fold task 10) and this run tests ONE thing: prompt diversity.
+# niah_novel/niah_multi are raised 25/30 -> 40/40 only to size the CONTEXT_DROP treatment (~40
+# description-free traces instead of ~27), not as an independent lever.
 #   nohup caffeinate -is bash scripts/run_sft14_warm.sh > /tmp/sft14_eval.log 2>&1 &
 cd "$(dirname "$0")/.."
 export PYTHONUNBUFFERED=1
@@ -22,7 +25,7 @@ echo "===== SFT (sft_general14w, warm start from $INIT) STARTING $(date +%H:%M:%
 for attempt in $(seq 1 200); do
   if INIT_CHECKPOINT=$INIT LR=5e-6 CONTEXT_DROP=0.5 QUESTION_PLACEHOLDER_FRAC=0.3 \
 SFT_TASKS=synth_sum,synth_count,synth_max,synth_min,synth_sumwhere,synth_mode,synth_distinct,synth_sumby,synth_count2,synth_diff,synth_maxwhere,synth_count_cmp,synth_count_range,synth_runreset,synth_varchain,synth_peak,synth_streak,synth_adjacent,synth_first_exceed,synth_filter_argmax,synth_2d,synth_topk,long_records,rule_label,labeled_records,realdoc_count,niah_novel,niah_multi,vt_novel,narrativeqa \
-N_PER_TASK=10 N_PER_TASK_OVERRIDE=vt_novel:200,synth_runreset:20,synth_varchain:20,synth_peak:20,synth_streak:20,synth_adjacent:20,synth_first_exceed:20,labeled_records:240,long_records:120,synth_topk:40,rule_label:40,realdoc_count:40,niah_novel:40,niah_multi:40,narrativeqa:30,synth_2d:24,synth_filter_argmax:15 \
+N_PER_TASK=10 N_PER_TASK_OVERRIDE=vt_novel:150,labeled_records:240,long_records:120,synth_topk:40,rule_label:40,realdoc_count:40,niah_novel:40,niah_multi:40,narrativeqa:30,synth_2d:24,synth_filter_argmax:15 \
 CTX=3000 DOC=6000 DOC_MIX=6000:2,8400:1,14000:1 DOC_MIX_OVERRIDE="vt_novel=6000:1,14000:1" CHUNK=200000 FOLD_LEAF_TOKENS=400 ROOT_DUP=4 DATUM_MODE=agent INTERNAL_KEEP=1.0 SFT_BATCH_SIZE=16 \
 BOOKQA_LEAF_MODEL=anthropic/claude-haiku-4-5-20251001 SAVE_NAME=sft_general14w \
 PRINT_TRACES=1 TRACE_OUT=/tmp/sft_general14w_traces \

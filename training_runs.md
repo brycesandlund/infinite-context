@@ -1138,11 +1138,15 @@ fold preamble), synth_peak keeps its description. **Cache-key bug found and fixe
 a cached trace but `_trace_key` ignored it, so a dropped trace would silently reuse a described one — `nodesc` is now
 part of the key (described keys unchanged, so the paid narrativeqa haiku leaves stay valid).
 
-## sft_general14w (run 14, warm start from RUN 13) — PREPARED 2026-09-22, not launched
+## sft_general14w (run 14, warm start from RUN 13) — 2026-09-23 — held-out **0.832** (BEST), diagnostics 1.000
 Warm from `sft_general13` (not 8w): run 13 has the better corpus-driven profile (user 0.95, temporal 0.28,
-multiquery 1.00, cwe/fwe 1.00) and one deficit, vt. Two levers: **CONTEXT_DROP=0.5** on the five prose tasks, and a
-fold boost (vt_novel 150→200, each synth fold task 10→20) taking fold share 24%→**31%**. Everything else is run 12's
-warm replay so run 13's gains are not drifted away. 1,079 traces, batch 16, LR 5e-6, 1 epoch ≈ 3 h / ≈$65.
+multiquery 1.00, cwe/fwe 1.00) and one deficit, vt. **ONE lever: prompt diversity** (the four changes above).
+**The fold-mass boost was proposed, built, and then REMOVED** — the corpora measure 24.4% fold (run 12, warm) vs
+22.7% (run 13, base), essentially identical, and run 13 folds 2/2 in-distribution, so mass is not the mechanism and
+boosting it would only confound the run. Fold weights stay at run-12 warm levels (vt_novel 150, synth fold 10 each,
+fold share 23%). niah_novel/niah_multi go 25/30 → 40/40 solely to size the CONTEXT_DROP treatment (~40
+description-free traces rather than ~27), not as an independent lever. 969 traces, batch 16, LR 5e-6, 1 epoch
+≈ 3 h / ≈$65. Treatment sizes: ~52 bare vt_novel, ~96 schema-lite labeled_records, ~40 description-free niah.
 Script `scripts/run_sft14_warm.sh`. If vt recovers to ~0.9 on run 13's profile the SCORE lands ≈0.78–0.80; if the
 two niah runaways also settle, ≈0.82.
 
@@ -1196,3 +1200,34 @@ what that instruction warns against, and a stated total is a coverage check the 
 
 Remaining known leak (not changed): author questions still name the tag, "author = Okafor (the `[by Okafor]` tag)" —
 that is task specification in the QUESTION, and OOLONG's question likewise names the user ID.
+
+**Run 14w results — 2026-09-23 — held-out 0.832, diagnostics 1.000 (24/24). Best checkpoint by a wide margin.**
+(ckpt `tinker://de730742-0918-5a2d-80fe-48f3d41ed0c3:train:0/weights/sft_general14w`; 969 traces / 40,805 datums /
+69.5M tokens, 2,551 batches at batch 16, LR 5e-6, NLL 0.0025; SFT 23:37→02:45 (3.1 h), eval 9 min; ≈$65.
+Raw `eval_results/raw/sft_general14w.{jsonl,txt}`.)
+
+| held-out | 8w | 12w | run 13 (base) | **14w** |
+|---|---|---|---|---|
+| **vt** | 0.88 | 0.96 | 0.28 | **1.00** — 5/5 FOLD, all perfect (run 13: 5/5 binary) |
+| **niah_multikey_1** | 0.80 | 0.80 | 0.80 | **1.00** — key carried 5/5 |
+| niah_multiquery | 1.00 | 0.70 | 1.00 | **1.00** |
+| niah_single_1 | 1.00 | 1.00 | 0.80 | **1.00** |
+| **oolong_counting** | 0.36 | 0.42 | 0.35 | **0.63** |
+| **oolong_temporal** | 0.25 | 0.21 | 0.28 | **0.35** (best ever) |
+| oolong_user | 0.60 | 0.75 | **0.95** | 0.65 |
+| cwe / fwe | 1.00 / 0.93 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 0.87 |
+| **SCORE** | 0.758 | 0.760 | 0.718 | **0.832** |
+
+**Reading.** Every RULER task is now at 1.00 except fwe (0.87, two third-word slips). vt went 0.28 → 1.00 with all
+five roots folding, and niah_multikey carried the key 5/5 for the first time. The OOLONG *aggregation* tasks moved
+too: counting 0.35 → 0.63 and temporal to its best-ever 0.35, with roots writing the open-set month contract
+unprompted ("`<month>` is the month and year of the review's date, written `Mon YYYY`") — the schema-lite training
+transferring exactly as intended. The one regression is oolong_user 0.95 → 0.65: trec picked the wrong label and
+agnews answered 6 vs 1; both roots wrote NO key contract at all, so the schema-lite variant may have over-corrected
+on that task. Temporal's three overflows are still the state-size ceiling (trec 38 months x 6 labels, negation 72
+dates) — unchanged and expected at a 3K budget.
+
+**Caveat, stated for the paper:** run 14 is warm from run 13, so the staged second pass and the prompt-diversity
+corpus are confounded. 12w (staged, no diversity) scored 0.760 and run 13 (diversity-free, single stage) 0.718, so
++0.07 over 12w is larger than staging alone has ever bought (+0.04); that is suggestive but not a clean attribution.
+The cheap disambiguator remains the description-ablation probe on in-distribution `vt_novel`.
