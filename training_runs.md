@@ -1061,7 +1061,7 @@ question; the fix would be for the multi-key training questions (niah_multi mult
 model reaches for, i.e. give niah_multi's opener the same quoted-question form so the two families are distinguished by the
 question text rather than by which opener the model happens to pick. **Best-of-per-task oracle across runs: 0.876** (recomputed from the raw jsonl; see `paper/results_across_runs.md`).
 
-## sft_general13 (run 13, FROM BASE) — launched 2026-09-22 09:54 — the single-stage reference
+## sft_general13 (run 13, FROM BASE) — 2026-09-22 — held-out 0.718, diagnostics 0.958 — the single-stage reference
 Corrected run 7's recipe on the run-12 oracle text, at run-7 scale with today's tasks: base count 40 for the 19 plain
 synth tasks; labeled_records 400 (14 qtypes), vt_novel 300, synth_topk 120, long_records / rule_label / realdoc_count 160,
 niah_multi 120, niah_novel 100, narrativeqa 80, synth_2d 80, synth_filter_argmax 60 → ≈2,500 traces, ≈170M tokens.
@@ -1072,3 +1072,43 @@ so the difference from 0.662 is the corpus; the 5e-6 warm stage is the documente
 vs run 7 (0.662) = the corpus work, batch confound accepted; vs 12w (0.760) = single stage vs the three-stage chain
 (run 7 → 8w → 12w, ≈3,700 traces of exposure in total). Script `scripts/run_sft13_base.sh`; log `/tmp/sft13_eval.log`;
 eval → `/tmp/eval_general13`. Expected ≈13 h + 8 min eval, ≈$200 + ≈$30 haiku for narrativeqa at 80.
+
+**Run 13 results — 2026-09-22 — held-out 0.718, diagnostics 0.958 (23/24).**
+(ckpt `tinker://bb67e67e-7d0f-5bf1-adaf-7022ee1f0d8f:train:0/weights/sft_general13`; 2,500 traces / 106,639 datums /
+181M tokens, 6,665 batches at batch 16, LR 1e-5 constant, NLL 0.0121; SFT 09:54→17:56 (8 h), eval 11 min; ≈$200.
+Raw `eval_results/raw/sft_general13.{jsonl,txt}`.)
+
+| held-out | run 7 (base, old corpus) | 8w | 12w | **run 13 (base, new corpus)** |
+|---|---|---|---|---|
+| oolong_counting | 0.60 | 0.36 | 0.42 | 0.35 |
+| **oolong_user** | 0.40 | 0.60 | 0.75 | **0.95** |
+| **oolong_temporal** | 0.27 | 0.25 | 0.21 | **0.28** |
+| niah_single_1 | 1.00 | 1.00 | 1.00 | 0.80 |
+| niah_multikey_1 | 1.00 | 0.80 | 0.80 | 0.80 |
+| niah_multiquery | 0.95 | 1.00 | 0.70 | **1.00** |
+| **vt** | 0.48 | 0.88 | 0.96 | **0.28** |
+| cwe / fwe | 0.52 / 0.73 | 1.00 / 0.93 | 1.00 / 1.00 | **1.00 / 1.00** |
+| **SCORE** | 0.662 | 0.758 | **0.760** | 0.718 |
+
+**Corpus ablation (run 13 vs run 7, both from base): 0.662 → 0.718.** The six weeks of corpus work is worth ~+0.06
+from base, concentrated exactly where it was aimed: user +0.55 (open-set contracts — BOTH user seeds correct, the
+first run ever to get negation's "most common user", with the root writing "`<user>` is exactly the user's ID as
+written in the sentences (never add a label)"), cwe +0.48 and fwe +0.27 (synth_topk), multiquery +0.05. Counting is
+the one loss (0.60 → 0.35) and it is leaf-label noise on the same three seeds.
+
+**Single-stage vs the warm chain (run 13 vs 12w): 0.718 vs 0.760.** The gap is ENTIRELY vt: 5/5 roots went BINARY
+("collect every variable assigned the value 94316") → 0.28, against 12w's 5/5 fold → 0.96. Every other held-out task
+is equal or better in run 13. So the fold prior is a two-stage artifact: 8w's weights carry it and the warm stages
+preserve it, but one pass over this corpus from base does not install it — vt_novel is 300/2500 roots (12%) against
+a 2,200-root binary majority, and from base the majority wins. That is the cleanest statement of what the staged
+recipe buys, and it is a training-mix fact, not a prompt fact.
+
+**Also new in run 13:** temporal's best score yet (0.28) with per-month roots on 3/5 seeds and negation at 67 vs 75
+(the whole-document dates contract DID transfer from base — it was ≈15 traces here vs ≈6 in the warm runs); two
+150-node runaways on niah (single_1 s3 and multikey s3) where the leaf hallucinated a needle sentence ("The magic
+number for abundant-backpack is 42. This value is used in the calculation…") — a from-base leaf-grounding weakness
+the warm runs do not show.
+
+**Reading for the paper.** 12w (0.760) remains the headline checkpoint; run 13 is the single-stage reference and the
+corpus ablation. The honest framing: the corpus work is worth +0.06 from base, and the staged recipe is worth a
+further +0.04, all of it the fold/binary prior on vt.
