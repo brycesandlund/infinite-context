@@ -273,7 +273,10 @@ _SKIP_TMODES = {"date_most", "date_2nd"}
 # Tasks whose QUESTION alone specifies the job, so the system-prompt description can be dropped
 # without making the problem ill-posed (see _make_sft_problem). Their eval counterparts (RULER
 # vt / niah_*, and the in-dist prose tasks) carry no description at all.
-_CONTEXT_DROP_TASKS = {"vt_novel", "niah_novel", "niah_multi", "narrativeqa", "realdoc_count"}
+# vt_novel is NOT here: its generator owns the bare condition (_VT_BARE_FRAC), dropping the
+# description, the copy-semantics gloss and the order preface TOGETHER so the RULER-matched case is a
+# controlled share rather than the product of three independent coins. One mechanism, not two.
+_CONTEXT_DROP_TASKS = {"niah_novel", "niah_multi", "narrativeqa", "realdoc_count"}
 CONTEXT_DROP = float(os.environ.get("CONTEXT_DROP", "0"))
 
 

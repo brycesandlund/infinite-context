@@ -171,6 +171,12 @@ _VT_PREAMBLE = (
 # Run 13 (from base) folded 2/2 in-distribution and went binary 5/5 on RULER vt.
 _VT_PREAMBLE_BARE = "Memorize and track the chains of variable assignment hidden in the text. "
 _VT_GLOSS_FRAC = 0.6      # 60% keep the gloss, 40% must infer order-dependence from the document
+# Order-dependence is signalled to the root by THREE independent things: the system description
+# ("...assignment lines hidden inside it, in order"), the question's copy-semantics gloss, and the
+# optional order preface. RULER's vt has none of the three. Left independent, the all-bare case is
+# only 0.5 x 0.4 x 0.43 ~= 9% of traces — too thin for the condition that actually matters — so a
+# fixed share is drawn BARE ON ALL THREE AXES at once, and the rest keep the independent mix.
+_VT_BARE_FRAC = 0.35
 
 
 # ---------------------------------------------------------------------------
@@ -406,18 +412,19 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
 
     t_val = vals[0]
     holders = sorted(n for n, v in binding.items() if v == t_val)
+    bare = rng.random() < _VT_BARE_FRAC          # RULER-matched: no description, no gloss, no preface
+    lead = _VT_PREAMBLE_BARE if bare else (_VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE)
+    prefaces = [""] if bare else _VT_PREFACES
     if qtype == "which_vars":
-        lead = _VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE
-        question = lead + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=_VT_PREFACES, t_val=t_val)
+        question = lead + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=prefaces, t_val=t_val)
         gold, grading, qvar = (holders or ["none"]), "set", None
     else:
         qvar = rng.choice([n for n, _, _ in chains[0]])
-        lead = _VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE
-        question = lead + _phrase(rng, _Q_VT_FINAL, prefaces=_VT_PREFACES, qvar=qvar)
+        question = lead + _phrase(rng, _Q_VT_FINAL, prefaces=prefaces, qvar=qvar)
         gold, grading = [str(binding[qvar])], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",
-        task_context=_VT_CONTEXT, grading_mode=grading,
+        task_context=("" if bare else _VT_CONTEXT), grading_mode=grading,
         metadata={"family": "niah", "strategy_default": "left_fold", "task": "vt_novel",
                   "qtype": qtype, "filler": fkind, "n_chains": n_chains, "target_value": t_val,
                   "query_var": qvar, "record_spans": spans},

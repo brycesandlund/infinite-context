@@ -1170,6 +1170,13 @@ in the description), and plausibly run 13's description-free niah runaways.
 3. `_SCHEMA_LITE_FRAC = 0.4` (labeled_records) — 40% of descriptions state only item type + label set, matching
    OOLONG's information content; the `[S<n>]` / `[by <author>]` / `[Mon DD, YYYY]` tags and the month rule are left
    to be discovered. Verified 30/30 (15 full-schema / 15 schema-lite).
-Combined on vt_novel: ~20% of traces have neither description nor gloss; ~9% are fully bare (no preface either).
+**Weighting (revised after review — the independent-coins version left the condition that matters at ~9%):**
+vt_novel's three cues are now drawn TOGETHER — `_VT_BARE_FRAC = 0.35` makes 35% of its traces RULER-matched
+(no description, no gloss, no preface) instead of 0.5 x 0.4 x 0.43 ~= 9%; the other 65% keep the description with
+the independent gloss/preface mix. vt_novel was removed from sft.py's `_CONTEXT_DROP_TASKS` so exactly one
+mechanism owns it. Measured on a 120-trace dry run: vt_novel 35% RULER-matched / 65% described; labeled_records
+45% schema-lite / 55% full-schema; niah_novel 35% no-description. At run-14 counts that is ~70 RULER-matched
+vt_novel traces (was ~17), ~96 schema-lite labeled_records, ~40 description-free niah — all above the ~40-trace
+threshold at which synth_topk flipped cwe from 0.52 to 1.00.
 Remaining known leak (not changed): author questions still name the tag, "author = Okafor (the `[by Okafor]` tag)" —
 that is task specification in the QUESTION, and OOLONG's question likewise names the user ID.
