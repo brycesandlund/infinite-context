@@ -154,6 +154,10 @@ _MULTI_CONTEXT = (
     "The document is a long passage of text with a few short factual sentences hidden inside "
     "it. Answer the question using ONLY this passage."
 )
+_NEEDLE_CONTEXT = (   # needle haystack: the "hidden inside a passage" descriptions above would be false
+    "The document is a long run of short factual sentences, each stating a special magic value for a "
+    "different key. Answer the question using ONLY this passage."
+)
 _VT_LIT = "VAR {name} = {value}."
 _VT_REF = "VAR {name} = VAR {rhs}."
 _VT_CONTEXT = (
@@ -239,6 +243,42 @@ def _pick_filler_kind(rng) -> str:
     return rng.choice(["novel", "novel", "essay", "noise"])
 
 
+# RULER's `type_haystack: needle` (niah_multikey_2/3): the haystack is NOTHING but distractor needles
+# of the same shape as the real one, so every leaf range is dense with wrong key=value lines and the
+# leaf must filter by key. Run 14w: multikey_2 0.80, multikey_3 0.00 (4/5 overflow) — no training
+# problem had ever put more than a handful of needles in a range.
+_NEEDLE_HAYSTACK_FRAC = 0.25
+
+
+def _compound_key(rng) -> str:
+    """Hyphenated two-word key (RULER's needle haystack uses adjective-noun keys; 40 plain nouns
+    can't key ~200 distinct distractors)."""
+    a, b = rng.sample(_KEYS, 2)
+    return f"{a}-{b}"
+
+
+def _mk_key(rng, ktype: str, compound: bool) -> str:
+    if ktype == "uuids":
+        return _uuid(rng)
+    return _compound_key(rng) if compound else rng.choice(_KEYS)
+
+
+def _needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude) -> str:
+    """Distractor needles only (never a key in `exclude`), ~doc_size_tokens long. The distractors are
+    NOT records: they carry no answer for the asked key, so a filtering leaf reports nothing for them."""
+    mk_val = (lambda: _uuid(rng)) if vtype == "uuids" else (lambda: str(rng.randint(1_000_000, 9_999_999)))
+    probe = _NEEDLE.format(vtype=vtype, key=_mk_key(rng, ktype, True), value=mk_val())
+    per = max(1, len(tokenizer(probe, add_special_tokens=False)["input_ids"]))
+    out, seen = [], set(exclude)
+    while len(out) < doc_size_tokens // per + 1:
+        k = _mk_key(rng, ktype, True)
+        if k in seen:
+            continue
+        seen.add(k)
+        out.append(_NEEDLE.format(vtype=vtype, key=k, value=mk_val()))
+    return " ".join(out) + " "
+
+
 def _uuid(rng) -> str:
     return str(uuid.UUID(int=rng.getrandbits(128)))
 
@@ -269,22 +309,31 @@ def make_niah_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
         return _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed)
 
     rng = random.Random(seed)
-    filler = _filler(rng, tokenizer, doc_size_tokens, "novel")
-    key = rng.choice(_KEYS)
-    value = str(rng.randint(1_000_000, 9_999_999))
-    needle = _NEEDLE.format(vtype="numbers", key=key, value=value)
+    # Key/value types vary (was: word key -> number, always). RULER's uuid-keyed niah_multikey_3 was the
+    # only uuid key the root had ever seen outside niah_multi's collect template, so it collected.
+    ktype = rng.choice(["words", "words", "uuids"])
+    vtype = rng.choice(["numbers", "numbers", "uuids"])
+    vword = "number" if vtype == "numbers" else "uuid"
+    needle_hay = rng.random() < _NEEDLE_HAYSTACK_FRAC
+    key = _mk_key(rng, ktype, compound=needle_hay)
+    value = _uuid(rng) if vtype == "uuids" else str(rng.randint(1_000_000, 9_999_999))
+    filler = (_needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude={key}) if needle_hay
+              else _filler(rng, tokenizer, doc_size_tokens, "novel"))
+    needle = _NEEDLE.format(vtype=vtype, key=key, value=value)
     doc_text, cspans = _insert(filler, _boundaries(filler, 1, rng), [needle])
     enc = tokenizer(doc_text, return_offsets_mapping=True, add_special_tokens=False)
     (ts, te), = _tok_spans(enc["offset_mapping"], cspans)
     spans = [(ts, te, 0, 1, needle.strip(), True)]
     return Problem(
-        document_tokens=enc["input_ids"], question=_phrase(rng, _Q_SINGLE, vword="number", key=key),
-        gold_answers=[value], task=task, task_context=_CONTEXT, grading_mode="qa_part",
+        document_tokens=enc["input_ids"], question=_phrase(rng, _Q_SINGLE, vword=vword, key=key),
+        gold_answers=[value], task=task, task_context=_NEEDLE_CONTEXT if needle_hay else _CONTEXT,
+        grading_mode="qa_part",
         metadata={"family": "niah", "strategy_default": "binary", "task": task,
                   "answer": value, "key": key, "record_spans": spans, "k": 12,
+                  "key_type": ktype, "value_type": vtype, "filler": "needle" if needle_hay else "novel",
                   # bare question, embedded verbatim in every subtask by BookQAOracle (no preface /
                   # answer-format tail — those conflict with the leaf protocol)
-                  "q_core": f"What is the special magic number for {key}?"},
+                  "q_core": f"What is the special magic {vword} for {key}?"},
     )
 
 
@@ -294,7 +343,11 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
     ktype = rng.choice(["words", "words", "uuids"])
     vtype = rng.choice(["numbers", "numbers", "uuids"])
     fkind = _pick_filler_kind(rng)
-    filler = _filler(rng, tokenizer, doc_size_tokens, fkind, corpus_tokens)
+    # Needle haystack only where the question names the key(s): hidden mode must collect every fact,
+    # which over ~200 needles is not a 3K-budget problem (and RULER has no such variant).
+    needle_hay = mode != "hidden" and rng.random() < _NEEDLE_HAYSTACK_FRAC
+    if needle_hay:
+        fkind = "needle"
 
     def mk_val():
         return _uuid(rng) if vtype == "uuids" else str(rng.randint(1_000_000, 9_999_999))
@@ -303,7 +356,7 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
     # the fact count whenever uuids are involved (measured: 5 uuid=uuid facts -> 3.5k-token node).
     heavy = ktype == "uuids" or vtype == "uuids"
     if mode == "multivalue":
-        keys = [rng.choice(_KEYS) if ktype == "words" else _uuid(rng)]
+        keys = [_mk_key(rng, ktype, needle_hay)]
         n_vals = rng.randint(2, 3) if heavy else rng.randint(2, 4)
         facts = [(keys[0], mk_val(), False) for _ in range(n_vals)]
         target_keys = keys
@@ -312,13 +365,19 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
             n_keys = rng.randint(2, 3) if heavy else rng.randint(2, 4)
         else:
             n_keys = rng.randint(1, 3) if heavy else rng.randint(1, 6)
-        keys = rng.sample(_KEYS, n_keys) if ktype == "words" else [_uuid(rng) for _ in range(n_keys)]
+        keys = []
+        while len(keys) < n_keys:
+            k = _mk_key(rng, ktype, needle_hay)
+            if k not in keys:
+                keys.append(k)
         facts = [(k, mk_val(), False) for k in keys]
         target_keys = keys if mode == "multiquery" else [rng.choice(keys)]
         if mode == "hidden":
             facts.append((target_keys[0], None, True))
     rng.shuffle(facts)
     vword = "number" if vtype == "numbers" else "uuid"
+    filler = (_needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude=set(keys)) if needle_hay
+              else _filler(rng, tokenizer, doc_size_tokens, fkind, corpus_tokens))
     sentences = [
         (_QUERY_NEEDLE.format(key=k) if is_q else _NEEDLE.format(vtype=vtype, key=k, value=v))
         for k, v, is_q in facts
@@ -348,7 +407,7 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
         grading = "set"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="niah_multi",
-        task_context=_MULTI_CONTEXT, grading_mode=grading,
+        task_context=_NEEDLE_CONTEXT if needle_hay else _MULTI_CONTEXT, grading_mode=grading,
         metadata={"family": "niah", "strategy_default": "binary", "task": "niah_multi",
                   "mode": mode, "key_type": ktype, "value_type": vtype, "filler": fkind,
                   "target_keys": target_keys, "answer": gold[0], "n_needles": len(facts),

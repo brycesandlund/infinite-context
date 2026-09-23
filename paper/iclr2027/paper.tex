@@ -82,7 +82,7 @@ Long-context LLM work can be broken into a few distinct categories: \emph{native
 
 \subsection{Native Long Context Models}
 
-GPT-2 shipped with a 1,024 token context limit. This limit doubled in every generation through GPT-4, until jumping to the 100K range on GPT-4 Turbo, with contemporaneous models Claude 2 and Llama 3.1 at similar limits. The core difficulty in scaling context length $n$ in the classic Transformer architecture is $\Omega(n^2)$ attention complexity, which becomes prohibitively expensive when $n >> 100K$. State-space architectures like the mamba lineage or neural methods like Titans make more drastic architectural changes to work around this issue. More mainstream solutions include 
+GPT-2 shipped with a 1,024 token context limit. This limit doubled in every generation through GPT-4, until jumping to the 100K range on GPT-4 Turbo, with contemporaneous models Claude 2 and Llama 3.1 at similar limits. The core difficulty in scaling context length $n$ in the classic Transformer architecture is $\Omega(n^2)$ attention complexity, which becomes prohibitively expensive as $n >> 100K$. State-space architectures like the mamba lineage or neural methods like Titans make more drastic architectural changes to work around this issue. Modern architectures are hybrid, combining linear attention layers with full attention, allowing context lengths to scale to 1M tokens.
 
 
 \section{Methodology}

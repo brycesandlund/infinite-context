@@ -5,7 +5,8 @@ synth_varchain — with mechanical (scripted, faithful) leaves. Each task is a V
 variant is drawn per problem and carried in metadata), so the oracle reads the mode from `meta`:
 
 - NiahMultiOracle (binary collect-then-resolve). Leaves fold the hidden facts starting in their
-  range into {key: value[,value…], QUERY: key_j}; combine is a per-key union merge (multivalue
+  range into {key: value[,value…], QUERY: key_j} — in hidden mode EVERY fact; when the question
+  names the key(s) (explicit/multiquery/multivalue) only the asked keys', others skipped silently; combine is a per-key union merge (multivalue
   keys hold several comma-joined values); the ROOT resolves by mode:
     hidden     -> state[state["QUERY"]]           (a real multi-hop lookup)
     explicit   -> state[target_key]
@@ -41,6 +42,19 @@ class NiahMultiOracle(ScaffoldOracle):
 
     def _kind(self):
         return "dict"
+
+    def _filtered(self) -> bool:
+        """The question names the key(s) (explicit / multiquery / multivalue): leaves keep only those."""
+        return self.mode != "hidden"
+
+    def _asked(self, recs):
+        keys = set(self.target_keys)
+        return [s for s in recs if s[3] in keys]
+
+    # Filtered modes drop other keys' facts SILENTLY (no per-fact line), like niah_novel's search
+    # leaf: a dense haystack of uuid needles would otherwise cost ~50 tokens per skipped fact.
+    def _accumulate(self, recs, acc):
+        return super()._accumulate(self._asked(recs) if self._filtered() else recs, acc)
 
     # Values are strings (a number, a uuid, or a key name), so override the base dict
     # serializer, which parses values as ints and would DROP non-numeric entries.
@@ -111,6 +125,8 @@ class NiahMultiOracle(ScaffoldOracle):
     # Phrases must read naturally inside the templated subtask: "Over the {unit} STARTING in
     # tokens a..b, compute {goal}." — noun-phrases, no dangling clauses.
     def _op_phrase(self) -> str:
+        if self._filtered():
+            return f"keeping each stated magic {self.vword} for the asked key(s) (key=value) and skipping every other key"
         return f"collecting each stated magic {self.vword} (key=value) and any lookup instruction"
 
     def _unit(self) -> str:
@@ -124,39 +140,55 @@ class NiahMultiOracle(ScaffoldOracle):
             return (f"The question asks for the magic {self.vword} of a key that only a hidden lookup instruction names, so "
                     f"the state is the set of collected key=value facts plus that instruction, resolved only at the root.")
         if self.mode == "multivalue":
-            return (f"The question asks for EVERY magic {self.vword} stated for one key, so the state collects all values "
-                    f"per key (several values under one key are comma-joined), merged at the root.")
-        return (f"The question asks for specific keys' magic {self.vword}s, so the state is the set of collected "
-                f"key=value facts, resolved only at the root.")
+            return (f"The question asks for EVERY magic {self.vword} stated for one key, so the state keeps all values "
+                    f"for that key only (comma-joined), skipping every other key's facts, merged at the root.")
+        return (f"The question names the key(s) it asks about, so the state keeps only those keys' key=value facts — "
+                f"every other key's fact is skipped — resolved at the root.")
 
     def _state_format(self) -> str:
+        if self._filtered():
+            return (f"the asked key(s)' facts as `<key>=<magic {self.vword}>` entries joined by `|` (several values "
+                    f"for one key comma-joined: `<key>=<v1>,<v2>`), where each `<key>` is the key name exactly as "
+                    f"written in the text — only the key(s) named above; a fact for any other key is skipped")
         return (f"the collected facts as `<key>=<magic {self.vword}>` entries joined by `|` (several values for one "
                 f"key comma-joined: `<key>=<v1>,<v2>`), where each `<key>` is the key name exactly as written in the "
                 f"text, and a lookup instruction as `QUERY=<key>`")
 
+    def _empty_partial(self) -> str:
+        if self._filtered():
+            return "; `none` if no hidden fact sentence for the asked key(s) starts in the range"
+        return super()._empty_partial()
+
     def _goal_phrase(self) -> str:
         # Name what the question asks for, so every subtask carries the KEY(s) down the tree
         # (run 4: the model dropped the key — "compute the hidden number" — and leaves returned
-        # whichever magic number they saw). Other keys are still collected: the leaf can't know
-        # in advance which sentence matters for a hidden-query lookup.
+        # whichever magic number they saw). Only HIDDEN mode collects every key: its leaf can't know
+        # in advance which key the lookup instruction will name. When the question names the key(s),
+        # the leaf FILTERS — run 14w on RULER niah_multikey_3 (every sentence a uuid=uuid needle):
+        # the old "(collecting every stated key=… fact in the range)" hedge made each 500-token leaf
+        # carry ~7 uuid pairs and 4/5 trees overflowed, including the leaf that held the answer.
         if self.mode == "explicit":
-            return (f"the magic {self.vword} stated for {self.target_keys[0]} (collecting every "
-                    f"stated key=magic {self.vword} fact in the range)")
+            return f"the magic {self.vword} stated for {self.target_keys[0]}"
         if self.mode == "multiquery":
-            return (f"the magic {self.vword}s stated for {', '.join(self.target_keys)} (collecting "
-                    f"every stated key=magic {self.vword} fact in the range)")
+            return f"the magic {self.vword}s stated for {', '.join(self.target_keys)}"
         if self.mode == "multivalue":
-            return (f"every magic {self.vword} stated for {self.target_keys[0]} (collecting every "
-                    f"stated key=magic {self.vword} fact in the range)")
+            return f"every magic {self.vword} stated for {self.target_keys[0]}"
         return f"the hidden facts (each key's magic {self.vword}, plus any lookup instruction)"
 
     def _combine_phrase(self) -> str:
         return "merge"
 
     def _empty_phrase(self) -> str:
+        if self._filtered():
+            return "  (no hidden fact sentence for the asked key(s) starts here)"
         return "  (no hidden fact sentence starts here)"
 
     def _partial_header(self, a, b, n) -> str:
+        if self._filtered():
+            n = len(self._asked(self._recs_in(a, b)))
+            return (f"Keeping the {n} hidden fact sentence(s) for the asked key(s) whose line STARTS in {a}..{b} "
+                    f"({self._op_phrase()}; the trailing reads only finish a sentence straddling {b}; "
+                    f"one starting at/after {b} belongs to the next range)")
         return (f"Collecting the {n} hidden fact sentence(s) whose line STARTS in {a}..{b} "
                 f"({self._op_phrase()}; the trailing reads only finish a sentence straddling {b}; "
                 f"one starting at/after {b} belongs to the next range)")

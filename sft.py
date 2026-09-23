@@ -343,7 +343,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v7"   # v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
+_CACHE_VERSION = "v8"   # v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False) -> str:
