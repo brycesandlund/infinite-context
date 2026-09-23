@@ -263,9 +263,8 @@ def _mk_key(rng, ktype: str, compound: bool) -> str:
     return _compound_key(rng) if compound else rng.choice(_KEYS)
 
 
-def _needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude) -> str:
-    """Distractor needles only (never a key in `exclude`), ~doc_size_tokens long. The distractors are
-    NOT records: they carry no answer for the asked key, so a filtering leaf reports nothing for them."""
+def _distractor_needles(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude) -> list[tuple[str, str]]:
+    """~doc_size_tokens worth of (key, value) distractor needles, never a key in `exclude`."""
     mk_val = (lambda: _uuid(rng)) if vtype == "uuids" else (lambda: str(rng.randint(1_000_000, 9_999_999)))
     probe = _NEEDLE.format(vtype=vtype, key=_mk_key(rng, ktype, True), value=mk_val())
     per = max(1, len(tokenizer(probe, add_special_tokens=False)["input_ids"]))
@@ -275,8 +274,15 @@ def _needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude) -> st
         if k in seen:
             continue
         seen.add(k)
-        out.append(_NEEDLE.format(vtype=vtype, key=k, value=mk_val()))
-    return " ".join(out) + " "
+        out.append((k, mk_val()))
+    return out
+
+
+def _needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude) -> str:
+    """niah_novel: distractor needles as plain filler text. They are NOT records — the search leaf
+    (BookQAOracle) reports only the sentence that answers the question, as over prose filler."""
+    pairs = _distractor_needles(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude)
+    return " ".join(_NEEDLE.format(vtype=vtype, key=k, value=v) for k, v in pairs) + " "
 
 
 def _uuid(rng) -> str:
@@ -293,6 +299,7 @@ def _interleave(rng, chains: list[list]) -> list:
         ci = rng.choices(live, weights=weights)[0]
         out.append(chains[ci][idx[ci]]); idx[ci] += 1
     return out
+
 
 
 # ---------------------------------------------------------------------------
@@ -376,16 +383,32 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
             facts.append((target_keys[0], None, True))
     rng.shuffle(facts)
     vword = "number" if vtype == "numbers" else "uuid"
-    filler = (_needle_filler(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude=set(keys)) if needle_hay
-              else _filler(rng, tokenizer, doc_size_tokens, fkind, corpus_tokens))
     sentences = [
         (_QUERY_NEEDLE.format(key=k) if is_q else _NEEDLE.format(vtype=vtype, key=k, value=v))
         for k, v, is_q in facts
     ]
-    doc_text, cspans = _insert(filler, _boundaries(filler, len(sentences), rng), sentences)
+    if needle_hay:
+        # The distractors ARE records here (key, value, is_query=False): a filtering leaf lists each one
+        # with a `(other key, skip)` verdict, like every other filtered leaf in the corpus.
+        pairs = _distractor_needles(rng, tokenizer, doc_size_tokens, ktype, vtype, exclude=set(keys))
+        slots = sorted(rng.sample(range(len(pairs) + 1), len(facts)))
+        recs = [(k, v, False) for k, v in pairs]
+        for off, (pos, f) in enumerate(zip(slots, facts)):
+            recs.insert(pos + off, f)
+        parts, cspans, cur = [], [], 0
+        for k, v, is_q in recs:
+            sent = _QUERY_NEEDLE.format(key=k) if is_q else _NEEDLE.format(vtype=vtype, key=k, value=v)
+            cspans.append((cur, cur + len(sent)))
+            parts.append(sent)
+            cur += len(sent) + 1
+        doc_text = " ".join(parts) + " "
+    else:
+        filler = _filler(rng, tokenizer, doc_size_tokens, fkind, corpus_tokens)
+        doc_text, cspans = _insert(filler, _boundaries(filler, len(sentences), rng), sentences)
+        recs = facts
     enc = tokenizer(doc_text, return_offsets_mapping=True, add_special_tokens=False)
     spans = [(ts, te, i, k, v, is_q)
-             for i, ((ts, te), (k, v, is_q)) in enumerate(zip(_tok_spans(enc["offset_mapping"], cspans), facts))]
+             for i, ((ts, te), (k, v, is_q)) in enumerate(zip(_tok_spans(enc["offset_mapping"], cspans), recs))]
 
     # Question + gold + grading per mode.
     if mode == "hidden":

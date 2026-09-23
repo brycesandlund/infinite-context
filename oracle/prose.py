@@ -6,7 +6,7 @@ variant is drawn per problem and carried in metadata), so the oracle reads the m
 
 - NiahMultiOracle (binary collect-then-resolve). Leaves fold the hidden facts starting in their
   range into {key: value[,value…], QUERY: key_j} — in hidden mode EVERY fact; when the question
-  names the key(s) (explicit/multiquery/multivalue) only the asked keys', others skipped silently; combine is a per-key union merge (multivalue
+  names the key(s) (explicit/multiquery/multivalue) only the asked keys' (other keys' lines get a `skip` verdict); combine is a per-key union merge (multivalue
   keys hold several comma-joined values); the ROOT resolves by mode:
     hidden     -> state[state["QUERY"]]           (a real multi-hop lookup)
     explicit   -> state[target_key]
@@ -47,15 +47,6 @@ class NiahMultiOracle(ScaffoldOracle):
         """The question names the key(s) (explicit / multiquery / multivalue): leaves keep only those."""
         return self.mode != "hidden"
 
-    def _asked(self, recs):
-        keys = set(self.target_keys)
-        return [s for s in recs if s[3] in keys]
-
-    # Filtered modes drop other keys' facts SILENTLY (no per-fact line), like niah_novel's search
-    # leaf: a dense haystack of uuid needles would otherwise cost ~50 tokens per skipped fact.
-    def _accumulate(self, recs, acc):
-        return super()._accumulate(self._asked(recs) if self._filtered() else recs, acc)
-
     # Values are strings (a number, a uuid, or a key name), so override the base dict
     # serializer, which parses values as ints and would DROP non-numeric entries.
     def _ser_state(self, state) -> str:
@@ -80,6 +71,8 @@ class NiahMultiOracle(ScaffoldOracle):
     # once at the end ("→ accumulator = …"), which is where the model needs it.
     def _acc_step(self, acc, s):
         _, _, idx, key, value, is_query = s
+        if self._filtered() and key not in self.target_keys:   # filter: every line shown, with a verdict
+            return acc, f"- magic {self.vword} for {key} (other key, skip)"
         if is_query:
             acc = {**acc, "QUERY": key}
             return acc, f"- lookup instruction: the key to look up is {key}  → QUERY={key}"
@@ -179,16 +172,9 @@ class NiahMultiOracle(ScaffoldOracle):
         return "merge"
 
     def _empty_phrase(self) -> str:
-        if self._filtered():
-            return "  (no hidden fact sentence for the asked key(s) starts here)"
         return "  (no hidden fact sentence starts here)"
 
     def _partial_header(self, a, b, n) -> str:
-        if self._filtered():
-            n = len(self._asked(self._recs_in(a, b)))
-            return (f"Keeping the {n} hidden fact sentence(s) for the asked key(s) whose line STARTS in {a}..{b} "
-                    f"({self._op_phrase()}; the trailing reads only finish a sentence straddling {b}; "
-                    f"one starting at/after {b} belongs to the next range)")
         return (f"Collecting the {n} hidden fact sentence(s) whose line STARTS in {a}..{b} "
                 f"({self._op_phrase()}; the trailing reads only finish a sentence straddling {b}; "
                 f"one starting at/after {b} belongs to the next range)")

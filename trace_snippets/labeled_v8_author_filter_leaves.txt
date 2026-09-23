@@ -1,0 +1,64 @@
+
+######## labeled_records / author_label_count  (seed 700000, schema_lite=True)
+QUESTION: Judge each item's label (one of: negative, positive). For this question, consider only the items with author = 61752 (the `[by 61752]` tag). Among those items, how many are labelled `negative`? Give the single integer in \boxed{}.
+SUBTASK: Over the items STARTING in tokens 0..374, compute how many of ONLY author 61752's items are `negative` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many of ONLY author 61752's items are `negative` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+LEAF OUTPUT:
+Judging the 5 items whose line STARTS in 0..374 one at a time and counting them (judging each item's label and counting the `negative` ones among author 61752's items only; the trailing reads only finish the last line, and any item starting at/after 374 belongs to the next range):
+- [S1] [by 87757] "Love Buffalo Chip! I've never ea…" → label: positive (other author, skip)
+- [S1] [by 52053] "Both times Ive been there, lunch…" → label: positive (other author, skip)
+- [S1] [by 87757] "The hotel is fantastic. First Cl…" → label: positive (other author, skip)
+- [S1] [by 52053] "So i got tired of Asian buffet w…" → label: negative (other author, skip)
+- [S1] [by 52053] "I took my wife to Marssa for her…" → label: positive (other author, skip)
+Partial = 0.
+\boxed{0}
+
+######## labeled_records / author_label_count  (seed 700015, schema_lite=True)
+QUESTION: Judge each item's label (one of: False, True). Looking only at items that have author Diaz or Han (the `[by …]` tag): how many are labelled `False`? Give the single integer in \boxed{}.
+SUBTASK: Over the items STARTING in tokens 0..374, compute how many of ONLY the items of authors Diaz and Han are `False` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many of ONLY the items of authors Diaz and Han are `False` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+LEAF OUTPUT:
+Judging the 10 items whose line STARTS in 0..374 one at a time and counting them (judging each item's label and counting the `False` ones among the items of authors Diaz and Han only; the trailing reads only finish the last line, and any item starting at/after 374 belongs to the next range):
+- [S1] [by Sato] "Jeleniowo [jɛlɛˈɲɔvɔ] (German: Jellinowen) is located in Bhopal.It is a private University." → label: False (other author, skip)
+- [S1] [by Okafor] "Mammillaria zeilmanniana is a species of plant in the Cactaceae family." → label: True (other author, skip)
+- [S1] [by Han] "The first USS Lehigh was a Passaic-class monitor launched 17 January 1863 by Reaney Son & Archbold Chester Penn." → label: True (author matches, no) → count=0
+- [S1] [by Sato] "Tommy the Toreador is a village in Jastun Shah Rural District Hati District Lali County Khuzestan Province Iran." → label: False (other author, skip)
+- [S1] [by Okafor] "Filip Švaříček (born December 30 1991) is a public secondary school in Anstruther Fife." → label: False (other author, skip)
+- [S1] [by Okafor] "Dennstaedtiales is an American record producer engineer mixer and songwriter based in Atlanta Georgia." → label: False (other author, skip)
+- [S1] [by Okafor] "Bulbophyllum carnosilabium is a public high school located in Emporia Virginia community in Greensville County Virginia." → label: False (other author, skip)
+- [S1] [by Diaz] "Sulluqucha (Quechua sullu fetus / lock made of wood which is an American politician from Indianapolis Indiana." → label: False (author matches, counts) → count=1
+- [S1] [by Han] "Draper Tools Ltd was a 70-gun third rate ship of the line of the English Royal Navy launched at Harwich in 1679.Breda was destroyed by an accidental fire in 1690." → label: False (author matches, counts) → count=2
+- [S1] [by Sato] "Eveready East Africa is an affiliate of the American Eveready Battery Company." → label: True (other author, skip)
+Partial = 2.
+\boxed{2}
+
+######## labeled_records / author_most  (seed 700013, schema_lite=True)
+QUESTION: Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Among ONLY the items with author Han or Lee (the `[by …]` tag), which label is the MOST common? Break ties by the alphabetically first label. Give your final answer in the form 'Label: [X]', where [X] is the label; put it inside \boxed{}.
+SUBTASK: Over the items STARTING in tokens 0..374, compute the per-label tally over ONLY the items of authors Han and Lee (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY the items of authors Han and Lee (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `anger`, `fear`, `joy`,
+LEAF OUTPUT:
+Judging the 11 items whose line STARTS in 0..374 one at a time and tallying them (judging each item's label and tallying the labels of the items of authors Han and Lee only; the trailing reads only finish the last line, and any item starting at/after 374 belongs to the next range):
+- [S1] [by Han] "i feel almost virtuous almost as…" → label: joy (author matches) → joy: 1
+- [S1] [by Rossi] "i stopped feeling bitter and sor…" → label: anger (other author, skip)
+- [S1] [by Lee] "i wish i could feel more assured…" → label: joy (author matches) → joy: 2
+- [S1] [by Rossi] "i had to stand in front of sinks…" → label: anger (other author, skip)
+- [S1] [by Han] "i subconsciously feel a little b…" → label: fear (author matches) → fear: 1
+- [S1] [by Han] "i feel a strange sensation cours…" → label: surprise (author matches) → surprise: 1
+- [S1] [by Lee] "i feel like prom dresses this go…" → label: joy (author matches) → joy: 3
+- [S1] [by Lee] "i am the type of person that abs…" → label: sadness (author matches) → sadness: 1
+- [S1] [by Han] "i have finished college had a co…" → label: sadness (author matches) → sadness: 2
+- [S1] [by Ivanov] "i feel so honored to have lindo …" → label: joy (other author, skip)
+- [S1] [by Lee] "i am feeling sympathetic with th…" → label: love (author matches) → love: 1
+Partial = fear:1|joy:3|love:1|sadness:2|surprise:1.
+\boxed{fear:1|joy:3|love:1|sadness:2|surprise:1}
+
+######## labeled_records / author_most  (seed 700003, schema_lite=True)
+QUESTION: Judge each item's label (one of: Artist, MeanOfTransportation, NaturalPlace, OfficeHolder). Among ONLY the items with author = Han (the `[by Han]` tag), which label is the MOST common? Break ties by the alphabetically first label. Give your final answer in the form 'Label: [X]', where [X] is the label; put it inside \boxed{}.
+SUBTASK: Over the items STARTING in tokens 0..371, compute the per-label tally over ONLY author Han's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author Han's items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `Artist`, `MeanOfTransportation`, `NaturalPlace`, `
+LEAF OUTPUT:
+Judging the 6 items whose line STARTS in 0..371 one at a time and tallying them (judging each item's label and tallying the labels of author Han's items only; the trailing reads only finish the last line, and any item starting at/after 371 belongs to the next range):
+- [S1] [by Ivanov] "Arup Roy is an Indian politician…" → label: OfficeHolder (other author, skip)
+- [S1] [by Kim] "The Martin-Baker MB3 was a Briti…" → label: MeanOfTransportation (other author, skip)
+- [S1] [by Ivanov] "The Messerschmitt M 28 was a mai…" → label: MeanOfTransportation (other author, skip)
+- [S1] [by Han] "Peter Plympton Smith (born Octob…" → label: OfficeHolder (author matches) → OfficeHolder: 1
+- [S1] [by Kim] "Catherine Annette Hanshaw (Octob…" → label: Artist (other author, skip)
+- [S1] [by Park] "Edwin Denby (February 18 1870 – …" → label: OfficeHolder (other author, skip)
+Partial = OfficeHolder:1.
+\boxed{OfficeHolder:1}

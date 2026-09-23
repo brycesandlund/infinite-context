@@ -48,12 +48,29 @@ _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section
            # two named authors compared on one label; the question names them WITH the descriptor word
            # ("author 30140 or author 92806") and the form wants only the id — the OOLONG-user yahoo seed lost
            # the same way in 3 runs (`User: User 30140`, `user 30140`) with the tally itself correct
-           "author_cmp"]
+           "author_cmp",
+           # run 15: filtered-subset questions were 2 of 12 qtypes and run 14w's OOLONG-user leaves dropped the user
+           # filter (tallied every line). Author-filtered share raised to ~30%: a filtered COUNT ("how many of user
+           # X's items are L" — the agnews seed shape we never taught) and extra author_most/least draws.
+           "author_label_count", "author_label_count", "author_most", "author_least"]
+# Author-filtered questions name 2 authors this often (OOLONG: "associated with user IDs …" may list several).
+_MULTI_AUTHOR_FRAC = 0.3
 # 40% of documents tag authors with numeric ids instead of names, so the open-set contract ("the author exactly
 # as written in the tag") and the `Author: [X]` form both see id-like keys (run 7/8w/9w: `User: User 30140`).
 _ID_AUTHOR_FRAC = 0.4
 _MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 _ROWS: dict[str, list[dict]] = {}
+
+
+def _pick_authors(rng, authors) -> list[str]:
+    """1 author, or 2 (sorted) with prob _MULTI_AUTHOR_FRAC."""
+    return sorted(rng.sample(authors, 2)) if rng.random() < _MULTI_AUTHOR_FRAC else [rng.choice(authors)]
+
+
+def _author_cond(aus) -> str:
+    if len(aus) == 1:
+        return f"author = {aus[0]} (the `[by {aus[0]}]` tag)"
+    return f"author {' or '.join(aus)} (the `[by …]` tag)"
 
 
 def _rows(name: str) -> list[dict]:
@@ -217,13 +234,20 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         grading, params = "numeric", {"qlabel": L}
         q = head + (f"For how many {unit_word}s is `{L}` the single most common label — i.e. that {unit_word} has "
                     f"STRICTLY more `{L}` items than items of any other one label? Give the single integer in \\boxed{{}}.")
+    elif qtype == "author_label_count":
+        aus = _pick_authors(rng, authors)
+        L = rng.choice(labels)
+        gold = sum(1 for r in recs if r["au"] in aus and r["label"] == L)
+        grading, params = "numeric", {"qauthor": aus[0], "qauthors": aus, "qlabel": L}
+        q = head + filtered_question(rng, "items", _author_cond(aus), f"how many are labelled `{L}`",
+                                     "Give the single integer in \\boxed{}.")
     elif qtype == "author_least":
-        au = rng.choice(authors)
-        c = Counter(r["label"] for r in recs if r["au"] == au)
+        aus = _pick_authors(rng, authors)
+        c = Counter(r["label"] for r in recs if r["au"] in aus)
         present = [l for l in labels if c[l] > 0]
         gold = min(present, key=lambda l: (c[l], l)) if present else labels[0]
-        grading, params = "exact", {"qauthor": au}
-        q = head + filtered_question(rng, "items", f"author = {au} (the `[by {au}]` tag)",
+        grading, params = "exact", {"qauthor": aus[0], "qauthors": aus}
+        q = head + filtered_question(rng, "items", _author_cond(aus),
                                      "which label is the LEAST common among the labels that appear at least once",
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
     elif qtype == "author_cmp":
@@ -281,11 +305,11 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
                     f"compared to items dated on or after {D}? 'Common' means the share of that period's items "
                     f"with the label. Answer with exactly one of: more common / less common / the same frequency. Put it in \\boxed{{}}.")
     else:  # author_most
-        au = rng.choice(authors)
-        c = Counter(r["label"] for r in recs if r["au"] == au)
+        aus = _pick_authors(rng, authors)
+        c = Counter(r["label"] for r in recs if r["au"] in aus)
         gold = min((l for l in labels if c[l] == max(c[l2] for l2 in labels))) if c else labels[0]
-        grading, params = "exact", {"qauthor": au}
-        q = head + filtered_question(rng, "items", f"author = {au} (the `[by {au}]` tag)", "which label is the MOST common",
+        grading, params = "exact", {"qauthor": aus[0], "qauthors": aus}
+        q = head + filtered_question(rng, "items", _author_cond(aus), "which label is the MOST common",
                                      f"Break ties by the alphabetically first label. Give the label (e.g. {ex}) in \\boxed{{}}.")
     # Answer-form following (run 7: the model boxed `User: User 30140` for "in the form 'User: [X]'").
     # A third of exact-answer questions state a template; the gold is the template filled ONCE.
