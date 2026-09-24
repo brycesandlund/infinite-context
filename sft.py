@@ -251,6 +251,36 @@ _DOC_MIX_OVERRIDE = {
 }
 
 
+# BUDGET x LENGTH JITTER (run 16). The split rule is FIXED — midpoint, "less than 500 tokens" — but the
+# corpus used to show it at ONE budget (3000) and three doc sizes (6000/8400/14000 -> a handful of range-size
+# families per depth), so the model could predict split-vs-read from memorized size families and surface cues
+# instead of the rule. Run 15w read "Range 2000..4000" as a leaf with P=1.0 (round range ending at the stated
+# doc length; trace_snippets/run15_split_decision_probe.txt). Here each problem draws a context BUDGET and a
+# CONTINUOUS doc length, larger budgets with longer docs; the oracle's behaviour does not change with the
+# budget, so the model sees "your context window is 12000 tokens" and still splits at 500.
+# Spec "3000:50,5000:15,..." = budget:weight. Empty -> the old fixed AGENT_CONTEXT + DOC_MIX behaviour.
+_BUDGET_DOC_RANGE = {3000: (5000, 9000), 5000: (7000, 11000), 8000: (9000, 14000),
+                     10000: (11000, 16000), 12000: (12000, 18000), 15000: (14000, 20000)}
+_BUDGET_MIX = [(int(b), float(w)) for b, _, w in
+               (kv.partition(":") for kv in os.environ.get("BUDGET_MIX", "").split(",") if kv.strip())]
+# A share of doc targets rounded to a multiple of 1000 (exact-slice generators then produce round lengths).
+ROUND_DOC_FRAC = float(os.environ.get("ROUND_DOC_FRAC", "0.2"))
+MAX_BUDGET = max([AGENT_CONTEXT] + [b for b, _ in _BUDGET_MIX])
+
+
+def _budget_doc_for(i: int, task: str) -> tuple[int, int]:
+    """(agent budget, doc size) for problem `i` of `task`. Deterministic (string-seeded RNG)."""
+    if not _BUDGET_MIX:
+        return AGENT_CONTEXT, _doc_size_for(i, task)
+    rng = random.Random(f"budgetdoc|{task}|{i}")
+    b = rng.choices([b for b, _ in _BUDGET_MIX], weights=[w for _, w in _BUDGET_MIX])[0]
+    lo, hi = _BUDGET_DOC_RANGE[b]
+    d = rng.randint(lo, hi)
+    if rng.random() < ROUND_DOC_FRAC:
+        d = round(d / 1000) * 1000
+    return b, d
+
+
 def _doc_size_for(i: int, task: str | None = None) -> int:
     """Doc size for problem index `i` — cycles DOC_MIX (or the task's DOC_MIX_OVERRIDE) so the long
     fraction spreads evenly and reproducibly across each task's problems."""
@@ -296,7 +326,8 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     # DOC_MIX (long-doc tier) applies only to SCRIPTED tasks — for a model-leaf task
     # (narrativeqa/bookqa) a longer doc means a bigger tree = many more paid leaf calls for no
     # QA benefit, so pin those to the base size.
-    doc = DOC_SIZE_TOKENS if task in _REJECT_SAMPLE_TASKS else _doc_size_for(i, task)
+    # Model-leaf tasks keep the base size AND the base budget (their cost is paid leaf calls).
+    budget, doc = (AGENT_CONTEXT, DOC_SIZE_TOKENS) if task in _REJECT_SAMPLE_TASKS else _budget_doc_for(i, task)
     if task.startswith("oolong"):
         seed, dataset = oolong_spec(task, i, DATA_SEED)
         return seed, make_oolong_problem(
@@ -304,6 +335,7 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
         )
     seed = DATA_SEED + ti * 100_000 + i
     problem = make_problem(task, corpus_tokens, tokenizer, doc, seed)
+    problem = dataclasses.replace(problem, metadata={**problem.metadata, "agent_budget": budget})
     # FORMAT DIVERSITY: drop the system-prompt document description on a fraction of the
     # PROSE tasks, so the root must infer the task's shape (order-dependent? one stated fact?
     # a tally?) from the QUESTION and the text alone. Every RULER eval task ships with an empty
@@ -322,6 +354,10 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     return seed, problem
 
 
+def _budget(problem) -> int:
+    return problem.metadata.get("agent_budget", AGENT_CONTEXT)
+
+
 async def _one_trace(oracle, problem, tokenizer):
     return await run_agent(
         oracle,
@@ -329,7 +365,7 @@ async def _one_trace(oracle, problem, tokenizer):
         tokenizer=tokenizer,
         task_context=problem.task_context,
         question=problem.question,
-        budget=AGENT_CONTEXT,
+        budget=_budget(problem),
         max_chunk_tokens=MAX_CHUNK_TOKENS,
         max_depth=MAX_DEPTH,
         max_turns=MAX_TURNS,
@@ -346,11 +382,11 @@ _TRACE_CACHE_DIR = os.path.expanduser(
 _CACHE_VERSION = "v9"   # v9: niah filtered leaves list skipped keys (convention) + needle distractors are records; labeled author_label_count + multi-author subsets + filtered share ~30% (2026-09-23); v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
-def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False) -> str:
+def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False, ctx=None) -> str:
     from oracle.base import ScaffoldOracle
     payload = dict(
         v=_CACHE_VERSION, task=task, seed=seed, doc=doc_len, strategy=strategy or "default",
-        ctx=AGENT_CONTEXT, leaf=ScaffoldOracle.LEAF_TOKENS, fold=ScaffoldOracle.FOLD_LEAF_TOKENS,
+        ctx=ctx or AGENT_CONTEXT, leaf=ScaffoldOracle.LEAF_TOKENS, fold=ScaffoldOracle.FOLD_LEAF_TOKENS,
         chunk=MAX_CHUNK_TOKENS, model=leaf_model_name,
         # the system prompt is baked into the cached trace, so a description-dropped trace is a
         # DIFFERENT artifact for the same (task, seed, doc) — key it, or CONTEXT_DROP silently
@@ -394,7 +430,8 @@ async def _cached_trace(oracle, problem, tokenizer, *, task, seed, strategy, lea
     path = os.path.join(_TRACE_CACHE_DIR, _trace_key(
         task, seed, len(problem.document_tokens), strategy, leaf_model_name,
         nodesc=not problem.task_context,
-        qph=problem.question.startswith("[The relevant text is in a separate document")) + ".json")
+        qph=problem.question.startswith("[The relevant text is in a separate document"),
+        ctx=_budget(problem)) + ".json")
     if os.path.exists(path):
         try:
             return _deser_node(json.load(open(path)))
@@ -419,7 +456,7 @@ async def _collect_scripted(task, ti, strategy, want, corpus_tokens, tokenizer, 
         i += 1
         oracle = make_oracle(
             problem, tokenizer,
-            budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
+            budget=_budget(problem), max_chunk_tokens=MAX_CHUNK_TOKENS,
             strategy=strategy,
         )
         if getattr(oracle, "tmode", None) in _SKIP_TMODES:
@@ -448,7 +485,7 @@ async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_mode
             tries += 1
             oracle = make_oracle(
                 problem, tokenizer,
-                budget=AGENT_CONTEXT, max_chunk_tokens=MAX_CHUNK_TOKENS,
+                budget=_budget(problem), max_chunk_tokens=MAX_CHUNK_TOKENS,
                 leaf_model=leaf_model,
             )
             batch.append(((task, seed, problem), oracle, problem))
@@ -520,7 +557,7 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
         )
         if float(weights.sum()) == 0.0:
             return out
-        datum = datum_from_model_input_weights(model_input, weights, max_length=AGENT_CONTEXT, reduction="mean")
+        datum = datum_from_model_input_weights(model_input, weights, max_length=MAX_BUDGET, reduction="mean")
         last = next((m.get("content") or "" for m in reversed(cb) if m.get("role") == "assistant"), "")
         # Order matters: QA verdicts FIRST. Most pos/neg verdicts are ANCESTORS of QA leaves
         # ("a subagent located the answer" / "neither half had relevant information") — spawn-only
@@ -545,7 +582,7 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
         if float(weights.sum()) == 0.0:  # nothing trainable (shouldn't happen)
             continue
         datum = datum_from_model_input_weights(
-            model_input, weights, max_length=AGENT_CONTEXT, reduction="mean"
+            model_input, weights, max_length=MAX_BUDGET, reduction="mean"
         )
         klass = _qa_verdict_class(m.get("content") or "") if is_qa else "normal"
         if is_root_turn:
@@ -614,12 +651,20 @@ async def main() -> None:
 
     _mix = ",".join(f"{s}x{_DOC_CYCLE.count(s)}" for s in sorted(set(_DOC_CYCLE)))
     print(f"SFT warm-start | tasks={len(SFT_TASKS)} x {N_PER_TASK} | "
-          f"doc_mix=[{_mix}] budget={AGENT_CONTEXT} epochs={EPOCHS}")
+          f"doc_mix=[{_mix}] budget={AGENT_CONTEXT} epochs={EPOCHS}"
+          + (f" | BUDGET_MIX={_BUDGET_MIX} (doc ranges {_BUDGET_DOC_RANGE}, round share {ROUND_DOC_FRAC})" if _BUDGET_MIX else ""))
     print("Loading + tokenizing PG-essay corpus...")
     corpus_tokens = tokenizer.encode(load_pg_essays_text(), add_special_tokens=False)
 
     print("Generating oracle traces (scripted, CPU)...")
     traces = await _gen_traces(corpus_tokens, tokenizer)
+    if _BUDGET_MIX:
+        from collections import Counter as _C
+        _bd = _C(_budget(m[2]) for m, _ in traces)
+        _dl = [len(m[2].document_tokens) for m, _ in traces]
+        print(f"Budget mix (traces): {dict(sorted(_bd.items()))} | doc tokens min/median/max "
+              f"{min(_dl)}/{sorted(_dl)[len(_dl) // 2]}/{max(_dl)} | exact multiples of 1000: "
+              f"{sum(d % 1000 == 0 for d in _dl)}")
 
     # Optionally dump every oracle trace we train FROM — the ground-truth
     # behaviour being taught. Uses the eval tree renderer (full text, read_chunk
