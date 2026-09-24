@@ -1267,3 +1267,33 @@ in this respect — so this is drift on an unsupported input across warm passes.
 never-taught overflow recovery: the parent writes "the answer is not in the range they covered → none" (15w: exactly
 its three wrong niah answers; run 13: 25 times). multikey_1 alone is −0.044 of the −0.046 SCORE-9 drop.
 Full tables: `trace_snippets/run15_split_decision_probe.txt`.
+
+## sft_general16w (run 16, warm start from 14w) — 2026-09-23 — held-out 0.810, RULER-13 **0.937** (best), 16-task **0.853** (best)
+
+(ckpt `tinker://97067667-0cfb-5879-9932-9ab90f9d06b2:train:0/weights/sft_general16w`; 1,009 traces / 42,943 datums /
+71.8M tokens, root share of datums 9.4% (run 15: 9.6%); SFT 19:33→~22:55, eval 9 min. Raw `eval_results/raw/sft_general16w.*`.
+Script `scripts/run_sft16_warm.sh`.) Same start (14w) and same v9 corpus as run 15; the ONE change is budget x length
+jitter: per-problem budget {3K 50%, 5K 15%, 8K 13%, 10K 11%, 12K 11%}, doc length triangular (mode at the row's low end,
+ceiling 14K, row mean > budget), 20% of targets rounded (only 8 docs came out exactly round). Split rule unchanged.
+
+**Split-decision probe (the direct test): clean everywhere.** Every probed range — round and non-round, ending at the doc
+or not, docs 2K-20K, budgets 1.5K-8K, search and collect subtasks — P(" fits") <= 0.011 (15w: 1.000 on 2000..4000).
+0 oversized "fits" in the eval (15w: 30). 16w is also the first checkpoint to split an exact-500 round range as the rule
+says ("less than 500"): 3500..4000 → 0.001 (all earlier checkpoints ~1.0). Round ranges were NOT directly trained (30
+round splits vs run 15's 111), so the rule generalized from the jittered sizes — the user's hypothesis over mine.
+
+| task | 14w | 15w | **16w** |
+|---|---|---|---|
+| niah_multikey_1 / single_2 / multivalue | 1.00 / 1.00 / 1.00 | 0.60 / 0.80 / 0.70 | **1.00 / 1.00 / 0.95** |
+| niah_multikey_2 / multikey_3 | 0.80 / 0.00 | 1.00 / 1.00 | **1.00 / 1.00** |
+| niah_single_1 / single_3 / multiquery | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 0.95 |
+| vt | 1.00 | 0.96 | 0.88 — 4/5 fold; one root went binary (0.60), one name slip (0.80) |
+| cwe / fwe / qa_1 / qa_2 | 1.00 / 0.87 / 1.00 / 0.40 | 1.00 / 1.00 / 1.00 / 0.40 | 1.00 / 1.00 / 1.00 / 0.40 |
+| oolong_counting | 0.63 | 0.46 | 0.51 — agnews tally correct (17) but answered without \boxed{} |
+| oolong_user | 0.65 | 0.75 | 0.68 — trec subset still 0 |
+| oolong_temporal | 0.35 | 0.30 | 0.26 — same three overflows (the known ceiling) |
+| **SCORE-9 / RULER-13 / 16-task** | **0.832** / 0.851 / 0.793 | 0.786 / 0.882 / 0.811 | 0.810 / **0.937** / **0.853** |
+
+Reading: the jitter fixed the split rule and every NIAH regression while keeping run 15's needle/multikey gains.
+SCORE-9 sits between 14w and 15w; the gap to 14w is vt (one binary root — the root-commitment prior again) plus
+OOLONG seed-level moves (a missing \boxed on a correct tally; the known temporal overflows), each within 45-rollout noise.

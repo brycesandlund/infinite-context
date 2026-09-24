@@ -258,9 +258,13 @@ _DOC_MIX_OVERRIDE = {
 # doc length; trace_snippets/run15_split_decision_probe.txt). Here each problem draws a context BUDGET and a
 # CONTINUOUS doc length, larger budgets with longer docs; the oracle's behaviour does not change with the
 # budget, so the model sees "your context window is 12000 tokens" and still splits at 500.
-# Spec "3000:50,5000:15,..." = budget:weight. Empty -> the old fixed AGENT_CONTEXT + DOC_MIX behaviour.
-_BUDGET_DOC_RANGE = {3000: (5000, 9000), 5000: (7000, 11000), 8000: (9000, 14000),
-                     10000: (11000, 16000), 12000: (12000, 18000), 15000: (14000, 20000)}
+# Spec "3000:50,5000:15,8000:13,10000:11,12000:11" = budget:weight. Empty -> the old fixed AGENT_CONTEXT + DOC_MIX behaviour.
+# Doc ranges never exceed the pre-run-16 ceiling (14000-token target). Each row's MEAN doc exceeds its budget.
+# Lengths are TRIANGULAR with the mode at the row's LOW end: node count doubles at 8000 tokens (31 -> 63 agents),
+# so a uniform draw would shift gradient mass from roots to internal/leaf agents; this keeps ~54% of traces at
+# >= 8000 (run 15: 50%) and the root share of datums about where it was.
+_BUDGET_DOC_RANGE = {3000: (4000, 14000), 5000: (5000, 14000), 8000: (6000, 14000),
+                     10000: (9000, 14000), 12000: (11500, 14000)}
 _BUDGET_MIX = [(int(b), float(w)) for b, _, w in
                (kv.partition(":") for kv in os.environ.get("BUDGET_MIX", "").split(",") if kv.strip())]
 # A share of doc targets rounded to a multiple of 1000 (exact-slice generators then produce round lengths).
@@ -275,7 +279,7 @@ def _budget_doc_for(i: int, task: str) -> tuple[int, int]:
     rng = random.Random(f"budgetdoc|{task}|{i}")
     b = rng.choices([b for b, _ in _BUDGET_MIX], weights=[w for _, w in _BUDGET_MIX])[0]
     lo, hi = _BUDGET_DOC_RANGE[b]
-    d = rng.randint(lo, hi)
+    d = int(rng.triangular(lo, hi, lo))
     if rng.random() < ROUND_DOC_FRAC:
         d = round(d / 1000) * 1000
     return b, d
