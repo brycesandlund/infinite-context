@@ -76,6 +76,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "narrativeqa": "qa_part",
     "niah_novel": "qa_part",
     "niah_multi": "qa_part",
+    "niah_bridge": "qa_part",
     "vt_novel": "set",
     "long_records": "numeric",   # fallback; per-problem grading_mode decides
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides
@@ -107,6 +108,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "narrativeqa": "qa_part",
     "niah_novel": "qa_part",
     "niah_multi": "qa_part",
+    "niah_bridge": "qa_part",
     "vt_novel": "set",
     "long_records": "numeric",   # fallback; per-problem grading_mode decides
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides

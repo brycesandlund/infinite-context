@@ -40,6 +40,7 @@ NIAH_TASKS: dict[str, dict] = {
     "niah_novel": {"family": "niah", "strategy": "binary"},
     "niah_multi": {"family": "niah", "strategy": "binary"},
     "vt_novel": {"family": "niah", "strategy": "left_fold"},
+    "niah_bridge": {"family": "niah", "strategy": "binary"},
 }
 
 # Key pool — plain nouns, à la RULER's magic-number keys.
@@ -332,6 +333,8 @@ def make_niah_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
         return _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed)
     if task == "vt_novel":
         return _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed)
+    if task == "niah_bridge":
+        return _make_niah_bridge(corpus_tokens, tokenizer, doc_size_tokens, seed)
 
     rng = random.Random(seed)
     # Key/value types vary (was: word key -> number, always). RULER's uuid-keyed niah_multikey_3 was the
@@ -534,4 +537,80 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
                   "qtype": qtype, "filler": fkind, "n_chains": n_chains, "target_value": t_val,
                   "surface": "bare" if bare else ("niah" if niah_surface else "vt"),
                   "query_var": qvar, "record_spans": spans},
+    )
+
+
+# ---------------------------------------------------------------------------
+# niah_bridge — two-hop "bridge" facts in prose (2026-09-24)
+# ---------------------------------------------------------------------------
+# RULER qa_2 (HotpotQA) needs a BRIDGE: fact 1 names an entity the question never names, fact 2 holds the answer
+# about that entity. 16w's leaves READ both hops and returned "No relevant information" — the corpus had 0 of 1,984
+# search leaves using the contract's "otherwise return any relevant information", because the only multi-fact traces
+# (context but no single answering sentence) were rejected at the root. Here: one SINGLE binary search (the existing
+# BookQAOracle shape); leaves pass up the fact sentences they hold as relevant context; the root chains them.
+# Synthetic, mechanical, no benchmark data. Distractors mirror BOTH hops (other role holders; the same relation for
+# other people) so the chain must be resolved by identity, not by picking the only fact of each kind.
+
+_BR_FIRST = ["Mira", "Ansel", "Tova", "Idris", "Leona", "Casimir", "Wren", "Otto", "Sabine", "Joaquin", "Freya",
+             "Anouk", "Bram", "Delphine", "Ezra", "Ilse", "Kasper", "Liora", "Matthias", "Noor", "Pim", "Rosalind"]
+_BR_LAST = ["Cole", "Varga", "Lindqvist", "Okoro", "Maresh", "Halloran", "Beaumont", "Strand", "Castell", "Fenwick",
+            "Ingram", "Dasko", "Achterberg", "Moreau", "Pell", "Quist", "Rutledge", "Sorensen", "Tully", "Wexford"]
+_BR_PLACES = ["Port Evan", "Norhaven", "Castle Brisk", "Ellmoor", "Saltmarch", "Greywater", "Kestrel Bay", "Hollin",
+              "Aldmere", "Fenwick Cross", "Varrow", "Whitlock"]
+_BR_ROLES = ["harbor master", "head archivist", "chief brewer", "lighthouse keeper", "town surveyor", "choir director",
+             "master glassblower", "bridge warden", "head gardener", "ferry captain"]
+_BR_HOP1 = ["The {role} of {place} is {p}.", "{p} serves as the {role} of {place}.",
+            "Everyone in {place} knows that {p} is their {role}.", "{place} appointed {p} as its {role}."]
+# (hop-2 sentence, bare question about "{desc}", value pool)
+_BR_REL = [
+    ("{p} was born in {v}.", "Where was {desc} born?",
+     ["Tarsk", "Oldbridge", "Veshen", "Marrowgate", "Lune", "Coldharbor", "Istvar", "Pellmere", "Rook's End"]),
+    ("{p} plays the {v}.", "Which instrument does {desc} play?",
+     ["cello", "hurdy-gurdy", "oboe", "harp", "bandoneon", "viola", "bassoon", "lute", "zither"]),
+    ("{p} speaks {v} fluently.", "Which language does {desc} speak fluently?",
+     ["Basque", "Icelandic", "Tagalog", "Welsh", "Amharic", "Estonian", "Quechua", "Maltese"]),
+    ("{p} keeps a dog named {v}.", "What is the name of the dog kept by {desc}?",
+     ["Biscuit", "Marlowe", "Juniper", "Pepper", "Captain", "Tansy", "Rufus", "Clementine"]),
+    ("{p} once climbed {v}.", "Which mountain did {desc} once climb?",
+     ["Mount Cairn", "the Hallow Peak", "Mount Veyra", "the Grey Needle", "Mount Oskar", "the Tallspire"]),
+]
+_BR_QPREFIX = ["", "", "Two facts in the text are needed here. ", "Read the passage carefully. "]
+
+
+def _make_niah_bridge(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
+    rng = random.Random(seed)
+    people = rng.sample([f"{a} {b}" for a in _BR_FIRST for b in _BR_LAST], 6)
+    places, roles = rng.sample(_BR_PLACES, 3), rng.sample(_BR_ROLES, 3)
+    s2, q2, pool = rng.choice(_BR_REL)
+    vals = rng.sample(pool, 4)
+    bridge, role, place, answer = people[0], roles[0], places[0], vals[0]
+    desc = f"the {role} of {place}"
+    hop1 = rng.choice(_BR_HOP1).format(role=role, place=place, p=bridge)
+    hop2 = s2.format(p=bridge, v=answer)
+    # distractors: other role holders (a different role OR place, never both the target's), the SAME relation for
+    # those people and for bystanders, so both hop kinds appear several times
+    others = [(people[1], roles[1], place), (people[2], role, places[1])]
+    if rng.random() < 0.5:
+        others.append((people[3], roles[2], places[2]))
+    facts = [(hop1, 2), (hop2, 2)]
+    for (p_, r_, pl_) in others:
+        facts.append((rng.choice(_BR_HOP1).format(role=r_, place=pl_, p=p_), 1))
+    for p_, v_ in zip([o[0] for o in others] + people[4:5], vals[1:]):
+        facts.append((s2.format(p=p_, v=v_), 1))
+    rng.shuffle(facts)
+    filler = _filler(rng, tokenizer, doc_size_tokens, rng.choice(["novel", "novel", "essay"]), corpus_tokens)
+    sentences = [f for f, _ in facts]
+    doc_text, cspans = _insert(filler, _boundaries(filler, len(sentences), rng), sentences)
+    enc = tokenizer(doc_text, return_offsets_mapping=True, add_special_tokens=False)
+    # (tok_start, tok_end, idx, relevance, snippet, has_answer=False): NO single sentence answers a bridge question
+    spans = [(ts, te, i, rel, f, False)
+             for i, ((ts, te), (f, rel)) in enumerate(zip(_tok_spans(enc["offset_mapping"], cspans), facts))]
+    q_core = q2.format(desc=desc)
+    question = rng.choice(_BR_QPREFIX) + q_core + " " + rng.choice(_ANSWER_TAILS)
+    return Problem(
+        document_tokens=enc["input_ids"], question=question, gold_answers=[answer], task="niah_bridge",
+        task_context=_MULTI_CONTEXT, grading_mode="qa_part",
+        metadata={"family": "niah", "strategy_default": "binary", "task": "niah_bridge", "answer": answer,
+                  "q_core": q_core, "k": 12, "record_spans": spans,
+                  "bridge": {"hop1": hop1, "hop2": hop2, "entity": bridge, "desc": desc, "answer": answer}},
     )

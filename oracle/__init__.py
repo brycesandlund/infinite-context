@@ -30,7 +30,7 @@ def make_oracle(problem, tokenizer, *, budget, max_chunk_tokens, strategy=None, 
     if task in ("bookqa", "narrativeqa"):
         return BookQAOracle(problem, tokenizer, budget=budget,
                             max_chunk_tokens=max_chunk_tokens, leaf_model=leaf_model)
-    if task == "niah_novel":
+    if task in ("niah_novel", "niah_bridge"):
         # Synthetic needle-in-novel: retrieval decomposition with a MECHANICAL leaf (the
         # scripted needle span), so no leaf model — BookQAOracle's scripted fallback IS the
         # needle match. Teaches decomposing a prose haystack (the RULER-transfer target).

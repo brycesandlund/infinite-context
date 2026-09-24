@@ -63,6 +63,7 @@ class BookQAOracle(ScaffoldOracle):
         self.answer = self.meta["answer"]      # gold — used ONLY by the external rejection gate
         self.k = self.meta.get("k", 12)
         self.leaf_model = leaf_model           # ModelBackend; None => scripted fallback leaf
+        self.bridge = self.meta.get("bridge")  # niah_bridge: {hop1, hop2, entity, desc, answer} — two-hop chain
         # entities live in meta but are used ONLY to build spans at generation time; the
         # oracle never puts them in a prompt.
 
@@ -197,11 +198,7 @@ class BookQAOracle(ScaffoldOracle):
                     # "the answer" as "the magic number" and its subtask dropped the KEY on 4/5 RULER
                     # multikey roots (leaves then returned other keys' numbers). 10w, whose root text named
                     # the question, carried the key 5/5.
-                    text=(f"This document is {self.doc_len} tokens — too long to read in one context. "
-                          f"The answer to the question \"{self.q_core}\" is stated in one place, so I split "
-                          f"the range in half recursively, having a subagent search each half for the sentence "
-                          f"that answers it (or any relevant context) and combining — the one that finds it "
-                          f"wins; once a half reports the answer, I read it off from the sentence that states it."),
+                    text=self._root_opener(),
                     tool_calls=[
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(0, m)}),
                         ToolCall(_new_id(), "spawn_subagent", {"subtask": self._subtask(m, self.doc_len)}),
@@ -213,8 +210,27 @@ class BookQAOracle(ScaffoldOracle):
             return rt
         return self._finalize_root(await self._leaf(0, self.doc_len, messages))
 
+    def _root_opener(self) -> str:
+        # ONE opener for every search question, bridge ones included (2026-09-24): the root makes no decision from the
+        # question — it passes it down verbatim and combines what comes back. A bridge-specific opener would add a
+        # "recognize multi-hop from the wording" decision; on RULER qa_2 the model writes this opener anyway, so the
+        # bridge traces train exactly the eval-time sequence: search opener -> relevant facts returned -> chain them.
+        return (f"This document is {self.doc_len} tokens — too long to read in one context. "
+                f"The answer to the question \"{self.q_core}\" is stated in one place, so I split "
+                f"the range in half recursively, having a subagent search each half for the sentence "
+                f"that answers it (or any relevant context) and combining — the one that finds it "
+                f"wins; once a half reports the answer, I read it off from the sentence that states it.")
+
     def _finalize_root(self, result):
         kind, ans, payload = result
+        if self.bridge and kind == "context" and self.bridge["hop1"] in payload and self.bridge["hop2"] in payload:
+            b = self.bridge
+            return AssistantTurn(
+                text=(f"No single passage answers the question; the passed-up facts:\n{self._show(payload)}\n"
+                      f"Chaining them: «{b['hop1']}» — so {b['desc']} is {b['entity']}; «{b['hop2']}» — so the "
+                      f"answer is {b['answer']}.\n\\boxed{{{b['answer']}}}"),
+                tool_calls=[],
+            )
         if kind == "answer":
             return AssistantTurn(
                 text=(f"A subagent located the answer; the sentence that states it:\n"

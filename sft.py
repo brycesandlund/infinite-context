@@ -124,7 +124,7 @@ _REJECT_SAMPLE_TASKS = {"bookqa", "narrativeqa"}   # need the model leaf + gold 
 # Tasks with answer/none leaf VERDICTS to rebalance (the class-imbalance fix). niah_novel is
 # scripted (not reject-sampled) but has the same 1-answer : many-none shape, and the user
 # wants the needle (answer) leaf oversampled — so it's here but not in the reject set.
-_QA_VERDICT_TASKS = {"bookqa", "narrativeqa", "niah_novel", "niah_multi"}
+_QA_VERDICT_TASKS = {"bookqa", "narrativeqa", "niah_novel", "niah_multi", "niah_bridge"}
 
 
 def _make_leaf_model():
@@ -310,7 +310,7 @@ _SKIP_TMODES = {"date_most", "date_2nd"}
 # vt_novel is NOT here: its generator owns the bare condition (_VT_BARE_FRAC), dropping the
 # description, the copy-semantics gloss and the order preface TOGETHER so the RULER-matched case is a
 # controlled share rather than the product of three independent coins. One mechanism, not two.
-_CONTEXT_DROP_TASKS = {"niah_novel", "niah_multi", "narrativeqa", "realdoc_count"}
+_CONTEXT_DROP_TASKS = {"niah_novel", "niah_multi", "niah_bridge", "narrativeqa", "realdoc_count"}
 CONTEXT_DROP = float(os.environ.get("CONTEXT_DROP", "0"))
 
 # Our OWN harness boilerplate: tasks/ruler/_common.py splices this where RULER's template had
@@ -354,7 +354,10 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     if QUESTION_PLACEHOLDER_FRAC > 0:
         if random.Random(("qph", task, seed).__hash__() & 0xFFFFFFFF).random() < QUESTION_PLACEHOLDER_FRAC:
             line = _QUESTION_PLACEHOLDER.format(n=len(problem.document_tokens))
-            problem = dataclasses.replace(problem, question=f"{line}\n{problem.question}")
+            # Keep the BARE question for oracles that quote it (BookQAOracle's q_core falls back to problem.question):
+            # without this, 6/30 narrativeqa roots quoted the placeholder line as "the question" to every child.
+            meta = problem.metadata if "q_core" in problem.metadata else {**problem.metadata, "q_core": problem.question}
+            problem = dataclasses.replace(problem, question=f"{line}\n{problem.question}", metadata=meta)
     return seed, problem
 
 
@@ -383,7 +386,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v12"  # v12: vt_novel niah-surface share (hidden-facts prefaces/questions + niah_multi description, fold answer) (2026-09-24); v11: v11: minimal-state audit — labeled relative/sections_cmp/first_month_cmp/section_most keep only the named labels, author_count/author_top subset variants; rule_label section_most per-section count; synth_2d months_cmp/month_for_grp/grp_in_month minimal (2026-09-24); v10: v10: labeled author_cmp filters to the two named authors AND the label (2026-09-24); v9: niah filtered leaves list skipped keys (convention) + needle distractors are records; labeled author_label_count + multi-author subsets + filtered share ~30% (2026-09-23); v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
+_CACHE_VERSION = "v13"  # v13: model-leaf calls no longer offered the agent tools (narrativeqa leaves regenerated) (2026-09-24); v12: v12: vt_novel niah-surface share (hidden-facts prefaces/questions + niah_multi description, fold answer) (2026-09-24); v11: v11: minimal-state audit — labeled relative/sections_cmp/first_month_cmp/section_most keep only the named labels, author_count/author_top subset variants; rule_label section_most per-section count; synth_2d months_cmp/month_for_grp/grp_in_month minimal (2026-09-24); v10: v10: labeled author_cmp filters to the two named authors AND the label (2026-09-24); v9: niah filtered leaves list skipped keys (convention) + needle distractors are records; labeled author_label_count + multi-author subsets + filtered share ~30% (2026-09-23); v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False, ctx=None) -> str:

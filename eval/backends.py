@@ -73,9 +73,12 @@ class ModelBackend(ABC):
 
     async def complete(self, messages: list[dict], max_tokens: int = 512) -> str:
         """Plain text completion — used by the LLM judge (eval/judge.py). Shared by
-        every backend: run sample() and return its text. The judge prompt offers
-        nothing to act on, so sample()'s tools stay unused (tool_choice is 'auto')."""
-        turn = await self.sample(messages, max_tokens)
+        every backend: run sample() WITHOUT tools and return its text."""
+        # tools=False (fixed 2026-09-24): with the agent tools offered (tool_choice="auto"), the BookQA leaf model
+        # answered 114 of 120 replayed excerpts by CALLING read_chunk ("I need to read more of this excerpt…")
+        # instead of replying ANSWER/CONTEXT/NONE — so ~55% of narrativeqa's training "none" leaves were never a
+        # judgment. Plain completion means plain completion.
+        turn = await self.sample(messages, max_tokens, tools=False)
         return turn.text
 
 

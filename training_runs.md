@@ -1437,3 +1437,59 @@ REFUTED. 15w and 16w share start (14w) and corpus; the only difference is run 16
 the budget STATED in the eval prompt does not explain it (16w mean P(fold) 0.81 / 0.60 / 0.75 / 0.64 at 3K / 5K / 8K /
 12K). Open: whether the jitter's vt_novel length distribution (the 6K/14K override was dropped for the triangular mix)
 or plain run-to-run drift moved it. Probe script: scratchpad `fold_probe.py` (same method as the split-decision probe).
+
+## qa_1/qa_2 on the unit-filtered pool + niah_bridge — 2026-09-24
+
+**RULER QA question pool filtered** (`tasks/ruler/qa_data.py`): questions whose every gold is a number followed by
+words ("35 people", "500-room", "3.5 million", "1 October 1998") are dropped — a correct bare number can never contain
+the unit, so RULER's substring match scores it 0 (qa_2: `35` for "…killed how many people?"). SQuAD 5,928 -> 5,782,
+HotpotQA 7,405 -> 7,143; paragraphs stay as distractors. Every qa seed now maps to a different question.
+16w, filtered pool, 16K doc, 5K budget, 10 fresh seeds each (`eval_results/raw/sft_general16w_qa_filtered_16k.*`):
+**qa_1 0.70, qa_2 0.30**. qa_2 misses: 3 alias / surface variants the substring grader cannot match (`Caligula` vs
+"Gaius Julius Caesar Augustus Germanicus", `Bigg Boss 10` vs "the tenth season", `The Windigo legend` vs "Wendigo"),
+3 stopped at the BRIDGE entity (answered hop 1), 1 `none`.
+
+**Why the bridge fails.** 16w's leaves read both hops of "Ravi Khote has included his music in which 2003 Indian drama?"
+(…"Pretty Woman" from "Kal Ho Naa Ho" / Kal Ho Naa Ho … is a 2003 Indian romantic drama) and returned "No relevant
+information". The search contract says "otherwise return any relevant information", the oracle has a full context
+channel (leaf context turn, internal merge, top-K) — but the corpus had **0 of 1,984** search leaves using it:
+narrativeqa's model leaf essentially never answers CONTEXT, niah_novel has nothing but the needle, and a root that
+receives only context boxes "answer not found" so such traces are rejected by design. Feasibility on RULER's own pool
+(HotpotQA validation, supporting-fact annotations): both supporting sentences share a content keyword with the
+question for 90.7% of bridge and 98.8% of comparison questions — one keyword-driven binary pass can surface both hops.
+
+**niah_bridge** (`tasks/niah/generators.py`, oracle = BookQAOracle scripted leaf): two inserted fact sentences in prose
+— "The head archivist of Port Evan is Freya Lindqvist." / "Freya Lindqvist was born in Tarsk." — plus distractors
+mirroring both hops (same role elsewhere, other roles in the same place, the same relation for other people); the
+question asks across the bridge ("Where was the head archivist of Port Evan born?"). Same single binary search; leaves
+pass up the fact sentences they hold as relevant context; the ROOT keeps the UNCHANGED search opener (revised
+2026-09-24: the root makes no decision from the question — it passes it down verbatim and combines what comes back; a
+bridge-specific opener would add a "recognize multi-hop from the wording" decision, and on RULER qa_2 the model writes
+the search opener anyway) and the only new text is the chaining final turn ("No single passage answers the question; …
+Chaining them: «hop 1» — so X is Freya Lindqvist; «hop 2» — so the answer is Tarsk."). No benchmark data. Verified
+100/100 gold at doc 6K/14K (max node 1.7K), niah_novel unchanged 100/100. Example: `trace_snippets/niah_bridge_example.txt`.
+
+**Run 17 draft** (`scripts/run_sft17_warm.sh`, not launched): run-16 recipe + v11 minimal states + v12 vt contrast +
+niah_bridge 80 + the six sequential synth tasks 10 -> 20. Dry run: 1,149/1,149 gold, 48,508 datums, 80.5M tokens
+(run 16: 71.8M), fold roots 286 (24.9%, was 22.4%), 546 context leaves (was 0; the QA rebalancer counts them as
+positive verdicts and duplicates them x2).
+
+## BUG: the model leaf was offered the agent tools — narrativeqa "none" leaves were mostly not judgments (fixed 2026-09-24, cache v13)
+
+`ModelBackend.complete()` (used by BookQAOracle's model-executed leaf and by rl.py's judge) called `sample()` with the
+default `tools=True`, so every Haiku leaf call also carried our `read_chunk` / `spawn_subagent` schema with
+`tool_choice="auto"`. Replaying 120 narrativeqa training leaves recorded as "No relevant information" WITH the tools:
+Haiku CALLED `read_chunk` on **114 (95%)** ("I need to read more of this excerpt…") — no ANSWER/CONTEXT line, so the
+parser recorded `none`. Replaying all 369 recorded-`none` leaves WITHOUT tools: ~167 none, ~107 context, ~95 answer.
+The leaf prompt was never the problem (it already allows CONTEXT). This is why the corpus had 0 narrativeqa context
+leaves, and a large part of why narrativeqa's rejection acceptance was 25%.
+Fix: `complete()` -> `sample(..., tools=False)` (eval/backends.py). Scope: SFT narrativeqa/bookqa leaves (every run
+that used BOOKQA_LEAF_MODEL) and rl.py's judge; NOT any reported eval number (graders are string-based).
+
+Same regeneration fixes a PLACEHOLDER LEAK: narrativeqa has no bare-question field, so BookQAOracle's q_core fell back to
+problem.question — which starts with the harness placeholder line on 30% of questions; 6/30 roots told every child to
+answer "[The relevant text is in a separate document …] (Document length: N tokens.) …". sft.py now stores the bare
+question as q_core before prepending the placeholder.
+
+v13 narrativeqa (30 traces, 456 leaves): answer 87 -> **135**, context 0 -> **116**, none 369 -> **205**; placeholder in
+subtask 6/30 -> **0/30**; acceptance 25% -> **42%**. Run-17 draft dry run: 1,149/1,149 traces, 48,845 datums, 81.0M tokens.

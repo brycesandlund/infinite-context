@@ -1,0 +1,42 @@
+QUESTION: Where was the head archivist of Port Evan born? Answer with the value, inside \boxed{}.
+GOLD: ['Tarsk'] | ORACLE: Tarsk
+INSERTED FACTS (document order):
+   Freya Lindqvist was born in Tarsk.   <- hop
+   Liora Halloran was born in Marrowgate. 
+   Liora Fenwick serves as the ferry captain of Port Evan. 
+   Ilse Beaumont was born in Coldharbor. 
+   Varrow appointed Ilse Beaumont as its head archivist. 
+   Liora Fenwick was born in Istvar. 
+   Freya Lindqvist serves as the head archivist of Port Evan.   <- hop
+
+=== ROOT, turn 1 (the unchanged search opener) ===
+This document is 6088 tokens — too long to read in one context. The answer to the question "Where was the head archivist of Port Evan born?" is stated in one place, so I split the range in half recursively, having a subagent search each half for the sentence that answers it (or any relevant context) and combining — the one that finds it wins; once a half reports the answer, I read it off from the sentence that states it.
+
+=== SUBTASK (root → child; the unchanged search subtask) ===
+Find the answer to the question "Where was the head archivist of Port Evan born?" within the document range in tokens 0..3044. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and search it for a sentence that states the answer (there is nothing to count). If this range contains the answer, return it with the sentence that states it; otherwise return any relevant information you find, or say "No relevant information in this range." and return `none` if there is none.
+
+=== INTERNAL r0 ===
+No subagent found the answer; passing up the 5 most relevant sentence(s):
+  • Freya Lindqvist was born in Tarsk.
+  • Liora Halloran was born in Marrowgate.
+  • Liora Fenwick serves as the ferry captain of Port Evan.
+  • Ilse Beaumont was born in Coldharbor.
+  • Varrow appointed Ilse Beaumont as its head archivist.
+\boxed{Freya Lindqvist was born in Tarsk. ‖ Liora Halloran was born in Marrowgate. ‖ Liora Fenwick serves as the ferry captain of Port Evan. ‖ Ilse Beaumont was born in Coldharbor. ‖ Varrow appointed Ilse Beaumont as its head archivist.}
+
+=== LEAF r0010 ===
+Read tokens 761..1141. No sentence here answers the question; relevant context:
+  • Freya Lindqvist was born in Tarsk.
+\boxed{Freya Lindqvist was born in Tarsk.}
+
+=== ROOT, final turn (the only new text) ===
+No single passage answers the question; the passed-up facts:
+  • Freya Lindqvist was born in Tarsk.
+  • Liora Halloran was born in Marrowgate.
+  • Liora Fenwick serves as the ferry captain of Port Evan.
+  • Ilse Beaumont was born in Coldharbor.
+  • Varrow appointed Ilse Beaumont as its head archivist.
+  • Liora Fenwick was born in Istvar.
+  • Freya Lindqvist serves as the head archivist of Port Evan.
+Chaining them: «Freya Lindqvist serves as the head archivist of Port Evan.» — so the head archivist of Port Evan is Freya Lindqvist; «Freya Lindqvist was born in Tarsk.» — so the answer is Tarsk.
+\boxed{Tarsk}
