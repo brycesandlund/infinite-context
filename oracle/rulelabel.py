@@ -51,6 +51,11 @@ class RuleLabelOracle(ScaffoldOracle):
         if q in ("most_common", "relative"):
             acc = acc + Counter([label])
             return acc, f"- {sec} \"{snip}\" → {check} → {label}: {acc[label]}"
+        if q == "section_most":   # MINIMAL STATE (audit 2026-09-24): one label's count per section, not both labels
+            if label != self.qlabel:
+                return acc, f"- {sec} \"{snip}\" → {check} (not `{self.qlabel}`, skip)"
+            acc = {**acc, sec: acc.get(sec, 0) + 1}
+            return acc, f"- {sec} \"{snip}\" → {check} (counts for {sec}) → {sec}={acc[sec]}"
         key = f"{sec}/{label}"
         acc = {**acc, key: acc.get(key, 0) + 1}
         return acc, f"- {sec} \"{snip}\" → {check} → {key}={acc[key]}"
@@ -97,7 +102,7 @@ class RuleLabelOracle(ScaffoldOracle):
                 rows.append(f"  {s}: {self.qa}={a} vs {self.qb}={b}: {'yes' if a > b else 'no'}")
             return str(len(hits)), (f"\nPer section, {self.qa} > {self.qb}?\n" + "\n".join(rows)
                                     + f"\nSections where yes: {', '.join(hits) or 'none'} → {len(hits)}.")
-        counts = {s: per[s].get(self.qlabel, 0) for s in self.sections}
+        counts = {s: (state or {}).get(s, 0) for s in self.sections}   # section_most: {section: count of qlabel}
         best = max(counts.values()) if counts else 0
         ans = next((s for s in self.sections if counts[s] == best), self.sections[0])
         return ans, (f"\n{self.qlabel} per section: " + ", ".join(f"{s}={n}" for s, n in counts.items())
@@ -117,7 +122,7 @@ class RuleLabelOracle(ScaffoldOracle):
             "most_common": f"{self._rule()} and tallying the labels",
             "relative": f"{self._rule()} and tallying the labels",
             "sections_cmp": f"{self._rule()} and tallying each (section, label) pair",
-            "section_most": f"{self._rule()} and tallying each (section, label) pair",
+            "section_most": f"{self._rule()} and counting the `{self.qlabel}` sentences per section",
         }[self.qtype]
 
     def _goal_phrase(self):
@@ -126,14 +131,15 @@ class RuleLabelOracle(ScaffoldOracle):
             "most_common": f"the per-label tally ({self._rule()})",
             "relative": f"the per-label tally ({self._rule()})",
             "sections_cmp": f"the per-(section, label) tally ({self._rule()})",
-            "section_most": f"the per-(section, label) tally ({self._rule()})",
+            "section_most": f"the per-section count of `{self.qlabel}` sentences ({self._rule()})",
         }[self.qtype]
 
     def _shape_reason(self):
         if self.qtype == "sections_cmp":
             return "The question compares labels WITHIN each section, so the state is a per-(section, label) tally, not a per-label one."
         if self.qtype == "section_most":
-            return f"The question compares one label's count ACROSS sections, so the state is a per-(section, label) tally, not a per-label one."
+            return (f"The question compares one label's count ACROSS sections, so the state is a per-section count of "
+                    f"`{self.qlabel}` alone — not a per-(section, label) tally.")
         if self.qtype == "count":
             return f"The question asks for one label's total, so the state is a single count of `{self.qlabel}` sentences."
         return "The question asks about labels over the whole document, so a per-label tally is the right state."
@@ -144,11 +150,15 @@ class RuleLabelOracle(ScaffoldOracle):
             return "the partial as a single integer"
         if self.qtype in ("most_common", "relative"):
             return f"the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly {labs}"
+        if self.qtype == "section_most":
+            return (f"the partial tally as `<section>=<count>` entries joined by `|`, counting only `{self.qlabel}` "
+                    f"sentences, where `<section>` is the line's `S<n>` tag")
         return (f"the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is "
                 f"the line's `S<n>` tag and `<label>` is exactly {labs}")
 
     def _combine_phrase(self):
-        return {"count": "sum", "most_common": "merge", "relative": "merge"}.get(self.qtype, "merge (add per section/label key)")
+        return {"count": "sum", "most_common": "merge", "relative": "merge",
+                "section_most": "merge (add per section)"}.get(self.qtype, "merge (add per section/label key)")
 
     def _empty_phrase(self):
         return "  (no sentence starts here)"

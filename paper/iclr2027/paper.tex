@@ -98,10 +98,12 @@ Memagent~\citep{yu2025memagent} trains a harness that walks linearly through con
 
 Frontier models now utilize multi-agent systems. Kimi K2.5 trains ``agent swarm"~\citep{kimiteam2026kimik25}: the model is trained to call subagents via reinforcement learning. Subagent trajectories are not trained. GPT-5.6 has also trained multi-agent behavior~\citep{openai2026gpt56}, notably utilizing 10,000 agents to solve Navier-Stokes~\citep{openai2026navierstokes}. Anthropic, DeepMind, Meta, and xAI likely do similarly, with multi-agent systems touted in respective model and product releases~\citep{anthropic2025multiagent,anthropic2026agentteams,openai2026codexsubagents,xai2026grokmultiagent,xai2025grok4,meta2026musespark,google2025deepthink,gottweis2026coscientist}.
 
-\section{Methodology}
+\section{Methods}
 \label{methods}
 
-We deliberately use the minimal tool definitions necessary to train agentic context management. However, our harness is sufficient to allow arbitrarily complex multi-agent decompositions. Decompositions in the literature fall into roughly three categories: tree decompositions~\citep{wu2021recursive,, sequential folds, and agentic subtasks.
+We deliberately use the minimal tool definitions necessary to train agentic context management. However, our harness is sufficient to allow arbitrarily complex multi-agent decompositions. Decompositions in the literature fall into roughly three categories: \emph{tree decompositions}~\citep{wu2021recursive,sarthi2024raptor,zhang2022summn}, \emph{sequential folds}~\citep{yu2025memagent,zhang2024coa}, and \emph{agentic delegation}~\citep{zhang2025rlm,kimiteam2026kimik25,anthropic2025multiagent}. We utilize all three.
+
+Without any training, models make poor use of our harness. 
 
 \section{Experiments}
 \label{experiments}

@@ -53,6 +53,10 @@ _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section
            # filter (tallied every line). Author-filtered share raised to ~30%: a filtered COUNT ("how many of user
            # X's items are L" — the agnews seed shape we never taught) and extra author_most/least draws.
            "author_label_count", "author_label_count", "author_most", "author_least"]
+# author_count / author_top ask about a SUBSET of authors this often (OOLONG-user: "only consider the subset of users
+# with IDs …; which user is represented most often / has the most instances with the label L"). The state then holds
+# only the listed authors. Audit 2026-09-24: no training question had this shape.
+_AUTHOR_SUBSET_FRAC = 0.5
 # Author-filtered questions name 2 authors this often (OOLONG: "associated with user IDs …" may list several).
 _MULTI_AUTHOR_FRAC = 0.3
 # 40% of documents tag authors with numeric ids instead of names, so the open-set contract ("the author exactly
@@ -65,6 +69,11 @@ _ROWS: dict[str, list[dict]] = {}
 def _pick_authors(rng, authors) -> list[str]:
     """1 author, or 2 (sorted) with prob _MULTI_AUTHOR_FRAC."""
     return sorted(rng.sample(authors, 2)) if rng.random() < _MULTI_AUTHOR_FRAC else [rng.choice(authors)]
+
+
+def _pick_subset(rng, authors) -> list[str]:
+    """2-3 of the document's 3-5 authors (always a proper subset), sorted."""
+    return sorted(rng.sample(authors, rng.randint(2, min(3, len(authors) - 1))))
 
 
 def _author_cond(aus) -> str:
@@ -222,12 +231,16 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         q = head + (f"Which {unit_word} has the MOST `{L}` items? Break ties by the earlier {unit_word}. Give the "
                     f"{unit_word} (e.g. {sections[0]}) in \\boxed{{}}.")
     elif qtype == "author_count":
+        sub = _pick_subset(rng, authors) if rng.random() < _AUTHOR_SUBSET_FRAC else None
+        pool = sub or authors
         c = Counter(r["au"] for r in recs)
-        best = max(c[a] for a in authors)
-        gold = next(a for a in authors if c[a] == best)           # authors sorted -> first in sort order on ties
-        grading, params = "exact", {}
-        q = (f"Which author has the MOST items overall (regardless of label)? Break ties by the author that comes "
-             f"first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. {authors[0]}) in \\boxed{{}}.")
+        best = max(c[a] for a in pool)
+        gold = next(a for a in pool if c[a] == best)              # pool sorted -> first in sort order on ties
+        grading, params = "exact", ({"qauthor": sub[0], "qauthors": sub} if sub else {})
+        tail = (f"Break ties by the author that comes first in alphabetical order. Give the author exactly as written in "
+                f"the `[by …]` tag (e.g. {pool[0]}) in \\boxed{{}}.")
+        q = (filtered_question(rng, "items", _author_cond(sub), "which author has the MOST items (regardless of label)", tail)
+             if sub else f"Which author has the MOST items overall (regardless of label)? {tail}")
     elif qtype == "section_mode_count":
         L = rng.choice(labels)
         gold = sum(1 for s_ in sections if per[s_][L] > max((per[s_][l] for l in labels if l != L), default=0))
@@ -261,12 +274,16 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
                     f"(e.g. {a1}) in \\boxed{{}}.")
     elif qtype == "author_top":
         L = rng.choice(labels)
+        sub = _pick_subset(rng, authors) if rng.random() < _AUTHOR_SUBSET_FRAC else None
+        pool = sub or authors
         c = Counter(r["au"] for r in recs if r["label"] == L)
-        best = max((c[a] for a in authors), default=0)
-        gold = next(a for a in authors if c[a] == best)           # authors sorted -> alphabetical tie
-        grading, params = "exact", {"qlabel": L}
-        q = head + (f"Which author has the MOST `{L}` items? Break ties by the author that comes first in alphabetical "
-                    f"order. Give the author exactly as written in the `[by …]` tag (e.g. {authors[0]}) in \\boxed{{}}.")
+        best = max((c[a] for a in pool), default=0)
+        gold = next(a for a in pool if c[a] == best)              # pool sorted -> alphabetical tie
+        grading, params = "exact", ({"qlabel": L, "qauthor": sub[0], "qauthors": sub} if sub else {"qlabel": L})
+        tail = (f"Break ties by the author that comes first in alphabetical order. Give the author exactly as written in "
+                f"the `[by …]` tag (e.g. {pool[0]}) in \\boxed{{}}.")
+        q = head + (filtered_question(rng, "items", _author_cond(sub), f"which author has the MOST `{L}` items", tail)
+                    if sub else f"Which author has the MOST `{L}` items? {tail}")
     elif qtype == "dates_rep_k":
         # Scoped to ONE month so the per-date tally stays <= ~14 keys (a whole-document per-date dict
         # overflowed the root); the leaf must derive each item's month to decide whether it counts.

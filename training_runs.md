@@ -1373,3 +1373,45 @@ OOLONG by dataset (mean of the 3 families): app_reviews 0.96 / 0.43 / 0.50, imdb
   obsequious-appellation (or any relevant key fact or number). Recursively split the range…"); every child restarted at
   0..8000 and the tree ran 460 levels deep until MAX_NODES=2000 stopped it. A real model failure (range dropped from a
   subtask), 1 of 125 rollouts; nothing like it at 16K/32K.
+
+## Minimal-sufficient-state audit — 2026-09-24 (training corpus v10 vs what each question needs)
+
+Trigger: 16w's 16K/32K OOLONG overflows. EVERY overflowing root wrote the same contract, a per-(X, label) tally over
+ALL labels, whatever the question needed: months L1>L2 (8/14 overflow) and first-month L1>L2 carried months x all
+labels (need months x {L1,L2}); user A vs B on L (7/16) and user-most-with-L (5/15) carried users x all labels (need 2
+numbers / users x {L}); before/after share carried DATES x labels (needs 4 numbers). Only months-L-single-most and
+dates-exactly-n need a large state inherently. The prior comes from the corpus: 105 of 1,009 traces (run-16 corpus)
+root-dictate a joint tally, and 54 of those need less.
+
+| task / qtype | carries | minimal sufficient | traces |
+|---|---|---|---|
+| labeled sections_cmp ("in how many sections/months is a > b") | outer x ALL labels | outer x {a, b} | 11 |
+| labeled first_month_cmp | month x ALL labels | month x {a, b} | 8 |
+| labeled section_most ("which section has most L") | outer x ALL labels | per-outer count of L | 10 |
+| labeled relative ("is a more/less common than b") | all labels (1-D) | {a, b} | ~15 |
+| rule_label section_most | section x both labels | per-section count of L | 10 |
+| synth_2d months_cmp | outer x ALL inner | outer x {g1, g2} | 4 |
+| synth_2d month_for_grp | outer x ALL inner | per-outer count of g | 8 |
+| synth_2d grp_in_month | outer x ALL inner | 1-D tally within the one outer value (= filter_argmax) | 3 |
+| labeled author_cmp | FIXED 2026-09-24 (v10): {a1, a2} x {L} | — | — |
+| vt_novel which_vars (fold) | every variable's current value | the SET of variables currently holding X (copy-aware update) | ~100 |
+| minimal already | synth scalar/mode/distinct/sumby/2-field folds, varchain (final value needs all vars forward), filter_argmax, months_argmax; long_records all 7 qtypes; labeled count/most_common/author_*/section_mode_count/dates_rep_k/before_after; rule_label count/most_common/relative/sections_cmp (2 labels); niah (hidden collects all by necessity); realdoc; topk (pruned by design) | | |
+
+Gap (no training analogue): OOLONG-user "only consider the subset of users with IDs …; which user is represented most
+often / has the most L" — our author_count/author_top are whole-document only (subsets exist only for author_most /
+author_least / author_label_count).
+Note on vt_novel: the run-10 contrastive sentence ("…not just the VARs currently holding X, since which ones end with X
+is only known at the end") is wrong as a sufficiency claim; run 9's failure was BINARY + filter (insufficient because
+copies are order-dependent), not fold + holder set, which was never tried.
+
+**Implemented 2026-09-24 (cache v11)** — every over-carrying row above now keeps only what its question names, in the
+existing filtered-leaf conventions (filter in the op-phrase parenthetical; every line shown with a verdict: `(other
+label, skip)` / `(not `L`, skip)` / `(other author, skip)` / synth `(skip)` vs `(match)`); root answer-extraction updated
+where the key shape changed (section_most -> `<outer>=<count>`, month_for_grp -> `<outer>=<count>`, grp_in_month -> 1-D).
+Plus the gap: author_count / author_top draw a 2-3-author SUBSET half the time (`_AUTHOR_SUBSET_FRAC = 0.5`), state =
+only the listed authors. Verified 1,200/1,200 gold (labeled_records, rule_label, synth_2d x 200 x doc 6K/14K; worst node
+2,840, +37 tokens of longer subtask text on a 2-label yelp leaf) and a full run-16-recipe dry run: 1,009/1,009 gold,
+42,918 datums, 71.6M tokens. Root-dictated joint tallies over ALL inner values: **105 -> 51**, exactly the qtypes that
+need one (section_mode_count 14, src_tag_2d 19, rule_label sections_cmp 9, synth_2d months_argmax 9); 23 more are joint
+tallies restricted to the two named values (sections_cmp / first_month_cmp / months_cmp); the rest became 1-D.
+Rendered examples: `trace_snippets/audit_v11_minimal_state_leaves.txt`. vt_novel (holder set) deferred to its own change.

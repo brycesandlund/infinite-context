@@ -1,0 +1,309 @@
+MINIMAL-STATE AUDIT (cache v11) — one rendered example per changed question type.
+Per example: question, the root's subtask (goal + answer contract), one leaf with kept AND skipped lines, the root's final turn.
+
+##############################################################################################################
+# labeled_records / relative   (seed 700018, dataset dbpedia, gold ['less common than'], oracle answer 'less common than')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: Athlete, Building, OfficeHolder, Village, WrittenWork). Is `Village` more common than, less common than, or equally common as `Athlete`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2989, compute the counts of `Village` and `Athlete` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the counts of `Village` and `Athlete` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is `Village` or `Athlete` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 5 items whose line STARTS in 1494..1867 one at a time and tallying them (judging each item's label and counting the `Village` and `Athlete` items only; the trailing reads only finish the last line, and any item starting at/after 1867 belongs to the next range):
+- [Mar 19, 2025 → Mar 2025] "Krnji Grad is a village in the m…" → label: Village → Village: 1
+- [Feb 27, 2025 → Feb 2025] "The Riverview Apartments in Wich…" → label: Building (other label, skip)
+- [Oct 21, 2025 → Oct 2025] "Harry Newsome (born January 25 1…" → label: Athlete → Athlete: 1
+- [Oct 10, 2025 → Oct 2025] "Udo Voigt (German: [ˈuːdo foːkt]…" → label: OfficeHolder (other label, skip)
+- [Feb 28, 2025 → Feb 2025] "Bolarghu (Persian: بلارغو‎ also …" → label: Village → Village: 2
+Partial = Athlete:1|Village:2.
+\boxed{Athlete:1|Village:2}
+
+ROOT FINAL TURN:
+Merge my two children's tallies (above) -> Athlete:18|Village:15.
+Village=15 vs Athlete=18 → Village is less common than Athlete.
+\boxed{less common than}
+
+##############################################################################################################
+# labeled_records / sections_cmp / section   (seed 700242, dataset dbpedia, gold ['1'], oracle answer '1')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: Building, EducationalInstitution, Film, NaturalPlace, Village). In how many sections are there STRICTLY more `Building` items than `Village` items? Give the single integer in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2988, compute the per-(section, label) tally of ONLY `Building` and `Village` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally of ONLY `Building` and `Village` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `S<n>` tag; and `<label>` is `Building` or `Village` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 6 items whose line STARTS in 3361..3735 one at a time and tallying them (judging each item's label and tallying each (section, label) pair for `Building` and `Village` only; the trailing reads only finish the last line, and any item starting at/after 3735 belongs to the next range):
+- [S2] "The Prajiul River is a tributary…" → label: NaturalPlace (other label, skip)
+- [S2] "Slaughter is a 1972 Blaxploitati…" → label: Film (other label, skip)
+- [S2] "The Itapanhaú River is a river o…" → label: NaturalPlace (other label, skip)
+- [S2] "The Willard House and Clock Muse…" → label: Building → S2/Building=1
+- [S2] "The Grand Army of the Republic H…" → label: Building → S2/Building=2
+- [S2] "Crawford-Gardner House is a hist…" → label: Building → S2/Building=3
+Partial = S2/Building=3.
+\boxed{S2/Building=3}
+
+ROOT FINAL TURN:
+Merge (add per section/label key) my two children's tallies (above) -> S1/Building=6|S1/Village=6|S2/Building=9|S2/Village=8|S3/Building=4|S3/Village=5.
+Per section, Building > Village?
+  S1: Building=6 vs Village=6: no
+  S2: Building=9 vs Village=8: yes
+  S3: Building=4 vs Village=5: no
+Sections where yes: S2 → 1.
+\boxed{1}
+
+##############################################################################################################
+# labeled_records / sections_cmp / date   (seed 700024, dataset dbpedia, gold ['1'], oracle answer '1')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: Athlete, MeanOfTransportation, Plant, WrittenWork). In how many months are there STRICTLY more `Plant` items than `Athlete` items? Give the single integer in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2951, compute the per-(month, label) tally of ONLY `Plant` and `Athlete` items (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally of ONLY `Plant` and `Athlete` items (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is `Plant` or `Athlete` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 5 items whose line STARTS in 2582..2951 one at a time and tallying them (judging each item's label and tallying each (month, label) pair for `Plant` and `Athlete` only (an item's month is the month and year of its date); the trailing reads only finish the last line, and any item starting at/after 2951 belongs to the next range):
+- [Oct 07, 2024 → Oct 2024] "Bobby Howe (born 6 November 1973…" → label: Athlete → Oct 2024/Athlete=1
+- [Feb 06, 2022 → Feb 2022] "The Primordial Emotions: The Daw…" → label: WrittenWork (other label, skip)
+- [Oct 11, 2024 → Oct 2024] "Sacoila is a genus of flowering …" → label: Plant → Oct 2024/Plant=1
+- [Dec 12, 2025 → Dec 2025] "USS Cotten (DD-669) was a Fletch…" → label: MeanOfTransportation (other label, skip)
+- [Oct 21, 2024 → Oct 2024] "Lilián Annette Garcia (born Augu…" → label: Athlete → Oct 2024/Athlete=2
+Partial = Oct 2024/Athlete=2|Oct 2024/Plant=1.
+\boxed{Oct 2024/Athlete=2|Oct 2024/Plant=1}
+
+ROOT FINAL TURN:
+Merge (add per month/label key) my two children's tallies (above) -> Dec 2025/Athlete=12|Dec 2025/Plant=6|Feb 2022/Athlete=4|Feb 2022/Plant=8|Oct 2024/Athlete=8|Oct 2024/Plant=3.
+Per month, Plant > Athlete?
+  Feb 2022: Plant=8 vs Athlete=4: yes
+  Oct 2024: Plant=3 vs Athlete=8: no
+  Dec 2025: Plant=6 vs Athlete=12: no
+Months where yes: Feb 2022 → 1.
+\boxed{1}
+
+##############################################################################################################
+# labeled_records / first_month_cmp   (seed 700006, dataset dbpedia, gold ['Jul 2024'], oracle answer 'Jul 2024')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: Animal, Artist, Athlete, EducationalInstitution, MeanOfTransportation). In which month did `Animal` FIRST occur more often than `Artist`? Months are in chronological order; answer with the month and year exactly as written in the items' dates (e.g. Jul 2024), or none if it never happens. Give it in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2965, compute the per-(month, label) tally of ONLY `Animal` and `Artist` items (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally of ONLY `Animal` and `Artist` items (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is `Animal` or `Artist` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 5 items whose line STARTS in 2594..2965 one at a time and tallying them (judging each item's label and tallying each (month, label) pair for `Animal` and `Artist` only (an item's month is the month and year of its date); the trailing reads only finish the last line, and any item starting at/after 2965 belongs to the next range):
+- [Jul 26, 2024 → Jul 2024] "The British Rail (BR) Class 08 i…" → label: MeanOfTransportation (other label, skip)
+- [Jul 21, 2025 → Jul 2025] "M/Y A is a luxury motor yacht de…" → label: MeanOfTransportation (other label, skip)
+- [Dec 25, 2025 → Dec 2025] "Kairat Nurtas (Кайрат Нуртас) (r…" → label: Artist → Dec 2025/Artist=1
+- [Jul 15, 2025 → Jul 2025] "Thomas Edward Seigler Jr. (born …" → label: Athlete (other label, skip)
+- [Dec 25, 2025 → Dec 2025] "The Mymaridae commonly known as …" → label: Animal → Dec 2025/Animal=1
+Partial = Dec 2025/Animal=1|Dec 2025/Artist=1.
+\boxed{Dec 2025/Animal=1|Dec 2025/Artist=1}
+
+ROOT FINAL TURN:
+Merge (add per month/label key) my two children's tallies (above) -> Dec 2025/Animal=5|Dec 2025/Artist=6|Jul 2024/Animal=6|Jul 2024/Artist=2|Jul 2025/Animal=1|Jul 2025/Artist=7.
+In chronological order, Animal > Artist?
+  Jul 2024: Animal=6 vs Artist=2: yes
+  Jul 2025: Animal=1 vs Artist=7: no
+  Dec 2025: Animal=5 vs Artist=6: no
+First month where yes: Jul 2024.
+\boxed{Jul 2024}
+
+##############################################################################################################
+# labeled_records / section_most / date   (seed 700071, dataset emotion, gold ['Month: Sep 2023'], oracle answer 'Month: Sep 2023')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: anger, fear, joy, love, sadness, surprise). Which month has the MOST `joy` items? Break ties by the earlier month. Give your final answer in the form 'Month: [X]', where [X] is the answer; put it inside \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2989, compute the per-month count of `joy` items (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-month count of `joy` items (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<month>=<count>` entries joined by `|`, counting only `joy` items, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 10 items whose line STARTS in 0..373 one at a time and tallying them (judging each item's label and counting the `joy` items per month (an item's month is the month and year of its date); the trailing reads only finish the last line, and any item starting at/after 373 belongs to the next range):
+- [Dec 06, 2025 → Dec 2025] "i feel almost virtuous almost as…" → label: joy (counts for Dec 2025) → Dec 2025=1
+- [Sep 23, 2023 → Sep 2023] "i love this service because it i…" → label: love (not `joy`, skip)
+- [Apr 08, 2023 → Apr 2023] "i can feel the hesitation the te…" → label: sadness (not `joy`, skip)
+- [Sep 18, 2023 → Sep 2023] "i realized that when i let my mi…" → label: fear (not `joy`, skip)
+- [Apr 06, 2023 → Apr 2023] "i was feeling quite broke" → label: sadness (not `joy`, skip)
+- [Sep 08, 2023 → Sep 2023] "i feel myself being very indecis…" → label: fear (not `joy`, skip)
+- [Dec 09, 2025 → Dec 2025] "i have been feeling pretty crappy" → label: sadness (not `joy`, skip)
+- [Dec 04, 2025 → Dec 2025] "i hate you for making me feel un…" → label: sadness (not `joy`, skip)
+- [Dec 19, 2025 → Dec 2025] "i feel like i shouldnt have even…" → label: anger (not `joy`, skip)
+- [Apr 06, 2023 → Apr 2023] "im feeling very mellow and relax…" → label: joy (counts for Apr 2023) → Apr 2023=1
+Partial = Apr 2023=1|Dec 2025=1.
+\boxed{Apr 2023=1|Dec 2025=1}
+
+ROOT FINAL TURN:
+Merge (add per month) my two children's tallies (above) -> Apr 2023=13|Dec 2025=14|Sep 2023=16.
+`joy` per month: Apr 2023=13, Sep 2023=16, Dec 2025=14; the most is Sep 2023 (16).
+The question asks for the form 'Month: [X]', so I box it that way.
+\boxed{Month: Sep 2023}
+
+##############################################################################################################
+# labeled_records / author_count / subset   (seed 700034, dataset yelp, gold ['Park'], oracle answer 'Park')
+##############################################################################################################
+QUESTION: Ignore the items that do not have author Han or Okafor or Park (the `[by …]` tag). Among the remaining items, which author has the MOST items (regardless of label)? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. Han) in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2991, compute the per-author tally of items over ONLY the items of authors Han, Okafor and Park (no label judgement needed). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items over ONLY the items of authors Han, Okafor and Park (no label judgement needed) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors Han, Okafor, Park, each written exactly as in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 7 items whose line STARTS in 4486..4860 one at a time and tallying them (tallying how many items each author has, for the items of authors Han, Okafor and Park only (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 4860 belongs to the next range):
+- [S5] [by Han] "Good Korean food in the Valley c…" → label: negative → Han: 1
+- [S5] [by Cho] "Quite a few months ago I made a …" → label: positive (other author, skip)
+- [S5] [by Park] "I LOVE THIS PLACE! Great Bagels …" → label: positive → Park: 1
+- [S5] [by Rossi] "Save your money, this place is o…" → label: negative (other author, skip)
+- [S5] [by Park] "Food is good but not spectacular…" → label: positive → Park: 2
+- [S5] [by Park] "They DO NOT heat their pool in t…" → label: negative → Park: 3
+- [S5] [by Park] "Kassab's is one of my favorite p…" → label: positive → Park: 4
+Partial = Han:1|Park:4.
+\boxed{Han:1|Park:4}
+
+ROOT FINAL TURN:
+Merge my two children's tallies (above) -> Han:10|Okafor:13|Park:23.
+Items per author among Han, Okafor, Park: Han=10, Okafor=13, Park=23; the most is Park (23).
+\boxed{Park}
+
+##############################################################################################################
+# labeled_records / author_top / subset   (seed 700001, dataset yelp, gold ['Author: Diaz'], oracle answer 'Author: Diaz')
+##############################################################################################################
+QUESTION: Judge each item's label (one of: negative, positive). For this question, consider only the items with author Diaz or Ivanov or Park (the `[by …]` tag). Among those items, which author has the MOST `positive` items? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the author exactly as written in the `[by …]` tag (just the name or id); put it inside \boxed{}.
+
+ROOT SUBTASK (to a child): Over the items STARTING in tokens 0..2968, compute the per-author tally of `positive` items over ONLY the items of authors Diaz, Ivanov and Park (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `positive` items over ONLY the items of authors Diaz, Ivanov and Park (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors Diaz, Ivanov, Park, each written exactly as in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 6 items whose line STARTS in 742..1113 one at a time and tallying them (judging each item's label and tallying, per author, the `positive` items of the items of authors Diaz, Ivanov and Park only; the trailing reads only finish the last line, and any item starting at/after 1113 belongs to the next range):
+- [Sep 06, 2023 → Sep 2023] [by Diaz] "Tried to go for dinner last nigh…" → label: positive (counts for Diaz) → Diaz: 1
+- [Jan 10, 2022 → Jan 2022] [by Ivanov] "I've had Todd and his crew work …" → label: positive (counts for Ivanov) → Ivanov: 1
+- [Jan 16, 2022 → Jan 2022] [by Park] "Went here for lunch today and fo…" → label: positive (counts for Park) → Park: 1
+- [Sep 15, 2023 → Sep 2023] [by Lee] "My favorite museum in the city. …" → label: positive (other author, skip)
+- [May 02, 2023 → May 2023] [by Lee] "This is a great place with good …" → label: positive (other author, skip)
+- [Sep 09, 2023 → Sep 2023] [by Ivanov] "Massive, Massive amounts of food…" → label: negative (not `positive`, skip)
+Partial = Diaz:1|Ivanov:1|Park:1.
+\boxed{Diaz:1|Ivanov:1|Park:1}
+
+ROOT FINAL TURN:
+Merge my two children's tallies (above) -> Diaz:10|Ivanov:10|Park:8.
+`positive` items per author among Diaz, Ivanov, Park: Diaz=10, Ivanov=10, Park=8; the most is Diaz (10).
+The question asks for the form 'Author: [X]', so I box it that way.
+\boxed{Author: Diaz}
+
+##############################################################################################################
+# rule_label / section_most   (seed 700002, dataset -, gold ['S1'], oracle answer 'S1')
+##############################################################################################################
+QUESTION: Label each sentence by the rule (`numeric` if it contains a digit (0-9), otherwise `plain`). Which section has the MOST `numeric` sentences? Break ties by the earlier section. Give the section tag (e.g. S1) in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the sentences STARTING in tokens 0..2988, compute the per-section count of `numeric` sentences (labelling each sentence `numeric` if it contains a digit (0-9), else `plain`). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-section count of `numeric` sentences (labelling each sentence `numeric` if it contains a digit (0-9), else `plain`) over the sentences STARTING in the range. Put the result in \boxed{}: the partial tally as `<section>=<count>` entries joined by `|`, counting only `numeric` sentences, where `<section>` is the line's `S<n>` tag; `none` if no sentence starts in the range.
+
+LEAF OUTPUT:
+Labelling the 13 sentences whose line STARTS in 373..747 one at a time and tallying them (labelling each sentence `numeric` if it contains a digit (0-9), else `plain` and counting the `numeric` sentences per section; the trailing reads only finish the last line, and any sentence starting at/after 747 belongs to the next range):
+- S1 "He endeavoured to soothe me as a nurse doe … fects of delirium." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "“Man,” I cried, “how ignorant art thou in thy pride of wisdom!" → contains a digit? no → plain (not `numeric`, skip)
+- S1 "Cease; you know not what it is you say.”" → contains a digit? no → plain (not `numeric`, skip)
+- S1 "I broke from the house angry and disturbed … er mode of action." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "Chapter 24 My present situation was one in … lowed up and lost." → contains a digit? yes → numeric (counts for S1) → S1=1
+- S1 "I was hurried away by fury; revenge alone … e been my portion." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "My first resolution was to quit Geneva for … y, became hateful." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "I provided myself with a sum of money, tog … her, and departed." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "And now my wanderings began which are to cease but with life." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "I have traversed a vast portion of the ear … are wont to meet." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "How I have lived I hardly know; many times … prayed for death." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "But revenge kept me alive; I dared not die … dversary in being." → contains a digit? no → plain (not `numeric`, skip)
+- S1 "When I quitted Geneva my first labour was … my fiendish enemy." → contains a digit? no → plain (not `numeric`, skip)
+Partial = S1=1.
+\boxed{S1=1}
+
+ROOT FINAL TURN:
+Merge (add per section) my two children's tallies (above) -> S1=1|S3=1.
+numeric per section: S1=1, S2=0, S3=1, S4=0; the most is S1 (1).
+\boxed{S1}
+
+##############################################################################################################
+# synth_2d / months_cmp   (seed 700004, dataset -, gold ['1'], oracle answer '1')
+##############################################################################################################
+QUESTION: For how many period values are there STRICTLY more label=Sports records than label=Sci/Tech records? Give the single integer in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the records STARTING in tokens 0..2993, compute the per-(period, label) tally over ONLY the label=Sports and label=Sci/Tech records. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(period, label) tally over ONLY the label=Sports and label=Sci/Tech records over the records STARTING in the range. Put the result in \boxed{}: the partial tally as `<period>/<label>=<count>` entries joined by `|`, where `<period>` is one of Oct 2023, May 2024, Jul 2024 and `<label>` is Sports or Sci/Tech only; `none` if no record starts in the range.
+
+LEAF OUTPUT:
+Computing the partial over the 13 records whose line STARTS in 0..374 (tallying each (period, label) pair for label=Sports and label=Sci/Tech only (skipping the rest); the trailing reads only finish the last line, and any record starting at/after 374 belongs to the next range):
+- [0000] period=Oct 2023 label=Business  (skip)
+- [0001] period=Jul 2024 label=World  (skip)
+- [0002] period=May 2024 label=Business  (skip)
+- [0003] period=May 2024 label=Business  (skip)
+- [0004] period=Oct 2023 label=Sci/Tech  (match)  → Oct 2023/Sci/Tech=1
+- [0005] period=Jul 2024 label=Business  (skip)
+- [0006] period=Oct 2023 label=Sci/Tech  (match)  → Oct 2023/Sci/Tech=2
+- [0007] period=Oct 2023 label=Sci/Tech  (match)  → Oct 2023/Sci/Tech=3
+- [0008] period=May 2024 label=Business  (skip)
+- [0009] period=Oct 2023 label=Business  (skip)
+- [0010] period=May 2024 label=Sci/Tech  (match)  → May 2024/Sci/Tech=1
+- [0011] period=May 2024 label=Business  (skip)
+- [0012] period=May 2024 label=Sci/Tech  (match)  → May 2024/Sci/Tech=2
+Partial = May 2024/Sci/Tech=2|Oct 2023/Sci/Tech=3.
+\boxed{May 2024/Sci/Tech=2|Oct 2023/Sci/Tech=3}
+
+ROOT FINAL TURN:
+Merge (add per period/label key) my two children's tallies (above) -> Jul 2024/Sci/Tech=16|Jul 2024/Sports=15|May 2024/Sci/Tech=13|May 2024/Sports=19|Oct 2023/Sci/Tech=25|Oct 2023/Sports=14.
+Per period, Sports > Sci/Tech?
+  period=Oct 2023: Sports=14 vs Sci/Tech=25: no
+  period=May 2024: Sports=19 vs Sci/Tech=13: yes
+  period=Jul 2024: Sports=15 vs Sci/Tech=16: no
+period values where yes: May 2024 → 1.
+\boxed{1}
+
+##############################################################################################################
+# synth_2d / month_for_grp   (seed 700001, dataset -, gold ['sales'], oracle answer 'sales')
+##############################################################################################################
+QUESTION: Which dept has the MOST status=escalated records? Break ties by the dept that comes earliest in the natural order given in the document description. Give the dept value (e.g. eng) in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the records STARTING in tokens 0..2999, compute the per-dept count of status=escalated records. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-dept count of status=escalated records over the records STARTING in the range. Put the result in \boxed{}: the partial tally as `<dept>=<count>` entries joined by `|`, counting only status=escalated records, where `<dept>` is one of eng, finance, hr, sales; `none` if no record starts in the range.
+
+LEAF OUTPUT:
+Computing the partial over the 16 records whose line STARTS in 0..374 (counting the status=escalated records per dept (skipping the rest); the trailing reads only finish the last line, and any record starting at/after 374 belongs to the next range):
+- [0000] dept=finance status=open  (skip)
+- [0001] dept=finance status=open  (skip)
+- [0002] dept=finance status=open  (skip)
+- [0003] dept=sales status=escalated  (match)  → sales=1
+- [0004] dept=finance status=pending  (skip)
+- [0005] dept=eng status=pending  (skip)
+- [0006] dept=eng status=closed  (skip)
+- [0007] dept=sales status=pending  (skip)
+- [0008] dept=finance status=open  (skip)
+- [0009] dept=hr status=open  (skip)
+- [0010] dept=eng status=escalated  (match)  → eng=1
+- [0011] dept=finance status=closed  (skip)
+- [0012] dept=finance status=open  (skip)
+- [0013] dept=eng status=escalated  (match)  → eng=2
+- [0014] dept=finance status=closed  (skip)
+- [0015] dept=hr status=pending  (skip)
+Partial = eng=2|sales=1.
+\boxed{eng=2|sales=1}
+
+ROOT FINAL TURN:
+Merge (add per dept) my two children's tallies (above) -> eng=11|finance=9|hr=11|sales=14.
+escalated count per dept: eng=11, finance=9, hr=11, sales=14; the most is sales (14).
+\boxed{sales}
+
+##############################################################################################################
+# synth_2d / grp_in_month   (seed 700010, dataset -, gold ['K1'], oracle answer 'K1')
+##############################################################################################################
+QUESTION: Ignore the records that do not have mon=Jul. Among the remaining records, which grp value is the MOST common? Break ties by the alphabetically first grp. Give the grp (e.g. K2) in \boxed{}.
+
+ROOT SUBTASK (to a child): Over the records STARTING in tokens 0..2992, compute the per-grp tally over ONLY the records with mon=Jul (how many of those have each grp value). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-grp tally over ONLY the records with mon=Jul (how many of those have each grp value) over the records STARTING in the range. Put the result in \boxed{}: the partial tally as `<grp>=<count>` entries joined by `|`, over only mon=Jul records, where `<grp>` is one of K1, K2, K3, K4; `none` if no record starts in the range.
+
+LEAF OUTPUT:
+Computing the partial over the 15 records whose line STARTS in 0..374 (tallying the grp of each record with mon=Jul (skipping the rest); the trailing reads only finish the last line, and any record starting at/after 374 belongs to the next range):
+- [0000] mon=Jul grp=K4  (match)  → K4=1
+- [0001] mon=Jun grp=K2  (skip)
+- [0002] mon=Jul grp=K1  (match)  → K1=1
+- [0003] mon=Jan grp=K1  (skip)
+- [0004] mon=Jul grp=K4  (match)  → K4=2
+- [0005] mon=Jul grp=K4  (match)  → K4=3
+- [0006] mon=Jul grp=K1  (match)  → K1=2
+- [0007] mon=Jan grp=K2  (skip)
+- [0008] mon=Jun grp=K4  (skip)
+- [0009] mon=Jan grp=K3  (skip)
+- [0010] mon=Jul grp=K3  (match)  → K3=1
+- [0011] mon=Jan grp=K1  (skip)
+- [0012] mon=Jun grp=K2  (skip)
+- [0013] mon=Jan grp=K2  (skip)
+- [0014] mon=Jul grp=K4  (match)  → K4=4
+Partial = K1=2|K3=1|K4=4.
+\boxed{K1=2|K3=1|K4=4}
+
+ROOT FINAL TURN:
+Merge (add per grp) my two children's tallies (above) -> K1=23|K2=16|K3=21|K4=18.
+Tally for mon=Jul: K1=23, K2=16, K3=21, K4=18; most common is K1 (23).
+\boxed{K1}
+

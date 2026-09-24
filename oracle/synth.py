@@ -169,7 +169,27 @@ class SynthOracle(ScaffoldOracle):
                 return acc, f"- [{idx:04d}] {self.ffield}={fv} {self.f_in}={grp}  (match)  → {self._ser_state(acc)}"
             return acc, f"- [{idx:04d}] {self.ffield}={fv} {self.f_in}={grp}  (skip)  → {self._ser_state(acc)}"
         if t == "synth_2d":
-            # delta only (the joint tally can reach 8 x 5 = 40 keys; never reprint it per record)
+            # MINIMAL STATE (audit 2026-09-24): only months_argmax needs the full joint tally ("is g strictly the most
+            # common WITHIN each month" needs every inner value). The other qtypes keep only what they name — the full
+            # joint tally taught 16w's OOLONG roots to build per-(month, label) over EVERY label and overflow at 16K.
+            fo, fi = self.f_out, self.f_in
+            if self.qtype == "months_cmp":
+                if grp not in (self.qgrp, self.qgrp2):
+                    return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (skip)"
+                key = f"{mon}/{grp}"
+                acc = {**acc, key: acc.get(key, 0) + 1}
+                return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (match)  → {key}={acc[key]}"
+            if self.qtype == "month_for_grp":
+                if grp != self.qgrp:
+                    return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (skip)"
+                acc = {**acc, mon: acc.get(mon, 0) + 1}
+                return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (match)  → {mon}={acc[mon]}"
+            if self.qtype == "grp_in_month":
+                if mon != self.qmon:
+                    return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (skip)"
+                acc = {**acc, grp: acc.get(grp, 0) + 1}
+                return acc, f"- [{idx:04d}] {fo}={mon} {fi}={grp}  (match)  → {grp}={acc[grp]}"
+            # months_argmax: delta only (the joint tally can reach 8 x 5 = 40 keys; never reprint it per record)
             key = f"{mon}/{grp}"
             acc = {**acc, key: acc.get(key, 0) + 1}
             return acc, f"- [{idx:04d}] {self.f_out}={mon} {self.f_in}={grp}  → {key}={acc[key]}"
@@ -223,8 +243,18 @@ class SynthOracle(ScaffoldOracle):
             "synth_adjacent": "comparing each 'amt' with the previous record's 'amt' and counting the strict increases",
             "synth_first_exceed": f"adding each 'amt' to the running total and noting the first index at which it exceeds {self.thresh}",
             "synth_filter_argmax": f"tallying the {self.f_in} of each record with {self.ffield}={self.fval} (skipping the rest)",
-            "synth_2d": f"tallying each ({self.f_out}, {self.f_in}) pair, i.e. how many records have each {self.f_out} AND {self.f_in}",
+            "synth_2d": self._op_2d(),
         }[self.task]
+
+    def _op_2d(self) -> str:
+        fo, fi = self.f_out, self.f_in
+        if self.qtype == "months_cmp":
+            return f"tallying each ({fo}, {fi}) pair for {fi}={self.qgrp} and {fi}={self.qgrp2} only (skipping the rest)"
+        if self.qtype == "month_for_grp":
+            return f"counting the {fi}={self.qgrp} records per {fo} (skipping the rest)"
+        if self.qtype == "grp_in_month":
+            return f"tallying the {fi} of each record with {fo}={self.qmon} (skipping the rest)"
+        return f"tallying each ({fo}, {fi}) pair, i.e. how many records have each {fo} AND {fi}"
 
     def _sequential_reason(self) -> str:
         return {
@@ -255,17 +285,35 @@ class SynthOracle(ScaffoldOracle):
             "synth_count_range": f"how many have amt between {self.lo} and {self.hi} (inclusive)",
             "synth_filter_argmax": f"the per-{self.f_in} tally over ONLY the records with {self.ffield}={self.fval} "
                                    f"(how many of those have each {self.f_in} value)",
-            "synth_2d": f"the per-({self.f_out}, {self.f_in}) tally (how many records have each {self.f_out} AND {self.f_in} combination)",
+            "synth_2d": self._goal_2d(),
         }[self.task]
+
+    def _goal_2d(self) -> str:
+        fo, fi = self.f_out, self.f_in
+        if self.qtype == "months_cmp":
+            return f"the per-({fo}, {fi}) tally over ONLY the {fi}={self.qgrp} and {fi}={self.qgrp2} records"
+        if self.qtype == "month_for_grp":
+            return f"the per-{fo} count of {fi}={self.qgrp} records"
+        if self.qtype == "grp_in_month":
+            return (f"the per-{fi} tally over ONLY the records with {fo}={self.qmon} "
+                    f"(how many of those have each {fi} value)")
+        return f"the per-({fo}, {fi}) tally (how many records have each {fo} AND {fi} combination)"
 
     def _shape_reason(self) -> str:
         t = self.task
         if t == "synth_2d":
+            fo, fi = self.f_out, self.f_in
             if self.qtype == "month_for_grp":
-                return (f"The question asks which {self.f_out} has the most {self.f_in}={self.qgrp} records, so the state must "
-                        f"count {self.f_in}={self.qgrp} separately WITHIN each {self.f_out}: a per-({self.f_out}, {self.f_in}) tally.")
-            return (f"The question is about {self.f_in} values WITHIN each {self.f_out}, so the state is a per-({self.f_out}, "
-                    f"{self.f_in}) tally, not a per-{self.f_in} one.")
+                return (f"The question asks which {fo} has the most {fi}={self.qgrp} records, so the state is a per-{fo} "
+                        f"count of {fi}={self.qgrp} records alone — not a per-({fo}, {fi}) tally.")
+            if self.qtype == "months_cmp":
+                return (f"The question compares {fi}={self.qgrp} with {fi}={self.qgrp2} WITHIN each {fo}, so the state is a "
+                        f"per-({fo}, {fi}) tally of just those two {fi} values — not every {fi}.")
+            if self.qtype == "grp_in_month":
+                return (f"The question is restricted to records with {fo}={self.qmon}, so the state is a per-{fi} tally "
+                        f"over those records only.")
+            return (f"The question asks whether {fi}={self.qgrp} beats EVERY other {fi} within each {fo}, so the state is a "
+                    f"per-({fo}, {fi}) tally over all {fi} values, not a per-{fi} one.")
         if t == "synth_filter_argmax":
             return f"The question is restricted to records with {self.ffield}={self.fval}, so the state is a per-{self.f_in} tally over those records only."
         if t == "synth_mode":
@@ -310,9 +358,18 @@ class SynthOracle(ScaffoldOracle):
 
     def _state_format_base(self) -> str:
         if self.task == "synth_2d":
-            return (f"the partial tally as `<{self.f_out}>/<{self.f_in}>=<count>` entries joined by `|`, "
-                    f"where `<{self.f_out}>` is one of {', '.join(self.out_vals)} and `<{self.f_in}>` is one of "
-                    f"{', '.join(self.in_vals)}")
+            fo, fi, ov, iv = self.f_out, self.f_in, ", ".join(self.out_vals), ", ".join(self.in_vals)
+            if self.qtype == "months_cmp":
+                return (f"the partial tally as `<{fo}>/<{fi}>=<count>` entries joined by `|`, where `<{fo}>` is one of "
+                        f"{ov} and `<{fi}>` is {self.qgrp} or {self.qgrp2} only")
+            if self.qtype == "month_for_grp":
+                return (f"the partial tally as `<{fo}>=<count>` entries joined by `|`, counting only {fi}={self.qgrp} "
+                        f"records, where `<{fo}>` is one of {ov}")
+            if self.qtype == "grp_in_month":
+                return (f"the partial tally as `<{fi}>=<count>` entries joined by `|`, over only {fo}={self.qmon} "
+                        f"records, where `<{fi}>` is one of {iv}")
+            return (f"the partial tally as `<{fo}>/<{fi}>=<count>` entries joined by `|`, "
+                    f"where `<{fo}>` is one of {ov} and `<{fi}>` is one of {iv}")
         if self.task == "synth_sumby":
             return "the partial as `<grp>=<total>` entries joined by `|`, where `<grp>` is one of K1, K2, K3, K4"
         if self.task == "synth_diff":
@@ -341,7 +398,9 @@ class SynthOracle(ScaffoldOracle):
             "synth_maxwhere": "take the max of",
             "synth_mode": "merge", "synth_distinct": "union",
             "synth_sumby": "merge (add per-grp)", "synth_diff": "merge (add per-flag)",
-            "synth_filter_argmax": "merge", "synth_2d": f"merge (add per {self.f_out}/{self.f_in} key)",
+            "synth_filter_argmax": "merge",
+            "synth_2d": {"month_for_grp": f"merge (add per {self.f_out})", "grp_in_month": f"merge (add per {self.f_in})"}.get(
+                self.qtype, f"merge (add per {self.f_out}/{self.f_in} key)"),
         }.get(self.task, "sum")
 
     def _empty_phrase(self) -> str:
@@ -400,6 +459,18 @@ class SynthOracle(ScaffoldOracle):
             ans = self._argbest(state, max if self.agg == "most" else min, self.in_vals)
             return ans, (f"\nTally over {self.ffield}={self.fval} records: {self._fmt_tally(state)}; "
                          f"{self.agg} common is {ans} ({state[ans]}).")
+        if self.qtype == "grp_in_month":
+            d = state or {}
+            if not d:
+                return self.in_vals[0], f"\nNo records with {fo}={self.qmon}; defaulting to {self.in_vals[0]}."
+            ans = self._argbest(d, max, self.in_vals)
+            return ans, f"\nTally for {fo}={self.qmon}: {self._fmt_tally(d)}; most common is {ans} ({d[ans]})."
+        if self.qtype == "month_for_grp":
+            g = self.qgrp
+            per = {m: (state or {}).get(m, 0) for m in self.out_vals}
+            ans = self._argbest(per, max, self.out_vals)
+            return ans, (f"\n{g} count per {fo}: " + ", ".join(f"{m}={n}" for m, n in per.items())
+                         + f"; the most is {ans} ({per[ans]}).")
         bm = self._by_month(state)
         if self.qtype == "months_argmax":
             g, hits, rows = self.qgrp, [], []
@@ -418,20 +489,7 @@ class SynthOracle(ScaffoldOracle):
                 rows.append(f"  {fo}={m}: {g1}={a_} vs {g2}={b_}: {'yes' if a_ > b_ else 'no'}")
             return str(len(hits)), (f"\nPer {fo}, {g1} > {g2}?\n" + "\n".join(rows)
                                     + f"\n{fo} values where yes: {', '.join(hits) or 'none'} → {len(hits)}.")
-        if self.qtype == "grp_in_month":
-            d = bm.get(self.qmon, {})
-            if not d:
-                return self.in_vals[0], f"\nNo records with {fo}={self.qmon}; defaulting to {self.in_vals[0]}."
-            ans = self._argbest(d, max, self.in_vals)
-            return ans, f"\nTally for {fo}={self.qmon}: {self._fmt_tally(d)}; most common is {ans} ({d[ans]})."
-        # month_for_grp
-        g = self.qgrp
-        per = {m: d.get(g, 0) for m, d in bm.items()}
-        if not per:
-            return self.out_vals[0], f"\nNo records seen; defaulting to {self.out_vals[0]}."
-        ans = self._argbest(per, max, self.out_vals)
-        return ans, (f"\n{g} count per {fo}: " + ", ".join(f"{m}={n}" for m, n in per.items())
-                     + f"; the most is {ans} ({per[ans]}).")
+        raise ValueError(f"unknown synth_2d qtype {self.qtype!r}")
 
     def _finalize_note(self, state) -> str:
         t = self.task
