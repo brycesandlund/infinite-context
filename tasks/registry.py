@@ -25,6 +25,7 @@ from tasks.longrec import LONGREC_TASKS, make_longrec_problem
 from tasks.rulelabel import RULELABEL_TASKS, make_rulelabel_problem
 from tasks.labeled import LABELED_TASKS, make_labeled_problem
 from tasks.topk import TOPK_TASKS, make_topk_problem
+from tasks.oolong_real import OOLONG_REAL_TASKS, make_oolong_real_problem
 
 
 # All 13 RULER tasks resolve through the same vendored builder; per-task
@@ -47,6 +48,7 @@ _GENERATORS.update({name: _bind(make_longrec_problem, name) for name in LONGREC_
 _GENERATORS.update({name: _bind(make_rulelabel_problem, name) for name in RULELABEL_TASKS})
 _GENERATORS.update({name: _bind(make_labeled_problem, name) for name in LABELED_TASKS})
 _GENERATORS.update({name: _bind(make_topk_problem, name) for name in TOPK_TASKS})
+_GENERATORS.update({name: _bind(make_oolong_real_problem, name) for name in OOLONG_REAL_TASKS})  # EVAL ONLY
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -79,6 +81,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides
     "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
     "synth_topk": "set",
+    "oolong_real": "oolong_real",   # eval only — never an SFT/RL task
 }
 
 
@@ -109,6 +112,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "rule_label": "numeric",     # fallback; per-problem grading_mode decides
     "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
     "synth_topk": "set",
+    "oolong_real": "oolong_real",   # eval only — never an SFT/RL task
 }
 
 

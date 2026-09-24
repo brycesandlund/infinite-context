@@ -49,7 +49,7 @@ from eval.run import _rollout_header, _tree_to_text  # shared rollout renderer
 from tasks import (
     grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode,
 )
-from tasks.oolong import make_oolong_problem, oolong_spec  # shared deterministic spec
+from tasks.oolong import OOLONG_TASKS, make_oolong_problem, oolong_spec  # shared deterministic spec
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +332,7 @@ def _make_sft_problem(task, ti, i, corpus_tokens, tokenizer):
     # QA benefit, so pin those to the base size.
     # Model-leaf tasks keep the base size AND the base budget (their cost is paid leaf calls).
     budget, doc = (AGENT_CONTEXT, DOC_SIZE_TOKENS) if task in _REJECT_SAMPLE_TASKS else _budget_doc_for(i, task)
-    if task.startswith("oolong"):
+    if task in OOLONG_TASKS:   # OOLONG-synth only
         seed, dataset = oolong_spec(task, i, DATA_SEED)
         return seed, make_oolong_problem(
             task, corpus_tokens, tokenizer, doc, seed, dataset=dataset
@@ -645,6 +645,8 @@ async def main() -> None:
     unknown = [t for t in SFT_TASKS if t not in list_tasks()]
     if unknown:
         raise SystemExit(f"Unknown SFT_TASKS: {unknown}. Available: {list_tasks()}")
+    if "oolong_real" in SFT_TASKS:
+        raise SystemExit("oolong_real is EVAL ONLY (held-out benchmark) — never train on it.")
 
     tokenizer = tokenizer_utils.get_tokenizer(MODEL_NAME)
     renderer = get_renderer(RENDERER_NAME, tokenizer)

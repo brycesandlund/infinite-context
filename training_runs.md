@@ -1297,3 +1297,79 @@ round splits vs run 15's 111), so the rule generalized from the jittered sizes �
 Reading: the jitter fixed the split rule and every NIAH regression while keeping run 15's needle/multikey gains.
 SCORE-9 sits between 14w and 15w; the gap to 14w is vt (one binary root — the root-commitment prior again) plus
 OOLONG seed-level moves (a missing \boxed on a correct tally; the known temporal overflows), each within 45-rollout noise.
+
+## OOLONG-real — built 2026-09-24 (EVAL ONLY; never an SFT/RL task — sft.py refuses it)
+
+Source: HF `oolongbench/oolong-real` (config `dnd`; 20 GB snapshot at `~/.cache/infinite-context/oolong_real`), code
++ scorer from `abertsch72/oolong` @ 0bb7eab (MIT). Critical Role transcripts, campaign 1 = `test` (the official split),
+campaign 2 = `validation`. Each split: 110 context windows of 1-24 episodes, ~6.0-6.1K questions in 4 types
+(singledoc_rolls/spells, multidoc_rolls/spells); answers are integers (0.75^|err|), strings (exact, case-insensitive)
+or comma lists (|gold ∩ pred| / |gold|). Document length in Qwen tokens (after moving the instruction paragraph to
+task_context): test 33.6K / 321K / 1.32M (min/median/max); 20 single-episode windows across both splits.
+
+- Prep: `PYTHONPATH=. uv run python scripts/prepare_oolong_real.py` -> per-window token arrays + question index
+  (`~/.cache/infinite-context/oolong_real/prepared/<split>/`). Aborts on any window without the mapping marker.
+- Adapter: `tasks/oolong_real/` — task `oolong_real`; the dataset's own instruction paragraph -> task_context (as
+  for OOLONG-synth), document = the rest verbatim (player->character mapping + transcripts), question verbatim,
+  grading mode `oolong_real` = vendored `dnd_*` scorer (`tasks/oolong_real/vendored_eval.py`, verbatim).
+  Env: `OOLONG_REAL_SPLIT` (test), `OOLONG_REAL_MIN_TOKENS` / `OOLONG_REAL_MAX_TOKENS`, `OOLONG_REAL_TYPES`.
+  Per-type scores print as the eval's per-"dataset" breakdown.
+- Fix needed on the way: `eval/run.py` and `sft.py` routed ANY task starting with "oolong" to the OOLONG-synth
+  generator; now `task in OOLONG_TASKS`.
+
+**Validation (base models only, as asked):**
+| run | protocol | n | score | reference |
+|---|---|---|---|---|
+| GPT-5-mini | official (`scripts/oolong_real_official.py`: their system/user messages + vendored scorer, raw HF rows), test, 1-episode windows | 40 | **51.22** (rolls 45.4 / spells 57.7; 1 low-confidence parse) | paper Table 4, 55K: **49.86** |
+| base Qwen3.6-35B-A3B | our harness, MODE=single (whole transcript in context), 1-episode | 10 | 0.570 | — (not in paper) |
+| base Qwen3.6-35B-A3B | our harness, MODE=decompose, budget 5K, 1-episode | 10 | 0.000 — 10/10 roots overflow within 1-6 agents: reads the transcript sequentially into its own context, never decomposes | expected for an untrained model |
+
+The official-protocol reproduction lands within sampling error of the paper (±~8 at n=40), so the raw data, the
+question/gold pairing and the scorer are right; the two base-Qwen runs show our adapter end to end (loading,
+task_context, tools over a 33-55K-token document, list/int/string grading). `claude-sonnet-4-20250514` (the paper's
+Claude row) has been retired by the API, so GPT-5-mini is the reproduction. Raw: `eval_results/raw/oolong_real_*`,
+`eval_results/raw/oolong_real_base_qwen_{single,decompose}_1ep.jsonl`. Fine-tuned checkpoints have NOT been evaluated on it (decision pending).
+
+## 16w long-context eval — 2026-09-24 — 8K / 16K / 32K docs, 5K per-agent budget, FRESH seeds, all 10 OOLONG-synth datasets
+
+`scripts/eval_long.sh <tag> <ckpt> <doc> <budget>`: all 13 RULER tasks x 5 seeds + the 3 OOLONG-synth families x 20
+(= 2 per dataset over all 10 validated datasets; the 4K scoreboard only ever reached the first 5), seed block 3,000,000+
+(never trained on or read), TEMP 0.2, MAX_NODES 2000, no depth cap. 5K is one of 16w's training budgets (15% of
+traces); 8K/16K are inside the 14K training length ceiling (16K just past it), 32K is ~2.3x past it. Raw
+`eval_results/raw/sft_general16w_long_{8k,16k,32k}.{jsonl,txt}`. Wall time 35 / 22 / 28 min.
+
+| task | 8K | 16K | 32K |
+|---|---|---|---|
+| niah_single_1/2/3 | 1.00 / 0.80 / 1.00 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 |
+| niah_multikey_1/2/3 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 | 1.00 / 1.00 / 1.00 |
+| niah_multivalue / multiquery | 0.95 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| vt | 0.80 | 1.00 | 0.84 |
+| cwe / fwe | 1.00 / 0.93 | 0.98 / 1.00 | 0.84 / 1.00 |
+| qa_1 / qa_2 | 0.60 / 0.40 | 0.80 / 0.60 | 0.60 / 0.60 |
+| **RULER-13** | **0.883** | **0.952** | **0.914** |
+| oolong_counting | 0.48 | 0.48 | 0.42 |
+| oolong_user | 0.55 | 0.25 | 0.36 |
+| oolong_temporal | 0.45 | 0.51 | 0.30 |
+| **OOLONG-synth-3** | **0.495** | **0.414** | **0.358** |
+| root overflows (OOLONG, of 60) | 3 | 15 | 15 |
+| agents / rollout (mean) | 55 | 89 | 188 |
+
+OOLONG by dataset (mean of the 3 families): app_reviews 0.96 / 0.43 / 0.50, imdb 0.68 / 0.83 / 0.66, metaphors
+0.63 / 0.34 / 0.33, agnews 0.61 / 0.35 / 0.50, trec_coarse 0.50 / 0.50 / 0.50, yahoo 0.33 / 0.50 / 0.51, negation
+0.17 / 0.50 / 0.33, multinli 0.39 / 0.35 / 0.05, spam 0.34 / 0.33 / 0.16, formality 0.34 / 0.00 / 0.02
+(n = 6 per cell — read as direction only).
+
+**Reading.**
+- RULER holds past the training length: every NIAH variant is at 1.00 at 16K and 32K (the 8K single_2 miss is the
+  one runaway below). The misses are vt (one seed per length collapses — 32K: 1 of 5 variables), cwe counting slips at
+  32K (0.6-0.9 partial credit: word frequencies off by one), and qa's ruler_part substring grader (e.g. "High risk
+  preparations and other compounding functions" vs gold "…and SOME other…" scores 0).
+- OOLONG degrades with length through the ROOT STATE CEILING, as predicted: overflows 3 → 15 → 15, now hitting
+  oolong_user too (8/20 at 16K). Example: "which user has more `abbreviation` instances: User 73858 or User 19826?" —
+  the root built a full per-(user, label) tally over every user instead of filtering to the two named users and one
+  label; the same filter-vs-collect choice fixed for niah in run 15, and a training target (author_cmp exists but its
+  state is the per-author count of one label, not a two-user filter).
+- Harness caps work: one 8K niah_single_2 rollout wrote a subtask with NO range ("Find the magic number for
+  obsequious-appellation (or any relevant key fact or number). Recursively split the range…"); every child restarted at
+  0..8000 and the tree ran 460 levels deep until MAX_NODES=2000 stopped it. A real model failure (range dropped from a
+  subtask), 1 of 125 rollouts; nothing like it at 16K/32K.

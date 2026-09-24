@@ -19,7 +19,7 @@ from typing import Literal
 
 GradingMode = Literal[
     "exact", "set", "numeric", "ruler_all", "ruler_part", "qa_part",
-    "oolong_exact", "oolong_compare", "oolong_soft",
+    "oolong_exact", "oolong_compare", "oolong_soft", "oolong_real",
 ]
 
 
@@ -148,6 +148,12 @@ def grade_answer(
         pred_lc = extracted.lower()
         hits = sum(1.0 for g in gold_answers if g.lower() in pred_lc)
         return hits / len(gold_answers)
+
+    if mode == "oolong_real":
+        # OOLONG-real's official scorer, vendored verbatim (tasks/oolong_real/vendored_eval.py). It parses the
+        # model's full output with its own \boxed{} regex, so hand it our extracted boxed content re-wrapped.
+        from tasks.oolong_real.vendored_eval import dnd_score
+        return float(dnd_score(gold_answers[0], "\\boxed{" + extracted + "}"))
 
     if mode == "oolong_exact":
         # OOLONG's official categorical scoring: parse the candidate after the

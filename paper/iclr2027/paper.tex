@@ -50,7 +50,7 @@ While native context scaling is appealing as a concrete engineering problem, it 
 
 While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
-We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below.
+We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{extend capability}, not to \emph{instill a prior}.
 
 \subsection{Harness}
 
@@ -61,7 +61,7 @@ Our harness has two tools:
   \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
 \end{enumerate}
 
-Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition as well as the original prompt\footnote{The full system prompt and harness environment is elucidated in Appendix~\ref{app:harness}.}; child agents' user prompt is specified by the calling model.
+Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition, a generic instruction, and potentially task-specific background, in accordance with the specified eval\footnote{Precise harness environment is given in Appendix~\ref{app:harness}.}. Subagents' user prompt is specified by the calling model.
 
 \subsection{Results}
 

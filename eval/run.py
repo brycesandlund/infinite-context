@@ -33,7 +33,7 @@ import rl  # single source of truth for budget/recursion/data constants
 from eval.agent import AgentNode, flatten, run_agent, run_single_shot
 from eval.backends import APIBackend, ModelBackend, TinkerBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
-from tasks.oolong import make_oolong_problem, oolong_spec
+from tasks.oolong import OOLONG_TASKS, make_oolong_problem, oolong_spec
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +177,7 @@ async def main() -> None:
     # own deterministic seed scheme. With a QTYPE filter we oversample idx and keep
     # only matching question types (e.g. the hard exact-count ones).
     def _make(task: str, ti: int, idx: int):
-        if task.startswith("oolong"):
+        if task in OOLONG_TASKS:   # OOLONG-synth only (oolong_real has its own generator)
             seed, ds = oolong_spec(task, idx, OOLONG_BASE)
             return seed, make_oolong_problem(
                 task, corpus_tokens, tokenizer, DOC_SIZE_TOKENS, seed, dataset=ds)
