@@ -92,7 +92,9 @@ An alternative to native long context, and an inevitability when such native con
 
 As long as LLMs have proven useful, an evolving line of work has focused on how to expand their capabilities without touching model internals. The first efforts were known as prompt engineering~\citep{phoenix2024promptengineering,berryman2024promptengineering}, which, though necessary on pre-trained base models~\citep{brown2020gpt3}, became internalized through instruction-tuning and reasoning RL~\citep{ouyang2022instructgpt,guo2025deepseekr1}. Function-calling has lead to a new wave of such efforts, where domain-specific knowledge, tools, and multi-agent systems live on a scaffold that interacts with powerful LLMs known as a ``harness"~\citep{lopopolo2026harnessengineering,barbaste2026harnessengineering}. 
 
-Long-context harnesses originate with systems like MemGPT
+Long-context harnesses originate with systems like MemGPT~\citep{packer2023memgpt}, RAPTOR~\citep{sarthi2024raptor}, and Chain of Agents~\citep{zhang2024coa}, where the overall goal is to engineer systems that decompose documents into contexts independent LLM calls can read and aggregate. Recursive Language Models is a popular recent example that allows for single-level recursive LLM calls via a programmatic environment~\citep{zhang2025rlm}, prompting several follow-ups~\citep{alizadeh2026srlm,roy2026lambdarlm,lumer2026rah,primeintellect2026rlm,kim2026reinforcingrlm}.
+
+
 
 
 \section{Methodology}

@@ -1,0 +1,83 @@
+SPLIT-DECISION FAILURE ON ROUND RANGES — run 15w, investigated 2026-09-23
+===========================================================================
+
+SYMPTOM (15w eval, 104 rollouts): subagents given 1000- or 2000-token ranges open with
+"Range 2000..4000 fits; reading it, then the next 200 tokens…" and read the whole range instead of
+splitting. 30 such nodes, all on the five RULER essay-haystack tasks (multikey_1, multiquery, single_2,
+single_3, multivalue). The 2000-token reads overflow the 3000 budget; the parent then improvises
+"A subagent ran out of context; the answer is not in the range they covered. \boxed{none}".
+
+WHICH RANGES (every oversized "fits" in 15w and run 13 — ranges >= 1000 tokens):
+
+  checkpoint   round endpoints (both %1000)   non-round endpoints
+  12w          0 / 66 wrongly "fits"          0 / 124
+  13           15 / 229  (7%)                 0 / 185
+  14w          0 / 138                        0 / 197
+  15w          30 / 119  (25%)                0 / 195
+
+Round ranges only arise when the document is exactly a round length. RULER's essay haystack is sized to
+exactly 4000 tokens; its noise and needle haystacks land at 3975-3999 (single_1, multikey_2/3 never fail).
+
+TRAINING SUPPORT: 523 distinct training doc lengths; only 6000 and 14000 are round (~40 traces, all
+realdoc_count / rule_label / a few synth — count/sum subtasks). 111 round-thousand decisions, all
+top-level ("0..14000", "0..7000", "7000..14000"), all split. The search and collect subtasks have NEVER
+been shown a round range. Run-14 and run-15 corpora are identical in this respect (151 vs 152 round
+splits, 5 vs 5 round leaves) — the new data did not teach it.
+
+CAUSAL PROBE. A failing subagent's exact prompt (system + subtask, verbatim from the 15w eval), with only
+the numbers substituted; P(" fits") vs P(" is") at the decision token after "Range A..B", T=1 two-way
+normalized [T=0.2 equivalent in brackets]. Two base prompts: the search subtask (multikey_1 seed 2014000,
+node r1) and the collect subtask (multivalue seed 2029003, node r1). Script: scratchpad fits_probe*.py.
+
+--- Probe 1: vary the range, document stated as 4000 tokens (search subtask) ---
+       range  size kind                   12w             13              14w             15w
+ 2000..4000   2000 round           0.000 [0.000]   0.016 [0.000]   0.000 [0.000]   1.000 [1.000]
+ 1000..2000   1000 round           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]   0.651 [0.958]
+ 3000..4000   1000 round           0.000 [0.000]   0.562 [0.777]   0.000 [0.000]   1.000 [1.000]
+    0..2000   2000 round           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 2000..3000   1000 round           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]   0.000 [0.000]
+    0..1000   1000 round           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 1999..3999   2000 non-round       0.000           0.000           0.000           0.000
+ 2011..4011   2000 non-round       0.000           0.000           0.000           0.000
+ 1987..3975   1988 non-round       0.000           0.000           0.000           0.000
+ 2987..3987   1000 non-round       0.000           0.000           0.000           0.000
+ 2100..4100   2000 round-100       0.000           0.000           0.000           0.000
+ 1500..2500   1000 round-100       0.000           0.000           0.000           0.000
+ 3493..3993    500 non-round       0.867 [1.000]   0.999 [1.000]   0.998 [1.000]   1.000 [1.000]  (boundary; correct-ish)
+ (collect subtask: same picture — 15w 2000..4000 1.000, 3000..4000 0.996, 1000..2000 0.294; 14w all 0.000)
+
+--- Probe 2: vary the STATED document length and the budget (search subtask) ---
+       range   doc budget variant                           13             14w             15w
+ 2000..4000   4000   3000 orig: ends at doc          0.016 [0.000]   0.000 [0.000]   1.000 [1.000]
+ 3000..4000   4000   3000 orig: ends at doc          0.562 [0.777]   0.000 [0.000]   1.000 [1.000]
+ 2000..4000   5000   3000 "4000" but doc=5000        0.004 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 3000..4000   5000   3000 "4000" but doc=5000        0.269 [0.007]   0.000 [0.000]   0.000 [0.000]
+ 2500..5000   5000   3000 ends at doc=5000           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 4000..5000   5000   3000 ends at doc=5000           0.182 [0.001]   0.000 [0.000]   0.000 [0.000]
+ 2000..4000   8000   3000 "4000" but doc=8000        0.002 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 4000..8000   8000   3000 ends at doc=8000           0.000 [0.000]   0.000 [0.000]   0.989 [1.000]
+ 6000..8000   8000   3000 ends at doc=8000           0.000 [0.000]   0.000 [0.000]   0.989 [1.000]
+ 3000..6000   6000   3000 ends at doc=6000           0.000 [0.000]   0.000 [0.000]   0.992 [1.000]  (collect: 0.000)
+ 4500..6000   6000   3000 ends at doc=6000           0.008 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 1000..2000   2000   3000 ends at doc=2000           0.000 [0.000]   0.000 [0.000]   0.000 [0.000]
+ 1999..3999   3999   3000 non-round ends at doc      0.000           0.000           0.000
+ 2987..3987   3987   3000 non-round ends at doc      0.000           0.000           0.000
+ 2000..4000   4000   1500 budget 1500                0.053 [0.000]   0.000 [0.000]   1.000 [1.000]
+ 2000..4000   4000   8000 budget 8000                0.008 [0.000]   0.000 [0.000]   0.992 [1.000]
+
+--- Probe 3: length-generalization sizes (14w vs 15w) ---
+ D/2..D, 3D/4..D, 7D/8..D for D in {10000, 12000, 16000, 20000}: all 0.000 on both, EXCEPT
+ 15w collect 14000..16000 @ doc 16000: 0.893 [1.000]. Non-round controls all 0.000.
+
+READING
+- Not the budget (1500/3000/8000 identical), not the literal number 4000 ("2000..4000" in a 5000- or
+  8000-token document is 0.000). The trigger is a ROUND range that ENDS AT THE DOCUMENT LENGTH STATED IN
+  THE SYSTEM PROMPT — and even that is patchy (4000/8000 docs yes; 5000/10000/12000/20000 no; 6000 and
+  16000 on one subtask only). An idiosyncratic shortcut in a region with no training support, decided in a
+  single token from the digits alone, before anything is read.
+- It drifts between runs: 12w/14w clean, 13 weak (4000/5000 docs), 15w near-certain at eval temperature.
+  Run 15's data did not cause it; another warm pass moved an unsupported boundary.
+- It costs points only through the overflow recovery, which is never taught (no training trace has an
+  overflowed child). "Reported none / not in range" responses to a child overflow: run 13 25x, 14w RULER-7
+  11x, 15w 3x — the 15w three are exactly its three wrong niah answers.
+- Headline: multikey_1 1.00 -> 0.60 alone is -0.044 of 15w's -0.046 SCORE-9 drop; the rest nets to ~0.

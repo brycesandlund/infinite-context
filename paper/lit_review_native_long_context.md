@@ -40,7 +40,7 @@ For our purposes the relevant fact is that hybrids change the cost curve, not th
 
 ## 4. Recurrence and architectural memory
 
-A related family adds an explicit memory rather than a state. Transformer-XL introduced segment-level recurrence with relative positions, the ancestor of all of this [dai2019transformerxl]. Memorizing Transformers added a non-differentiable kNN lookup over a cache of past key-value pairs [wu2022memorizing]. Infini-attention combined a compressive memory with local attention in a single block, claiming bounded memory over unbounded input [munkhdalai2024infiniattention]. Titans learns to memorize at test time, updating a neural memory module as it reads [behrouz2024titans].
+A related family adds an explicit memory rather than a state. Transformer-XL introduced segment-level recurrence with relative positions, the ancestor of all of this [dai2019transformerxl]. Memorizing Transformers added a non-differentiable kNN lookup over a cache of past key-value pairs [wu2022memorizing]. Infini-attention combined a compressive memory with local attention in a single block, claiming bounded memory over unbounded input [munkhdalai2024infini]. Titans learns to memorize at test time, updating a neural memory module as it reads [behrouz2024titans].
 
 This family is the architectural mirror of the *fold* harnesses in the companion review: a running state updated left to right. The difference is where the state lives — in activations versus in tokens the model wrote — and therefore whether it is inspectable and whether the update rule is learned implicitly or demonstrated.
 
@@ -52,15 +52,15 @@ Bhaskar et al. give the sharpest result for our purposes: they ask how many KV e
 
 ## 6. Systems: exact attention, made to fit
 
-A parallel line keeps attention mathematically exact and attacks the constant factors. FlashAttention made attention IO-aware by tiling to SRAM and never materializing the matrix [dao2022flashattention], with FlashAttention-2 improving work partitioning [dao2023flashattention2]. Ring Attention distributes blockwise attention across devices so context scales with device count, enabling near-infinite context in principle [liu2023ringattention]. PagedAttention (vLLM) applied virtual-memory paging to the KV cache, cutting fragmentation and raising throughput several-fold [kwon2023pagedattention].
+A parallel line keeps attention mathematically exact and attacks the constant factors. FlashAttention made attention IO-aware by tiling to SRAM and never materializing the matrix [dao2022flashattention], with FlashAttention-2 improving work partitioning [dao2023flashattention2]. Ring Attention distributes blockwise attention across devices so context scales with device count, enabling near-infinite context in principle [liu2024ringattention]. PagedAttention (vLLM) applied virtual-memory paging to the KV cache, cutting fragmentation and raising throughput several-fold [kwon2023pagedattention].
 
 This is the honest core of native scaling: no approximation, no lost recall, just engineering. It is also why million-token windows exist at all, and why the harness literature cannot claim native context is a dead end — it demonstrably works, at a cost.
 
 ## 7. Positional extension and data recipes
 
-Making a short-context model long is now a standard post-training step. RoPE [su2021roformer] is the near-universal positional scheme, and ALiBi showed linear biases extrapolate beyond training length [press2022alibi]. Position Interpolation rescales RoPE frequencies to fit a longer window and extends LLaMA to 32K within 1,000 fine-tuning steps [chen2023positioninterpolation]. YaRN adds NTK-by-parts interpolation plus attention temperature scaling, reaching state of the art with fine-tuning on ~0.1% of pretraining data [peng2023yarn]. LongRoPE searches non-uniform interpolation progressively to reach 2M tokens from 256K training [ding2024longrope]. Xiong et al. give the frontier-scale recipe — attention base frequency adjustment plus continued pretraining on long data [xiong2023effectivelongcontext].
+Making a short-context model long is now a standard post-training step. RoPE [su2021roformer] is the near-universal positional scheme, and ALiBi showed linear biases extrapolate beyond training length [press2022alibi]. Position Interpolation rescales RoPE frequencies to fit a longer window and extends LLaMA to 32K within 1,000 fine-tuning steps [chen2023pi]. YaRN adds NTK-by-parts interpolation plus attention temperature scaling, reaching state of the art with fine-tuning on ~0.1% of pretraining data [peng2024yarn]. LongRoPE searches non-uniform interpolation progressively to reach 2M tokens from 256K training [ding2024longrope]. Xiong et al. give the frontier-scale recipe — attention base frequency adjustment plus continued pretraining on long data [xiong2023effective].
 
-Data matters as much as positions. Fu et al. show 128K context is largely a *data engineering* problem, achievable with ~500M tokens of continued pretraining if the length distribution and domain mixture are right [fu2024dataengineering]. LongAlign addresses long instruction-following alignment [bai2024longalign]. Gao et al.'s ProLong gives the most careful controlled study of what actually helps [gao2024prolong]. An et al. attack "lost in the middle" directly with information-intensive training so the model uses all positions [an2024film].
+Data matters as much as positions. Fu et al. show 128K context is largely a *data engineering* problem, achievable with ~500M tokens of continued pretraining if the length distribution and domain mixture are right [fu2024dataengineering]. LongAlign addresses long instruction-following alignment [bai2024longalign]. Gao et al.'s ProLong gives the most careful controlled study of what actually helps [gao2025prolong]. An et al. attack "lost in the middle" directly with information-intensive training so the model uses all positions [an2024film].
 
 ## 8. What the frontier ships, and what it discloses
 
@@ -88,16 +88,16 @@ The one-line framing: native scaling makes the window bigger, and the evidence o
 
 ## Source index
 
-Verified arXiv identifiers, for bib entries not yet in `iclr2027_conference.bib`:
+Verified arXiv identifiers (✓ = already in `iclr2027_conference.bib` under this key, as of 2026-09-23):
 
 | key | arXiv | title (first author, date) |
 |---|---|---|
-| vaswani2017attention | 1706.03762 | Attention Is All You Need (Vaswani, 2017-06) |
+| vaswani2017attention ✓ | 1706.03762 | Attention Is All You Need (Vaswani, 2017-06) |
 | dai2019transformerxl | 1901.02860 | Transformer-XL (Dai, 2019-01) |
 | child2019sparse | 1904.10509 | Generating Long Sequences with Sparse Transformers (Child, 2019-04) |
 | beltagy2020longformer | 2004.05150 | Longformer (Beltagy, 2020-04) |
 | wang2020linformer | 2006.04768 | Linformer (Wang, 2020-06) |
-| katharopoulos2020lineartransformers | 2006.16236 | Transformers are RNNs (Katharopoulos, 2020-06) |
+| katharopoulos2020lineartransformers ✓ | 2006.16236 | Transformers are RNNs (Katharopoulos, 2020-06) |
 | zaheer2020bigbird | 2007.14062 | Big Bird (Zaheer, 2020-07) |
 | choromanski2021performer | 2009.14794 | Rethinking Attention with Performers (Choromanski, 2020-09) |
 | su2021roformer | 2104.09864 | RoFormer / RoPE (Su, 2021-04) |
@@ -105,29 +105,29 @@ Verified arXiv identifiers, for bib entries not yet in `iclr2027_conference.bib`
 | wu2022memorizing | 2203.08913 | Memorizing Transformers (Wu, 2022-03) |
 | dao2022flashattention | 2205.14135 | FlashAttention (Dao, 2022-05) |
 | peng2023rwkv | 2305.13048 | RWKV (Peng, 2023-05) |
-| zhang2023h2o | 2306.14048 | H2O: Heavy-Hitter Oracle (Zhang, 2023-06) |
-| chen2023positioninterpolation | 2306.15595 | Position Interpolation (Chen, 2023-06) |
+| zhang2023h2o ✓ | 2306.14048 | H2O: Heavy-Hitter Oracle (Zhang, 2023-06) |
+| chen2023pi ✓ | 2306.15595 | Position Interpolation (Chen, 2023-06) |
 | sun2023retnet | 2307.08621 | Retentive Network (Sun, 2023-07) |
 | dao2023flashattention2 | 2307.08691 | FlashAttention-2 (Dao, 2023-07) |
-| peng2023yarn | 2309.00071 | YaRN (Peng, 2023-08) |
+| peng2024yarn ✓ | 2309.00071 | YaRN (Peng, 2023-08) |
 | kwon2023pagedattention | 2309.06180 | PagedAttention / vLLM (Kwon, 2023-09) |
-| xiong2023effectivelongcontext | 2309.16039 | Effective Long-Context Scaling (Xiong, 2023-09) |
-| xiao2023streamingllm | 2309.17453 | StreamingLLM / attention sinks (Xiao, 2023-09) |
-| liu2023ringattention | 2310.01889 | Ring Attention (Liu, 2023-10) |
-| gu2023mamba | 2312.00752 | Mamba (Gu, 2023-12) |
+| xiong2023effective ✓ | 2309.16039 | Effective Long-Context Scaling (Xiong, 2023-09) |
+| xiao2023streamingllm ✓ | 2309.17453 | StreamingLLM / attention sinks (Xiao, 2023-09) |
+| liu2024ringattention ✓ | 2310.01889 | Ring Attention (Liu, 2023-10) |
+| gu2023mamba ✓ | 2312.00752 | Mamba (Gu, 2023-12) |
 | yang2024gla | 2312.06635 | Gated Linear Attention (Yang, 2023-12) |
 | bai2024longalign | 2401.18058 | LongAlign (Bai, 2024-01) |
-| fu2024dataengineering | 2402.10171 | Data Engineering for 128K Context (Fu, 2024-02) |
-| ding2024longrope | 2402.13753 | LongRoPE (Ding, 2024-02) |
+| fu2024dataengineering ✓ | 2402.10171 | Data Engineering for 128K Context (Fu, 2024-02) |
+| ding2024longrope ✓ | 2402.13753 | LongRoPE (Ding, 2024-02) |
 | lieber2024jamba | 2403.19887 | Jamba (Lieber, 2024-03) |
-| munkhdalai2024infiniattention | 2404.07143 | Infini-attention (Munkhdalai, 2024-04) |
-| li2024snapkv | 2404.14469 | SnapKV (Li, 2024-04) |
+| munkhdalai2024infini ✓ | 2404.07143 | Infini-attention (Munkhdalai, 2024-04) |
+| li2024snapkv ✓ | 2404.14469 | SnapKV (Li, 2024-04) |
 | an2024film | 2404.16811 | Make Your LLM Fully Utilize the Context (An, 2024-04) |
 | beck2024xlstm | 2405.04517 | xLSTM (Beck, 2024-05) |
 | glorioso2024zamba | 2405.16712 | Zamba (Glorioso, 2024-05) |
-| dao2024mamba2 | 2405.21060 | Transformers are SSMs / Mamba-2 (Dao, 2024-05) |
-| gao2024prolong | 2410.02660 | How to Train Long-Context LMs Effectively (Gao, 2024-10) |
-| behrouz2024titans | 2501.00663 | Titans (Behrouz, 2024-12) |
+| dao2024mamba2 ✓ | 2405.21060 | Transformers are SSMs / Mamba-2 (Dao, 2024-05) |
+| gao2025prolong ✓ | 2410.02660 | How to Train Long-Context LMs Effectively (Gao, 2024-10) |
+| behrouz2024titans ✓ | 2501.00663 | Titans (Behrouz, 2024-12) |
 | minimax2025minimax01 | 2501.08313 | MiniMax-01 (MiniMax, 2025-01) |
 | yuan2025nsa | 2502.11089 | Native Sparse Attention (Yuan, 2025-02; ACL 2025 best paper) |
 | lu2025moba | 2502.13189 | MoBA (Lu, 2025-02) |

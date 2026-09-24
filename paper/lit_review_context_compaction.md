@@ -171,7 +171,7 @@ The honest limitation: compaction serves open-ended interactive sessions in whic
 
 **Already in `iclr2027_conference.bib`:** `chroma2025contextrot`, `hsieh2024ruler`, `liu2024lostmiddle`, `deepseekai2025deepseekv32`, `laban2026delegate52`, `yu2025memagent`, `zhou2025mem1`, `han2026infomem`, `sun2025contextfolding`, `kang2025acon`, `yi2026adacom`, `li2026compactionrl`, `packer2023memgpt`, `anthropic2025multiagent`, `zhang2025rlm`, `zhang2024coa`, `yan2025dontbuild`, `behrouz2024titans`.
 
-**Verified arXiv entries not yet in the bib** (all checked 2026-09-23; venue from the arXiv comment where given):
+**Verified arXiv entries** (all checked 2026-09-23; venue from the arXiv comment where given; ✓ = already in the bib under this key):
 
 | key | arXiv | title (first author, date; venue) |
 |---|---|---|
@@ -216,7 +216,7 @@ The honest limitation: compaction serves open-ended interactive sessions in whic
 | chang2024booookscore | 2310.00785 | BooookScore (Chang, 2023-10; ICLR 2024) |
 | yang2024sweagent | 2405.15793 | SWE-agent (Yang, 2024-05) |
 | wang2025openhands | 2407.16741 | OpenHands (Wang, 2024-07; ICLR 2025) |
-| lindenbauer2025complexitytrap | 2508.21433 | The Complexity Trap (Lindenbauer, 2025-08; DL4Code workshop, NeurIPS 2025) |
+| lindenbauer2025complexitytrap ✓ | 2508.21433 | The Complexity Trap (Lindenbauer, 2025-08; DL4Code workshop, NeurIPS 2025) |
 | zhang2026ace | 2510.04618 | Agentic Context Engineering (Zhang, 2025-10; ICLR 2026) |
 | wu2025resum | 2509.13313 | ReSum (Wu, 2025-09) |
 | ye2026agentfold | 2510.24699 | AgentFold (Ye, 2025-10; ICLR 2026 per ML Anthology) |
@@ -225,23 +225,23 @@ The honest limitation: compaction serves open-ended interactive sessions in whic
 | feng2026agentswing | 2603.27490 | AgentSwing (Feng, 2026-03) |
 | hao2026selfgc | 2607.00692 | Self-GC (Hao, 2026-07) |
 | liu2026compressioncost | 2608.16370 | What Does Context Compression Cost an Agent? (Liu, 2026-08) |
-| barbaste2026harnessengineering | 2609.00006 | Harness Engineering: A Source-Code Study of Eleven Systems (Barbaste, 2026-07) |
+| barbaste2026harnessengineering ✓ | 2609.00006 | Harness Engineering: A Source-Code Study of Eleven Systems (Barbaste, 2026-07) |
 | bui2026terminalagents | 2603.05344 | Building Effective AI Coding Agents for the Terminal (Bui, 2026-03) |
 | chhikara2025mem0 | 2504.19413 | Mem0 (Chhikara, 2025-04) |
 | xu2025amem | 2502.12110 | A-MEM (Xu, 2025-02; NeurIPS 2025) |
 
-From the native-context review's index, also cited here and not yet in the bib: `xiao2023streamingllm` (2309.17453), `zhang2023h2o` (2306.14048), `li2024snapkv` (2404.14469), `bhaskar2025cacheme` (2506.17121).
+From the native-context review's index, also cited here (✓ where now in the bib): `xiao2023streamingllm` ✓ (2309.17453), `zhang2023h2o` ✓ (2306.14048), `li2024snapkv` ✓ (2404.14469), `bhaskar2025cacheme` (2506.17121).
 
-**Industry and documentation sources** (no arXiv record; need `@misc` entries):
+**Industry and documentation sources** (no arXiv record; ✓ = already in the bib as a `@misc` entry):
 
 | key | source |
 |---|---|
-| anthropic2025contextengineering | Anthropic, "Effective context engineering for AI agents," engineering blog, September 29, 2025 — https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents |
+| anthropic2025contextengineering ✓ | Anthropic, "Effective context engineering for AI agents," engineering blog, September 29, 2025 — https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents |
 | anthropic2026compaction | Anthropic, Claude API docs: *Compaction overview* and *Context editing* — https://platform.claude.com/docs/en/build-with-claude/compaction, …/context-editing |
 | anthropic2026contextwindows | Anthropic, Claude API docs: *Context windows* (context awareness) — https://platform.claude.com/docs/en/build-with-claude/context-windows |
 | anthropic2026claudecode | Anthropic, Claude Code docs: *How Claude Code works* — https://code.claude.com/docs/en/how-claude-code-works |
-| openai2025codexmax | OpenAI, "Building more with GPT-5.1-Codex-Max," November 2025 — https://openai.com/index/gpt-5-1-codex-max/ |
-| cursor2026selfsummarization | F. Cassano and S. Rush, "Training Composer for longer horizons," Cursor blog, March 17, 2026 — https://cursor.com/blog/self-summarization |
+| openai2025codexmax ✓ | OpenAI, "Building more with GPT-5.1-Codex-Max," November 2025 — https://openai.com/index/gpt-5-1-codex-max/ |
+| cursor2026selfsummarization ✓ | F. Cassano and S. Rush, "Training Composer for longer horizons," Cursor blog, March 17, 2026 — https://cursor.com/blog/self-summarization |
 | openai2026compaction | OpenAI, API docs: *Compaction* — https://developers.openai.com/api/docs/guides/compaction |
 | ji2025manus | Y. Ji, "Context Engineering for AI Agents: Lessons from Building Manus," Manus blog, 2025 — https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus |
 | factory2025compression | Factory, "Evaluating Context Compression for AI Agents," December 16, 2025 — https://factory.com/news/evaluating-compression (formerly factory.ai) |

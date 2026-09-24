@@ -1231,3 +1231,39 @@ dates) — unchanged and expected at a 3K budget.
 corpus are confounded. 12w (staged, no diversity) scored 0.760 and run 13 (diversity-free, single stage) 0.718, so
 +0.07 over 12w is larger than staging alone has ever bought (+0.04); that is suggestive but not a clean attribution.
 The cheap disambiguator remains the description-ablation probe on in-distribution `vt_novel`.
+
+## sft_general15w (run 15, warm start from 14w) — 2026-09-23 — held-out 0.786, RULER-13 0.882, diagnostics 0.903
+
+(ckpt `tinker://fa3fd877-3c30-5b16-8f0d-5b1555ef6de3:train:0/weights/sft_general15w`; 1,009 traces / 42,044 datums,
+2,628 batches at batch 16, LR 5e-6, NLL 0.0018; SFT 14:52→18:09, eval 9 min. Raw `eval_results/raw/sft_general15w.{jsonl,txt}`.
+Script `scripts/run_sft15_warm.sh`, cache v9.) Run-14 recipe plus the full-RULER audit fixes: niah_multi filters to the
+asked keys (other keys listed `(other key, skip)`), uuid keys/values in niah_novel, all-needle haystacks (25% of eligible
+niah), labeled_records `author_label_count` + 2-author subsets + ~30% author-filtered; niah_novel/niah_multi 40 → 60.
+Eval appends the 7 never-scored RULER tasks after the run-6..14 list (existing seeds unchanged; 14w's numbers for them
+are from `eval_results/raw/sft_general14w_ruler7.*`, same seeds).
+
+| task | 14w | **15w** |
+|---|---|---|
+| **niah_multikey_3** (all-needle, uuid→uuid) | 0.00 (4/5 overflow) | **1.00** — generalized with 0 exact-shape training traces |
+| niah_multikey_2 (all-needle) | 0.80 | **1.00** |
+| oolong_user | 0.65 | 0.75 (agnews subset count 0.24 → 0.75; trec still 0) |
+| fwe | 0.87 | 1.00 |
+| **niah_multikey_1** | 1.00 | **0.60** — see below |
+| niah_single_2 / niah_multivalue | 1.00 / 1.00 | 0.80 / 0.70 — see below |
+| oolong_counting / temporal | 0.63 / 0.35 | 0.46 / 0.30 (counting: one yahoo seed 1.0 → 0.0; temporal: known ceiling) |
+| niah_single_1, niah_single_3, multiquery, cwe, qa_1 | 1.00 | 1.00 |
+| vt / qa_2 | 1.00 / 0.40 | 0.96 / 0.40 |
+| **SCORE-9 / RULER-13 / 16-task** | 0.832 / 0.851 / 0.793 | **0.786 / 0.882 / 0.811** |
+
+**The regression is one artifact, not the new data.** 30 subagents given 1000/2000-token ranges said "Range
+2000..4000 fits" and read the whole range. Every one is a ROUND range ending at the stated document length; RULER's
+essay haystack is sized to exactly 4000 tokens (its noise/needle haystacks land at 3975-3999 and never trigger it).
+A causal probe on the exact failing prompts (vary only the numbers; P(" fits") at the decision token) gives 15w
+P = 1.000 for 2000..4000 / 3000..4000 at doc 4000 and 0.000 for every non-round or round-100 range of the same size;
+not the budget, not the literal "4000" (doc 5000/8000 → 0.000), patchy across doc lengths (4000/8000 fire; 5000,
+10000, 12000, 20000 don't). 12w and 14w are clean on every probe; run 13 has a weak version. Training has almost no
+round ranges (only ~40 traces with 6000/14000 docs, count/sum subtasks) and the run-14 and run-15 corpora are identical
+in this respect — so this is drift on an unsupported input across warm passes. It costs points only through the
+never-taught overflow recovery: the parent writes "the answer is not in the range they covered → none" (15w: exactly
+its three wrong niah answers; run 13: 25 times). multikey_1 alone is −0.044 of the −0.046 SCORE-9 drop.
+Full tables: `trace_snippets/run15_split_decision_probe.txt`.
