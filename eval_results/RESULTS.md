@@ -128,12 +128,12 @@ Same 10 counting problems, four ways. "harness" = MODE=decompose (8K budget, mus
 | **SFT + harness**       | 0.519 | ~40       | yes (read_chunk)    |
 | gpt-5.4 single-shot     | 0.468 | 1.0       | yes (in context)    |
 | gpt-5.4 + harness       | 0.376 | 3.3       | yes (read_chunk)    |
-| base Qwen + harness     | 0.000 | 1.5       | **no — never reads**|
+| base Qwen + harness     | 0.000 | 1.5       | yes, but overflows 10/10 |
 
 Three reads:
 1. **The harness HURTS anyone not trained on it.** gpt-5.4 drops 0.468 → 0.376 (decomposes shallowly,
    ~3 nodes, and loses accuracy in the clumsy split/aggregate); base Qwen drops 0.681 → **0.000** —
-   handed the tools with no training it never even calls read_chunk (`no_answer=10/10`, `grounded=0`).
+   handed the tools with no training it *does* read (30 `read_chunk` calls, 5 spawns, `grounded=True` 10/10) but reads chunks into its **own** context (median ~3.5K tokens, up to 6K, against the 8K budget) instead of delegating them, and every rollout ends in root context overflow (`root_termination=overflow` 10/10, no answer). *Corrected 2026-09-24 from the raw rollouts; this line previously said it never calls read_chunk.*
 2. **SFT's entire value is the PROTOCOL.** Identical base weights go from 0.000 (with the harness) to
    **0.519** after SFT — and SFT beats *frontier operating the same harness* (0.519 > 0.376) by
    decomposing finely (~40 nodes) instead of clumsily (gpt-5.4's 3.3).

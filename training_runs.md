@@ -1415,3 +1415,23 @@ only the listed authors. Verified 1,200/1,200 gold (labeled_records, rule_label,
 need one (section_mode_count 14, src_tag_2d 19, rule_label sections_cmp 9, synth_2d months_argmax 9); 23 more are joint
 tallies restricted to the two named values (sections_cmp / first_month_cmp / months_cmp); the rest became 1-D.
 Rendered examples: `trace_snippets/audit_v11_minimal_state_leaves.txt`. vt_novel (holder set) deferred to its own change.
+
+## 32K @ 8K budget + the vt fold-decision probe — 2026-09-24
+
+**32K OOLONG-synth, 16w, 8K per-agent budget** (same fresh seeds / 10 datasets as the 5K-budget run; raw
+`eval_results/raw/sft_general16w_long_32k_b8k.*`): counting 0.418 → 0.430, user 0.356 → **0.469**, temporal 0.299 → 0.291,
+mean 0.358 → **0.397**; root overflows 15 → **7**. Budget buys back part of the loss (mostly oolong_user); temporal does
+not move — its all-label states outgrow 8K too. The v11 minimal-state corpus targets the rest.
+
+**vt: which checkpoints fold?** 5 of 20 RULER-vt roots across 16w's 4K-32K evals went binary, every one with niah_multi's
+collect opener ("hidden fact sentences … collect every variable=value fact"). Probe: the exact 20 root prompts, P(" This"
+= "This task is order-dependent…") vs P(" The" = "The result over a range does not depend…") after the shared first
+sentence; mass on the two tokens >= 0.99 everywhere.
+| checkpoint | 12w | 13 | 14w | 15w | 16w |
+|---|---|---|---|---|---|
+| mean P(fold), T=1 [T=0.2] | 1.00 [1.00] | 0.00 [0.00] | 1.00 [1.00] | 1.00 [1.00] | **0.68 [0.74]** (0.05-1.00 per prompt) |
+15w (niah 60/60, v9 corpus) is 1.00 on all 20, so the "more niah_multi examples pulled vt toward collect" hypothesis is
+REFUTED. 15w and 16w share start (14w) and corpus; the only difference is run 16's budget x length jitter. Varying only
+the budget STATED in the eval prompt does not explain it (16w mean P(fold) 0.81 / 0.60 / 0.75 / 0.64 at 3K / 5K / 8K /
+12K). Open: whether the jitter's vt_novel length distribution (the 6K/14K override was dropped for the triangular mix)
+or plain run-to-run drift moved it. Probe script: scratchpad `fold_probe.py` (same method as the split-decision probe).
