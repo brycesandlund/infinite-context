@@ -50,7 +50,7 @@ While native context scaling is appealing as a concrete engineering problem, it 
 
 While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
-We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{extend capability}, not to \emph{instill a prior}.
+We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{extend capability}, without \emph{restricting choices} or \emph{instilling a prior}.
 
 \subsection{Harness}
 
@@ -100,6 +100,8 @@ Frontier models now utilize multi-agent systems. Kimi K2.5 trains ``agent swarm"
 
 \section{Methodology}
 \label{methods}
+
+We deliberately use the minimal tool definitions necessary to train agentic context management. However, our harness is sufficient to allow arbitrarily complex multi-agent decompositions. Decompositions in the literature fall into roughly three categories: tree decompositions~\citep{wu2021recursive,, sequential folds, and agentic subtasks.
 
 \section{Experiments}
 \label{experiments}

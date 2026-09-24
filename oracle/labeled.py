@@ -87,7 +87,16 @@ class LabeledOracle(ScaffoldOracle):
                 acc = acc + Counter([label])
                 return acc, f"{head} (author matches) → {label}: {acc[label]}"
             return acc, f"{head} (other author, skip)"
-        if q in ("author_top", "author_cmp"):
+        if q == "author_cmp":
+            # Filter on BOTH axes: the answer needs two counts. 16w at 16K OOLONG-user ("User 73858 or User 19826?")
+            # built a per-(user, label) tally over every user and overflowed; the old oracle filtered only the label.
+            if au not in (self.qa1, self.qa2):
+                return acc, f"{head} (other author, skip)"
+            if label != self.qlabel:
+                return acc, f"{head} (not `{self.qlabel}`, skip)"
+            acc = acc + Counter([au])
+            return acc, f"{head} (counts for {au}) → {au}: {acc[au]}"
+        if q == "author_top":
             if label == self.qlabel:
                 acc = acc + Counter([au])
                 return acc, f"{head} (counts for {au}) → {au}: {acc[au]}"
@@ -255,7 +264,7 @@ class LabeledOracle(ScaffoldOracle):
             "author_label_count": f"{self._labelling()} and counting the `{self.qlabel}` ones among {self._whose()} only",
             "author_top": f"{self._labelling()} and tallying, per author, the `{self.qlabel}` items",
             "author_count": "tallying how many items each author has (the label is irrelevant)",
-            "author_cmp": f"{self._labelling()} and tallying, per author, the `{self.qlabel}` items",
+            "author_cmp": f"{self._labelling()} and counting the `{self.qlabel}` items of author {self.qa1} and of author {self.qa2} only",
             "author_least": f"{self._labelling()} and tallying the labels of {self._whose()} only",
             "section_mode_count": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
             "sections_cmp": f"{self._labelling()} and tallying each ({self.unit_word}, label) pair{(' (' + self._outer_note()[2:] + ')') if self._outer_note() else ''}",
@@ -275,7 +284,7 @@ class LabeledOracle(ScaffoldOracle):
             "author_label_count": f"how many of ONLY {self._whose()} are `{self.qlabel}` ({self._labelling()})",
             "author_top": f"the per-author tally of `{self.qlabel}` items ({self._labelling()})",
             "author_count": "the per-author tally of items (no label judgement needed)",
-            "author_cmp": f"the per-author tally of `{self.qlabel}` items ({self._labelling()})",
+            "author_cmp": f"the count of `{self.qlabel}` items by author {self.qa1} and by author {self.qa2} ({self._labelling()})",
             "author_least": f"the per-label tally over ONLY {self._whose()} ({self._labelling()})",
             "section_mode_count": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
             "sections_cmp": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
@@ -297,8 +306,8 @@ class LabeledOracle(ScaffoldOracle):
             return (f"The question asks in how many {uw}s `{self.qlabel}` beats EVERY other label{derive}, so the state is a "
                     f"per-({uw}, label) tally over all labels — not a per-{uw} count of `{self.qlabel}` alone.")
         if q == "author_cmp":
-            return (f"The question compares two named authors on `{self.qlabel}`, so the state is a per-author count of "
-                    f"`{self.qlabel}` items — the same tally as for any author question, read off for {self.qa1} and {self.qa2} at the end.")
+            return (f"The question compares two named authors on `{self.qlabel}`, so the state is just those two counts — "
+                    f"`{self.qlabel}` items by {self.qa1} and by {self.qa2}; every other author and every other label is skipped.")
         if q == "author_count":
             return ("The question asks which author has the most items, so the state is a per-author count — the labels "
                     "play no part, and the authors are whatever names or ids the `[by …]` tags carry.")
@@ -328,7 +337,10 @@ class LabeledOracle(ScaffoldOracle):
             return "the partial as a single integer"
         if q in ("most_common", "relative", "author_most", "author_least"):
             return f"the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of {labs}"
-        if q in ("author_top", "author_count", "author_cmp"):
+        if q == "author_cmp":
+            return (f"the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors {self.qa1} and "
+                    f"{self.qa2}, each written exactly as in the item's `[by …]` tag")
+        if q in ("author_top", "author_count"):
             # OPEN key space: authors are read off the text, never enumerated by the root (run 9w on OOLONG-user:
             # the root invented `User A`..`User E` and every leaf returned `none:38`)
             return (f"the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author "
