@@ -1,0 +1,32 @@
+=== surface=vt (unchanged) | which_vars | seed 500000
+system description: The document is a long passage of text with short 'VAR ... = ...' assignment lines hidden inside it, in order. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text. Which variables are assigned the value 33757, directly or through a chain of copies? List them all, comma-separated. Answer with the list inside \boxed{}.
+
+=== surface=bare (unchanged) | which_vars | seed 500001
+system description: (none — RULER-matched)
+question: Memorize and track the chains of variable assignment hidden in the text. Which variables end up assigned the value 57725? List every such variable name, comma-separated. Give them in \boxed{}.
+
+=== surface=niah (NEW in v12) | which_vars | seed 500004
+system description: The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text. Read carefully — a detail in this passage matters later. Several hidden sentences in the text assign values to variables. Which variables are assigned the value 74619? List them all, comma-separated. Put the list in \boxed{}.
+
+=== surface=niah (NEW in v12) | which_vars | seed 500005
+system description: The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text. Some facts are buried in the text below. Which variables do the planted facts assign the value 27142? Give every one, comma-separated. Answer with the list inside \boxed{}.
+
+=== surface=niah (NEW in v12) | final_value | seed 500010
+system description: The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text. Keep track of any special values you come across. Several hidden sentences in the text assign values to variables. What value is VAR GWHZA assigned? Give it in \boxed{}.
+
+=== surface=bare (unchanged) | final_value | seed 500011
+system description: (none — RULER-matched)
+question: Memorize and track the chains of variable assignment hidden in the text. What is the final value of VAR ECCLG? Give the integer. Answer with the value, inside \boxed{}.
+
+=== surface=niah (NEW in v12) | final_value | seed 500016
+system description: The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text. A note about this passage: it contains a few planted facts. According to the hidden fact sentences, what is the value of VAR WSSCN? Give the integer. Reply with just the value inside \boxed{}.
+
+=== surface=vt (unchanged) | final_value | seed 500028
+system description: The document is a long passage of text with short 'VAR ... = ...' assignment lines hidden inside it, in order. Answer the question using ONLY this passage.
+question: Memorize and track the chains of variable assignment hidden in the text (a line 'VAR A = VAR B' copies B's current value into A). What is the final value of VAR AAWZI? Give the integer. Answer with the value, inside \boxed{}.
+

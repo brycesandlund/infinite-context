@@ -5,9 +5,10 @@ Never used for training. Data: `scripts/prepare_oolong_real.py` (one-time) turns
 evaluates the `test` split (campaign 1); `validation` is campaign 2.
 
 Mapping onto our harness (nothing rewritten):
-  task_context  = the dataset's own instruction paragraph (the text before the player->character mapping),
-                  as our OOLONG-synth adapter does with that dataset's description;
-  document      = the rest of `context_window_text` verbatim (mapping + [START/END OF EPISODE] transcripts);
+  task_context  = everything before the first [START OF EPISODE], verbatim: the instruction paragraph AND the
+                  player->character mapping (the official harness sends the whole window as the system message;
+                  the mapping is task-level context every subagent needs, as OOLONG-synth's description is);
+  document      = the transcripts verbatim ([START OF EPISODE] … [END OF EPISODE] blocks);
   question      = the dataset question verbatim;
   grading       = the authors' scorer, vendored verbatim (vendored_eval.py): 0.75^|err| for integers, exact
                   (case-insensitive) for strings, |gold ∩ pred| / |gold| for comma lists.

@@ -1309,8 +1309,10 @@ task_context): test 33.6K / 321K / 1.32M (min/median/max); 20 single-episode win
 
 - Prep: `PYTHONPATH=. uv run python scripts/prepare_oolong_real.py` -> per-window token arrays + question index
   (`~/.cache/infinite-context/oolong_real/prepared/<split>/`). Aborts on any window without the mapping marker.
-- Adapter: `tasks/oolong_real/` — task `oolong_real`; the dataset's own instruction paragraph -> task_context (as
-  for OOLONG-synth), document = the rest verbatim (player->character mapping + transcripts), question verbatim,
+- Adapter: `tasks/oolong_real/` — task `oolong_real`; everything before the first `[START OF EPISODE]` (instruction
+  paragraph AND player->character mapping) -> task_context (revised 2026-09-24: the official harness sends the whole
+  window as the system message and the mapping is task-level context, as OOLONG-synth's description is; it was
+  first put in the document), document = the transcripts verbatim, question verbatim,
   grading mode `oolong_real` = vendored `dnd_*` scorer (`tasks/oolong_real/vendored_eval.py`, verbatim).
   Env: `OOLONG_REAL_SPLIT` (test), `OOLONG_REAL_MIN_TOKENS` / `OOLONG_REAL_MAX_TOKENS`, `OOLONG_REAL_TYPES`.
   Per-type scores print as the eval's per-"dataset" breakdown.

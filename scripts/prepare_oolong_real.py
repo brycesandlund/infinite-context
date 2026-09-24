@@ -4,15 +4,16 @@ Input:  ~/.cache/infinite-context/oolong_real/dnd/{test,validation}.jsonl  (HF s
         question row repeats its full context window text)
 Output: ~/.cache/infinite-context/oolong_real/prepared/<split>/
           windows/<context_window_id>.npy   document tokens (Qwen tokenizer, int32) — stored ONCE per window
-          windows/<context_window_id>.instr.txt   the dataset's own instruction paragraph (-> task_context)
+          windows/<context_window_id>.instr.txt   instruction paragraph + player->character mapping (-> task_context)
           index.jsonl   one row per question: id, context_window_id, question, answer, question_type,
                         episodes, campaign, doc_tokens
 
-Split of each context_window_text (verbatim, nothing rewritten): the leading instruction paragraph (ends just
-before "The following lines contain the mapping between player names and character names.") becomes the
-task_context, exactly as our OOLONG-synth adapter puts that dataset's description in task_context; everything
-from the mapping onward (player->character mapping + [START OF EPISODE]…[END OF EPISODE] transcripts) is the
-document. A window without the marker aborts the run (never silently mis-split).
+Split of each context_window_text (verbatim, nothing rewritten): everything before the first "[START OF EPISODE]"
+— the instruction paragraph AND the player->character mapping block ("…Use this mapping when answering the questions
+below.") — becomes the task_context, i.e. the system prompt every agent sees. The official harness sends the whole
+window as the system message; the mapping is task-level context (who plays whom), not data to aggregate, so like our
+OOLONG-synth adapter's description it goes where every subagent can use it. The transcripts ([START OF EPISODE]…
+[END OF EPISODE] blocks) are the document. A window without the markers aborts the run (never silently mis-split).
 
     PYTHONPATH=. uv run python scripts/prepare_oolong_real.py [split ...]
 """
@@ -27,6 +28,7 @@ import rl
 
 ROOT = os.path.expanduser("~/.cache/infinite-context/oolong_real")
 MARKER = "The following lines contain the mapping between player names and character names."
+EPISODE = "[START OF EPISODE]"
 
 
 def main(splits):
@@ -43,9 +45,10 @@ def main(splits):
                 cw = r["context_window_id"]
                 if cw not in seen:
                     text = r["context_window_text"]
-                    i = text.find(MARKER)
-                    if i < 0:
-                        raise SystemExit(f"{split} window {cw}: mapping marker not found — refusing to guess a split")
+                    m = text.find(MARKER)
+                    i = text.find(EPISODE, m) if m >= 0 else -1
+                    if m < 0 or i < 0:
+                        raise SystemExit(f"{split} window {cw}: mapping/episode marker not found — refusing to guess a split")
                     instr, doc = text[:i].strip(), text[i:]
                     ids = tok.encode(doc, add_special_tokens=False)
                     np.save(os.path.join(out, "windows", f"{cw}.npy"), np.asarray(ids, dtype=np.int32))
