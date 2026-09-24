@@ -73,16 +73,26 @@ We finetune Qwen3.6-35B-A3B on the above harness on a diverse synthetic data mix
 
 \subsection{Paper Organization}
 
-In the next section, we survey related work, to frame the contribution of the following sections. In Section~\ref{methods}, we describe our training methodology. In Section~\ref{experiments}, we discuss all our experiments, and we conclude in Section~\ref{conclude}.
+In the next section, we survey related work to frame the contribution of the following sections. In Section~\ref{methods}, we describe our training methodology. In Section~\ref{experiments}, we discuss all our experiments, and we conclude in Section~\ref{conclude}.
 
 \section{Related Work}
 \label{related}
 
-Long-context LLM work can be broken into a few distinct categories: \emph{native long context models}, \emph{context compaction}, and \emph{long context harnesses}, both trained and untrained. We discuss the first two briefly and the last at greater length, as it is most relevant to this work.
+Long-context LLM work can be broken into a few distinct categories: \emph{native long context models}, \emph{context compaction}, and \emph{long context harnesses}, both trained and untrained.
 
 \subsection{Native Long Context Models}
 
-GPT-2 shipped with a 1,024 token context limit~\citep{radford2019gpt2}. This limit doubled in every generation through GPT-4~\citep{brown2020gpt3,openai2022chatgpt,openai2023gpt4}, until jumping to the 100K range on GPT-4 Turbo~\citep{openai2023devday}, with contemporaneous models Claude 2~\citep{anthropic2023claude2} and Llama 3.1~\citep{grattafiori2024llama3} at similar limits. The core difficulty in scaling context length $n$ in the classic Transformer architecture is $\Omega(n^2)$ attention complexity~\citep{vaswani2017attention}, which becomes prohibitively expensive as $n >> 100K$. State-space architectures like the mamba lineage~\citep{gu2023mamba,dao2024mamba2} or neural methods like Titans~\citep{behrouz2024titans} make more drastic architectural changes to work around this issue. Modern architectures are hybrid, combining linear attention layers with full attention, allowing context lengths to scale to 1M+ tokens~\citep{qwen2026qwen35,kimiteam2026kimik3,deepseekai2025deepseekv32,glm5team2026glm5,nvidia2025nemotron3}.
+GPT-2 shipped with a 1,024 token context limit~\citep{radford2019gpt2}. This limit doubled in every generation through GPT-4~\citep{brown2020gpt3,openai2022chatgpt,openai2023gpt4}, until jumping to the 100K range on GPT-4 Turbo~\citep{openai2023devday}, with contemporaneous models Claude 2~\citep{anthropic2023claude2} and, later, Llama 3.1~\citep{grattafiori2024llama3} at similar limits. The core difficulty in scaling context length $n$ in the classic Transformer architecture~\citep{vaswani2017attention} is $\Omega(n^2)$ attention complexity, which becomes prohibitively expensive as $n >> 100K$. State-space architectures like the mamba lineage~\citep{gu2023mamba,dao2024mamba2,lahoti2026mamba3}, neural methods like Titans~\citep{behrouz2024titans}, and Linear Transformer~\citep{katharopoulos2020lineartransformers} derivatives DeltaNet~\citep{schlag2021fastweight} and Gated DeltaNet~\citep{yang2025gateddeltanet} abandon quadratic attention for recurrence. Modern architectures are hybrid, combining linear or sparse attention layers with dense attention, allowing context lengths to scale to 1M+ tokens while retaining long-context performance~\citep{qwen2026qwen35,kimiteam2026kimik3,deepseekai2025deepseekv32,glm5team2026glm5,nvidia2025nemotron3,gemmateam2024gemma2,mistral2024ministral}.
+
+\subsection{Context Compaction}
+
+An alternative to native long context, and an inevitability when such native context fills, is a function $f$ mapping current context $x$ to a reduced context $y$ where $|y| << |x|$. Three categories of such lossy $f$ exist: masking/dropping, summarization, and learned compaction. The simplest compaction technique is masking: dropping tokens based on a predetermined rule. Clearing tool call results is a popular recommended choice~\citep{anthropic2025contextengineering}, achieving results competitive with summarization~\citep{deepseekai2025deepseekv32,lindenbauer2025complexitytrap}. Alternative approaches evict tokens based on attention statistics~\citep{xiao2023streamingllm,zhang2023h2o,li2024snapkv}. Summarization is the current production harness default, implemented in Claude Code, Codex, and Gemini CLI~\citep{anthropic2025contextengineering,openai2026codexrepo,google2026geminicli,barbaste2026harnessengineering}. Trained compaction is a new frontier, described as part of GPT-5.1-Codex-Max~\citep{openai2025codexmax} and Cursor's composer~\citep{cursor2026selfsummarization} training. ``Still'' trains a model to compress KV-Cache directly~\citep{oneill2026still}.
+
+\subsection{Long Context Harnesses}
+
+As long as LLMs have proven useful, an evolving line of work has focused on how to expand their capabilities without touching model internals. The first efforts were known as prompt engineering~\citep{phoenix2024promptengineering,berryman2024promptengineering}, which, though necessary on pre-trained base models~\citep{brown2020gpt3}, became internalized through instruction-tuning and reasoning RL~\citep{ouyang2022instructgpt,guo2025deepseekr1}. Function-calling has lead to a new wave of such efforts, where domain-specific knowledge, tools, and multi-agent systems live on a scaffold that interacts with powerful LLMs known as a ``harness"~\citep{lopopolo2026harnessengineering,barbaste2026harnessengineering}. 
+
+Long-context harnesses originate with systems like MemGPT
 
 
 \section{Methodology}
