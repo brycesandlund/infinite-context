@@ -181,6 +181,24 @@ _VT_GLOSS_FRAC = 0.6      # 60% keep the gloss, 40% must infer order-dependence 
 # only 0.5 x 0.4 x 0.43 ~= 9% of traces — too thin for the condition that actually matters — so a
 # fixed share is drawn BARE ON ALL THREE AXES at once, and the rest keep the independent mix.
 _VT_BARE_FRAC = 0.35
+# NIAH-SURFACE vt (2026-09-24). 5/20 of 16w's RULER-vt roots went BINARY with niah_multi's collect opener ("the hidden fact
+# sentences … collect every variable=value fact"): RULER's "…variable assignment HIDDEN in the text" reads as a
+# hidden-facts retrieval task, and no vt_novel trace ever paired niah vocabulary with the fold. This share of the
+# NON-bare problems wears niah's surface — a planted-facts preface, a question phrased as hidden facts to collect, and
+# (when described) niah_multi's own document description — while the oracle's answer stays the fold.
+_VT_NIAH_SURFACE_FRAC = 0.45     # of non-bare problems -> ~30% of vt_novel overall
+_VT_NIAH_PREFACES = [p for p in _PREFACES if p]   # "Some facts are buried in the text below. " …
+_Q_VT_WHICH_NIAH = [
+    "Several hidden sentences in the text assign values to variables. Which variables are assigned the value {t_val}? List them all, comma-separated.",
+    "The text hides a few facts of the form 'VAR X = …'. Collect every variable whose value is {t_val}. List them, comma-separated.",
+    "Find every variable that holds the value {t_val} according to the hidden fact sentences. List them all, comma-separated.",
+    "Which variables do the planted facts assign the value {t_val}? Give every one, comma-separated.",
+]
+_Q_VT_FINAL_NIAH = [
+    "Several hidden sentences in the text assign values to variables. What value is VAR {qvar} assigned?",
+    "According to the hidden fact sentences, what is the value of VAR {qvar}? Give the integer.",
+    "The text hides a few facts of the form 'VAR X = …'. What value does VAR {qvar} hold?",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -496,18 +514,24 @@ def _make_vt_novel(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
     holders = sorted(n for n, v in binding.items() if v == t_val)
     bare = rng.random() < _VT_BARE_FRAC          # RULER-matched: no description, no gloss, no preface
     lead = _VT_PREAMBLE_BARE if bare else (_VT_PREAMBLE if rng.random() < _VT_GLOSS_FRAC else _VT_PREAMBLE_BARE)
-    prefaces = [""] if bare else _VT_PREFACES
+    niah_surface = (not bare) and rng.random() < _VT_NIAH_SURFACE_FRAC
+    if niah_surface:
+        lead = _VT_PREAMBLE_BARE     # no copy gloss: like RULER, order-dependence must be read off the VAR lines
+    prefaces = [""] if bare else (_VT_NIAH_PREFACES if niah_surface else _VT_PREFACES)
     if qtype == "which_vars":
-        question = lead + _phrase(rng, _Q_VT_WHICH, tails=_LIST_TAILS, prefaces=prefaces, t_val=t_val)
+        forms = _Q_VT_WHICH_NIAH if niah_surface else _Q_VT_WHICH
+        question = lead + _phrase(rng, forms, tails=_LIST_TAILS, prefaces=prefaces, t_val=t_val)
         gold, grading, qvar = (holders or ["none"]), "set", None
     else:
         qvar = rng.choice([n for n, _, _ in chains[0]])
-        question = lead + _phrase(rng, _Q_VT_FINAL, prefaces=prefaces, qvar=qvar)
+        forms = _Q_VT_FINAL_NIAH if niah_surface else _Q_VT_FINAL
+        question = lead + _phrase(rng, forms, prefaces=prefaces, qvar=qvar)
         gold, grading = [str(binding[qvar])], "exact"
     return Problem(
         document_tokens=enc["input_ids"], question=question, gold_answers=gold, task="vt_novel",
-        task_context=("" if bare else _VT_CONTEXT), grading_mode=grading,
+        task_context=("" if bare else _MULTI_CONTEXT if niah_surface else _VT_CONTEXT), grading_mode=grading,
         metadata={"family": "niah", "strategy_default": "left_fold", "task": "vt_novel",
                   "qtype": qtype, "filler": fkind, "n_chains": n_chains, "target_value": t_val,
+                  "surface": "bare" if bare else ("niah" if niah_surface else "vt"),
                   "query_var": qvar, "record_spans": spans},
     )
