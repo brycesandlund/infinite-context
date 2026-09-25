@@ -1,0 +1,106 @@
+LABELED_RECORDS v15 — new judgment sources (SNLI / PAWS pairs with a per-problem marker; politeness), Opus-filtered.
+
+##############################################################################################################
+# labeled_records / author_least  seed 2900000  gold ['Label: paraphrase']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a pair of sentences separated by the marker "<-->"; its label is whether the second sentence is a PARAPHRASE of the first (the same meaning, not just the same words). The possible labels are: not paraphrase, paraphrase.
+
+QUESTION:
+Classify every data point as one of: not paraphrase, paraphrase. Among ONLY the data points with author = 99539 (the `[by 99539]` tag), which label is the LEAST common among the labels that appear at least once? Break ties by the alphabetically first label. Give your final answer in the form 'Label: [X]', where [X] is the label; put it inside \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4992, compute the per-label tally over ONLY author 99539's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author 99539's items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `not paraphrase`, `paraphrase`; `none` if no item starts in the range.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..312, compute the per-label tally over ONLY author 99539's items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY author 99539's items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `not paraphrase`, `paraphrase`; `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+[S1] [by 99539] The philosophical and legal provisions of the concrete concept of state of Roerich are based on : <--> The philosophical and legal provisions of Roerich 's concrete conceptual concept of the state are based on
+[S1] [by 76420] Geographically , Belews Creek occupies township in the central Forsyth County . <--> Geographically , Forsyth County occupies in central Belews Creek Township .
+[S1] [by 56439] This minus sign indicates that the imaginary part of the impedance is negative . <--> The imaginary sign indicates that the minus part of the impedance is negative .
+[S1] [by 50903] Margarita Isabel Morales y González ( born Margarita Isabel ; 25 July 1941 -- 9 April 2017 ) was a Mexican Ariel Award-winning film , and television actress . <--> Margarita Isabel Morales y González ( born Margarita Isabel , July 25 , 1941 -- April 9 , 2017 ) was an Ariel Award-winning Mexican fil
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..312 one at a time and tallying them (judging each item's label and tallying the labels of author 99539's items only; the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [S1] [by 99539] "The philosophical and legal provisions of the concrete concept of state of Roerich are based on : <--> The philosophical and legal provisions of Roerich 's concrete conceptual concept of the state are based on" → label: paraphrase (author matches) → paraphrase: 1
+- [S1] [by 76420] "Geographically , Belews Creek occupies township in the central Forsyth County . <--> Geographically , Forsyth County occupies in central Belews Creek Township ." → label: not paraphrase (other author, skip)
+- [S1] [by 56439] "This minus sign indicates that the imaginary part of the impedance is negative . <--> The imaginary sign indicates that the minus part of the impedance is negative ." → label: not paraphrase (other author, skip)
+- [S1] [by 50903] "Margarita Isabel Morales y González ( born Margarita Isabel ; 25 July 1941 -- 9 April 2017 ) was a Mexican Ariel Award-winning film , and television actress . <--> Margarita Isabel Morales y González ( born Margarita Isabel , July 25 , 1941 -- April 9 , 2017 ) was an Ariel Award-winning Mexican film and television actress ." → label: paraphrase (other author, skip)
+- [S1] [by 17653] "Elizabeth Wood 's first memorable encounter with Thomas Kane was at the age of six when he was twenty years old . <--> Thomas Thomas Kane 's first memorable encounter with Elizabeth Wood was at six years old when he was twenty ." → label: not paraphrase (other author, skip)
+- [S1] [by 99539] "Taobao is a Chinese online shopping website similar to eBay , Amazon and Alibaba Group , which is operated by Rakuten in Hangzhou , Zhejiang . <--> Taobao is a Chinese online shopping website similar to eBay , Amazon and Rakuten , which is operated in Hangzhou , Zhejiang by Alibaba Group ." → label: not paraphrase (author matches) → not paraphrase: 1
+Partial = not paraphrase:1|paraphrase:1.
+\boxed{not paraphrase:1|paraphrase:1}
+
+##############################################################################################################
+# labeled_records / most_common  seed 2900003  gold ['neutral']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a request posted on a wiki or Q&A site; its label is how POLITE the request is. The politeness of each request can be classified as one of: impolite, neutral, polite.
+
+QUESTION:
+Consider each line's label (impolite, neutral, polite). Which label is the most common overall? Break ties by the alphabetically first label. Give the label in \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4992, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `impolite`, `neutral`, `polite`; `none` if no item starts in the range.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..312, compute the per-label tally (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `impolite`, `neutral`, `polite`; `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+[Jul 21, 2023] [by Park] I also found your audio uploads at <url>. If it's not a burden, would you mind recording more Hungarian town names for WP?
+[Jul 20, 2023] [by Ivanov] Yes, and there has been a user from an AOL IP who has been trolling Pilotguy for weeks. Why must you blindly disagree with everything anyone says to you?
+[Jul 03, 2024] [by Han] Your obfuscation of the real issue is disengenuous; I'm rapidly losing respect for you. Is it not Wikipedia's mission to scornfully snub vandalism, which is done instantly, agressively, mercilessly?
+[Dec 21, 2023] [by Han] ok that was really confusing, I clicked on this link <url> and then cleaned the page but the page still exists, sso from what I understood if you put the ending "/double redirect" at the end of any article, you'll see how many redirects it has? is that right?
+[Jun 15, 2025] [by Han] This is now ready for transfer. I will l
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..312 one at a time and tallying them (judging each item's label and tallying the labels; the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [Jul 21, 2023 → Jul 2023] "I also found your audio uploads …" → label: polite → polite: 1
+- [Jul 20, 2023 → Jul 2023] "Yes, and there has been a user f…" → label: impolite → impolite: 1
+- [Jul 03, 2024 → Jul 2024] "Your obfuscation of the real iss…" → label: impolite → impolite: 2
+- [Dec 21, 2023 → Dec 2023] "ok that was really confusing, I …" → label: neutral → neutral: 1
+- [Jun 15, 2025 → Jun 2025] "This is now ready for transfer. …" → label: polite → polite: 2
+- [Jul 12, 2024 → Jul 2024] "Hello, I'm with the project of t…" → label: polite → polite: 3
+Partial = impolite:2|neutral:1|polite:3.
+\boxed{impolite:2|neutral:1|polite:3}
+
+##############################################################################################################
+# labeled_records / author_most  seed 2900009  gold ['entailment']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a pair of sentences separated by the marker "//": a premise, then a hypothesis; its label is the RELATIONSHIP of the hypothesis to the premise. Items fall into exactly one of these labels: contradiction, entailment, neutral.
+
+QUESTION:
+Consider each item's label (contradiction, entailment, neutral). Looking only at items that have author Han or Kim (the `[by …]` tag): which label is the MOST common? Break ties by the alphabetically first label. Give the label (e.g. contradiction) in \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4990, compute the per-label tally over ONLY the items of authors Han and Kim (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY the items of authors Han and Kim (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `contradiction`, `entailment`, `neutral`; `none` if no item starts in the range.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..311, compute the per-label tally over ONLY the items of authors Han and Kim (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-label tally over ONLY the items of authors Han and Kim (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is exactly one of `contradiction`, `entailment`, `neutral`; `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+[S1] [by Han] Two women looking at information in a spiral booklet. // Two people are checking out the handbook.
+[S1] [by Cho] People walk down a sidewalk lined with pastel colored buildings. // The buildings are light in color.
+[S1] [by Cho] A man adjusts the engine of a boat near the water. // A man is preparing to use his boat.
+[S1] [by Kim] A woman sweeps in front of giant wooden double doors while another person comes through with a dustpan. // A woman is sweeping.
+[S1] [by Han] A boy in an orange shirt plays on a large drainpipe with several other children in a sandy area. // A boy stands on a drainage pipe at the beach.
+[S1] [by Han] People working in front and behind a really nice counter with black tile. // The people are working.
+[S1] [by Kim] Young boy kicks a red and white soccer ball on a grassy field // the boy is ten years old
+[S1] [by Han] A man is jumping off the grass w
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..311 one at a time and tallying them (judging each item's label and tallying the labels of the items of authors Han and Kim only; the trailing reads only finish the last line, and any item starting at/after 311 belongs to the next range):
+- [S1] [by Han] "Two women looking at information in a spiral booklet. // Two people are checking out the handbook." → label: neutral (author matches) → neutral: 1
+- [S1] [by Cho] "People walk down a sidewalk lined with pastel colored buildings. // The buildings are light in color." → label: entailment (other author, skip)
+- [S1] [by Cho] "A man adjusts the engine of a boat near the water. // A man is preparing to use his boat." → label: neutral (other author, skip)
+- [S1] [by Kim] "A woman sweeps in front of giant wooden double doors while another person comes through with a dustpan. // A woman is sweeping." → label: entailment (author matches) → entailment: 1
+- [S1] [by Han] "A boy in an orange shirt plays on a large drainpipe with several other children in a sandy area. // A boy stands on a drainage pipe at the beach." → label: neutral (author matches) → neutral: 2
+- [S1] [by Han] "People working in front and behind a really nice counter with black tile. // The people are working." → label: entailment (author matches) → entailment: 2
+- [S1] [by Kim] "Young boy kicks a red and white soccer ball on a grassy field // the boy is ten years old" → label: neutral (author matches) → neutral: 3
+- [S1] [by Han] "A man is jumping off the grass while holding onto a giant white balloon. // The boy let go of the balloon and sat down." → label: contradiction (author matches) → contradiction: 1
+- [S1] [by Kim] "Construction worker in orange vest laying square stone pavers. // A construction worker wearing an orange vest is working for the city." → label: neutral (author matches) → neutral: 4
+- [S1] [by Han] "A naked man with glasses is shaving his face in his bathroom. // The man is dressed." → label: contradiction (author matches) → contradiction: 2
+Partial = contradiction:2|entailment:2|neutral:4.
+\boxed{contradiction:2|entailment:2|neutral:4}

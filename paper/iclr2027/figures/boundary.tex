@@ -1,71 +1,45 @@
 % !TEX root = ../paper.tex
 % Boundary handling: the grounded iterative boundary read (oracle/base.py _read_phase, LEAF_OVERLAP=200).
-% Trace: long_records (mention_count), seed 40, 2000-token request (document 1968 tokens), 3000-token budget.
-% Entry spans (tok_start, tok_end): 1 [0,278) 2 [278,407) 3 [407,968) 4 [968,1553) 5 [1553,1767) 6 [1767,1968);
-% the single 'expressing' is in entry 4 at token 1294. Uses the styles/macros defined in figures/decomposition.tex.
+% Adapted from the first leaf of long_records (count_tag) seed 1, 2000-token request, 3000-token budget: that
+% leaf owns 0..466 and reads 0..466, 466..666, then 666..866 (entry 3 is still cut off at 666; the third read
+% reaches entry 4's header). Ranges relabelled to 0..500 / 500..700 / 700..900 for readability.
+% Uses the styles/macros defined in figures/decomposition.tex.
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[node distance=1mm]
-  \node[qtxt, text width=\dimexpr\linewidth-2.4mm-1pt\relax] {\who{Question}How many entries contain the word
-    `expressing' anywhere in their body text (whole-word, case-sensitive; a hyphenated compound does not count)?};
-\end{tikzpicture}\\[1.5mm]
-\begin{tikzpicture}[x=0.0055cm, y=1cm]
-  % leaf boundaries
-  \foreach \b in {0,492,984,1476,1968}
-    \draw[black!35, densely dotted] (\b,0.45) -- (\b,-1.85) node[below, note] {\b};
-  \node[note, anchor=east] at (-30,-2.03) {token};
-  % the document: entries, each starting with its header (dark bar)
-  \node[note, anchor=east] at (-30,0.225) {entries};
-  \foreach \s/\e/\n in {0/278/1, 278/407/2, 407/968/3, 968/1553/4, 1553/1767/5, 1767/1968/6} {
-    \draw[black!55, fill=black!4] (\s,0) rectangle (\e,0.45);
-    \fill[black!70] (\s,0) rectangle ++(10,0.45);
-    \node[font=\scriptsize] at ({(\s+\e)/2+5},0.225) {\n};
-  }
-  \fill[black] (1294,0.47) -- ++(-14,0.11) -- ++(28,0) -- cycle;
-  \node[note, above] at (1294,0.56) {`expressing'};
-  % leaf reads: owned range [a,b) solid, trailing 200-token reads dashed
-  \foreach \a/\b/\r/\y/\ret in {0/492/1092/-0.35/0, 492/984/1584/-0.8/1, 984/1476/1676/-1.25/0, 1476/1968/1968/-1.7/0} {
-    \node[note, anchor=east] at (-30,\y) {leaf \rng{\a,\b}};
-    \draw[black!70, fill=blue!18] (\a,\y-0.14) rectangle (\b,\y+0.14);
-    \node[state, anchor=west] at (\r+15,\y) {$\to$ \ret};
-  }
-  % trailing reads (each +200 until the last owned entry's body is complete)
-  \foreach \s/\y in {492/-0.35, 692/-0.35, 892/-0.35, 984/-0.8, 1184/-0.8, 1384/-0.8, 1476/-1.25}
-    \draw[black!55, densely dashed, fill=blue!5] (\s,\y-0.14) rectangle ++(200,0.28)
-      node[midway, font=\tiny, text=black!60] {+200};
-\end{tikzpicture}\\[1.5mm]
-\begin{minipage}[t]{0.555\linewidth}
-\begin{tikzpicture}[baseline=(current bounding box.north)]
-  \node[txt, fill=blue!12] {\who{Leaf \rng{492,984}}Range 492..984 fits; reading it, then the next 200 tokens to
-    finish the last entry's body (it may run well past 984).\enspace
-    \tool{read\_chunk(492, 984)}\enspace\tool{read\_chunk(984, 1184)}\\
-    {\color{black!55}\itshape\dots\ CHORUS.\enspace Entry: 4 / Author: Han / Genre: report\enspace ``Wow!\dots}\\
-    The last entry's body is still cut off at 1184 (no blank line / next header yet), so I read the next 200 tokens
-    (1184..1384) to finish it.\enspace\tool{read\_chunk(1184, 1384)}\\
-    The last entry's body is still cut off at 1384\dots\enspace\tool{read\_chunk(1384, 1584)}\\
-    {\color{black!55}\itshape\dots\ to carry it further.\enspace Entry: 5 / Author: Cho\dots}\\
-    Computing the partial over the entries whose HEADER STARTS in 492..984 (\dots\ any entry whose header starts
-    at/after 984 belongs to the next range):\\
-    - entry 4: `expressing' appears 1x in the body [``\dots way of expressing yourself.''] (counts) $\to$ count=1\\
-    Partial = 1. \quad $\boxed{1}$};
+\begin{minipage}[c]{0.3\linewidth}\centering
+\begin{tikzpicture}[node distance=7mm]
+  \node[agent, fill=blue!12, minimum width=22mm] (r1) {read \rng{0,500}};
+  \node[agent, fill=orange!25, minimum width=22mm, below=of r1] (r2) {read \rng{500,700}};
+  \node[agent, fill=teal!18, minimum width=22mm, below=of r2] (r3) {read \rng{700,900}};
+  \draw[spawn] (r1) -- (r2);
+  \draw[spawn, densely dotted] (r2) -- (r3);
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[t]{0.435\linewidth}
-\begin{tikzpicture}[baseline=(current bounding box.north)]
-  \node[txt, fill=blue!12] {\who{Leaf \rng{984,1476}}Range 984..1476 fits; reading it, then the next 200 tokens to
-    finish the last entry's body (it may run well past 1476).\enspace
-    \tool{read\_chunk(984, 1476)}\enspace\tool{read\_chunk(1476, 1676)}\\
-    {\color{black!55}\itshape wow! wow!''\dots\ a proper way of expressing yourself.''\dots}\\
-    Computing the partial over the entries whose HEADER STARTS in 984..1476 (\dots):\\
-    (no entry header starts here --- this range is inside an entry owned by the range before it)\\
-    Partial = 0. \quad $\boxed{0}$};
+\begin{minipage}[c]{0.68\linewidth}
+\begin{tikzpicture}[node distance=1mm]
+  \node[qtxt] (q) {\who{Question}How many entries have genre=report?};
+  \node[txt, fill=blue!12, below=of q] (t1) {\who{Leaf \rng{0,500}}Range 0..500 fits; reading it, then the next 200
+    tokens to finish the last entry's body (it may run well past 500).\\
+    \tool{read\_chunk(0, 500)}\enspace\tool{read\_chunk(500, 700)}\\
+    {\color{black!55}\itshape === entry 1 \textbar{} author=Han \textbar{} genre=essay ===\dots\
+    === entry 3 \textbar{} author=Park \textbar{} genre=essay ===\dots\ CHAPTER X \_Letter}};
+  \node[txt, fill=orange!25, below=of t1] (t2) {The last entry's body is still cut off at 700 (no blank line / next
+    header yet), so I read the next 200 tokens (700..900) to finish it.\enspace\tool{read\_chunk(700, 900)}\\
+    {\color{black!55}\itshape , Dr.\enspace === entry 4 \textbar{} author=Lee \textbar{} genre=report ===\dots}};
+  \node[txt, fill=teal!18, below=of t2] (t3) {Computing the partial over the entries whose HEADER STARTS in 0..500
+    (\dots\ any entry whose header starts at/after 500 belongs to the next range):\\
+    \begin{tabular}{@{}l@{\enspace}l@{\enspace}l@{\enspace$\to$\enspace}l@{}}
+      - entry 1 & (genre=essay)  & (no)    & count=0\\
+      - entry 2 & (genre=report) & (match) & count=1\\
+      - entry 3 & (genre=essay)  & (no)    & count=1
+    \end{tabular}\\
+    Partial = 1. \quad $\boxed{1}$};
 \end{tikzpicture}
 \end{minipage}
 
-\caption{\textbf{Boundary handling.} A leaf owns the records whose first line starts in its range \rng{a,b}. It
-reads \rng{a,b} plus the next 200 tokens, then keeps reading 200-token blocks while its last owned record is still
-cut off. Leaf \rng{492,984} owns entry~4, whose header starts 16 tokens before the boundary, and reads twice more to
-reach `expressing' at token 1294. Leaf \rng{984,1476} reads the same word but owns no header, so it returns 0: every
-record is counted exactly once.}
+\caption{\textbf{Boundary handling.} A leaf owns the records whose first line starts in its range. It reads its
+range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dotted). Entry~3
+starts before 500 but runs past 700, so the leaf reads to 900, where entry~4's header appears. Entry~4 starts at or
+after 500, so it belongs to the next leaf and is not counted here.}
 \label{fig:boundary}
 \end{figure}

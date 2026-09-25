@@ -74,7 +74,8 @@ def parse(out, n, labels, allow_unclear):
 
 async def main():
     cache = json.load(open(CACHE)) if os.path.exists(CACHE) else {}
-    sem_o, sem_q = asyncio.Semaphore(8), asyncio.Semaphore(32)
+    sem_o, sem_q = asyncio.Semaphore(int(os.environ.get("OPUS_CONC", "32"))), asyncio.Semaphore(32)
+    done = [0]
     qwen = tinker.ServiceClient().create_sampling_client(base_model=rl.MODEL_NAME)
 
     async def opus(desc, labels, rs):
@@ -86,7 +87,11 @@ async def main():
                     try:
                         r = await litellm.acompletion(model=JUDGE, temperature=0, max_tokens=800, messages=[
                             {"role": "system", "content": f"{OPUS_SYS}\n\n{desc}"}, {"role": "user", "content": u}])
-                        cache[k] = r.choices[0].message.content or ""; break
+                        cache[k] = r.choices[0].message.content or ""
+                        done[0] += 1
+                        if done[0] % 100 == 0:                 # save progress (a killed run resumes from cache)
+                            json.dump(cache, open(CACHE, "w")); print(f"opus {done[0]} batches", flush=True)
+                        break
                     except Exception as e:
                         print("opus retry", e); await asyncio.sleep(5 * (attempt + 1))
         return cache.get(k, "")
@@ -100,9 +105,9 @@ async def main():
             return get_text_content(renderer.parse_response(r.sequences[0].tokens)[0]) or ""
 
     jobs = []
-    for name in _DESC:
+    for name in [x for x in os.environ.get("SOURCES", ",".join(_DESC)).split(",") if x]:
         rows = random.Random(f"sample-{name}").sample(_rows(name), min(N, len(_rows(name))))
-        desc = f"The document is a list of text items, ONE per line. {_DESC[name]}"
+        desc = f"The document is a list of text items, ONE per line. {_DESC[name].replace('{m}', '->')}"
         jobs += [(name, desc, labels, rs) for labels, rs in batches(name, rows)]
     print(f"{len(jobs)} batches, {sum(len(j[3]) for j in jobs)} rows", flush=True)
     o_out = await asyncio.gather(*[opus(d, l, rs) for _, d, l, rs in jobs])
@@ -119,7 +124,7 @@ async def main():
     json.dump(recs, open(OUT, "w"), indent=1)
 
     print(f"\nOpus verdict vs gold  |  base-Qwen accuracy within each Opus category")
-    for src in _DESC:
+    for src in sorted({r["src"] for r in recs}):
         rr = [r for r in recs if r["src"] == src]
         cats = collections.Counter(r["opus_cat"] for r in rr)
         qa = {c: sum(r["qwen_ok"] for r in rr if r["opus_cat"] == c) for c in cats}
@@ -127,7 +132,7 @@ async def main():
                          for c in ("agree", "unclear", "disagree") if cats[c])
         print(f"  {src:8s} n={len(rr):3d}  qwen overall {sum(r['qwen_ok'] for r in rr) / len(rr):4.0%}  |  {line}")
     rnd = random.Random(1)
-    for src in _DESC:
+    for src in sorted({r["src"] for r in recs}):
         for cat in ("unclear", "disagree"):
             ex = [r for r in recs if r["src"] == src and r["opus_cat"] == cat]
             for r in rnd.sample(ex, min(3, len(ex))):

@@ -1,3 +1,75 @@
-[92m00:59:25 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
-[92m00:59:25 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m01:06:15 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m01:06:15 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
 3121 batches, 17338 rows
+opus 100 batches
+opus 200 batches
+opus 300 batches
+opus 400 batches
+opus 500 batches
+opus 600 batches
+opus 700 batches
+opus 800 batches
+opus 900 batches
+opus 1000 batches
+opus 1100 batches
+opus 1200 batches
+opus 1300 batches
+opus 1400 batches
+opus 1500 batches
+opus 1600 batches
+opus 1700 batches
+opus 1800 batches
+opus 1900 batches
+opus 2000 batches
+opus 2100 batches
+opus 2200 batches
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+opus retry litellm.ServiceUnavailableError: AnthropicException - upstream connect error or disconnect/reset before headers. reset reason: connection termination. Handle with `litellm.ServiceUnavailableError`.
+opus 2300 batches
+opus 2400 batches
+
+[1;31mGive Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new[0m
+LiteLLM.Info: If you need to debug this error, use `litellm._turn_on_debug()'.
+
+opus retry litellm.ServiceUnavailableError: AnthropicException - upstream connect error or disconnect/reset before headers. reset reason: connection termination. Handle with `litellm.ServiceUnavailableError`.
+opus 2500 batches
+opus 2600 batches
+opus 2700 batches
+opus 2800 batches
+opus 2900 batches
+opus 3000 batches
+
+Opus verdict vs gold  |  base-Qwen accuracy within each Opus category
+  dbpedia  n=4000  qwen overall  99%  |  agree 3956 ( 99%, qwen  99%)  unclear  24 (  1%, qwen  71%)  disagree  20 (  0%, qwen  30%)
+  emotion  n=3911  qwen overall  62%  |  agree 2292 ( 59%, qwen  91%)  unclear 278 (  7%, qwen  33%)  disagree 1341 ( 34%, qwen  17%)
+  yelp     n=3977  qwen overall  94%  |  agree 3624 ( 91%, qwen  99%)  unclear 252 (  6%, qwen  56%)  disagree 101 (  3%, qwen  17%)
+  claims   n=5450  qwen overall  89%  |  agree 4670 ( 86%, qwen  93%)  unclear 644 ( 12%, qwen  70%)  disagree 136 (  2%, qwen  55%)
+   [dbpedia unclear] gold=Artist opus=unclear qwen=artist | Gregg Fienberg is an American television producer and director. He worked on the Western drama Deadwood in both capacities and received a Di
+   [dbpedia unclear] gold=Company opus=unclear qwen=animal | This article is about the graphic. For the American reggae group see Stick Figure.A stick figure is a very simple drawing of a person or ani
+   [dbpedia unclear] gold=Company opus=unclear qwen=writtenwork | Larrikin is an Australian English term which in the 19th and early 20th centuries meant a lout a hoodlum or a young urban rough a hooligan m
+   [dbpedia disagree] gold=Building opus=village qwen=village | Powelton Village is a neighborhood of mostly Victorian mostly twin homes in the West Philadelphia section of the United States city of Phila
+   [dbpedia disagree] gold=Company opus=meanoftransportation qwen=meanoftransportation | The Buckmobile was an American automobile manufactured between 1903 and 1905 in Utica New York by the Buckmobile Company. The automobile was
+   [dbpedia disagree] gold=Album opus=writtenwork qwen=album | Call Us What You Want But Don't Call Us in the Morning is a DVD released by Welsh rock trio Stereophonics. The DVD features all music videos
+   [emotion unclear] gold=joy opus=unclear qwen=anger | i could look it up and act like i know what it is and lie to you about it and feel smug in my know it all ness but frankly i m way too lazy 
+   [emotion unclear] gold=sadness opus=unclear qwen=surprise | i feel an emotional reaction but a lot of times that emotion is accompanied by a physical reaction as well
+   [emotion unclear] gold=joy opus=unclear qwen=anger | i can feel the gap it feels like rich people status and poor people status
+   [emotion disagree] gold=joy opus=anger qwen=anger | i want to feel respected even when i do things that you don t understand
+   [emotion disagree] gold=love opus=joy qwen=joy | i basically wrote this for my future self i m feeling generous and think like i should just give the guy a break and list all the queries
+   [emotion disagree] gold=sadness opus=fear qwen=fear | i feel like i am being deprived of oxygen
+   [yelp unclear] gold=negative opus=unclear qwen=negative | Good: Great location, nice bathroom, full length mirrors, very pleasant staff and an awesome view. Bad: $22 per day resort fee is nothing mo
+   [yelp unclear] gold=negative opus=unclear qwen=negative | They have great coffee, but the worst hours ever. They close at 7:00pm on weeknights, and 2:00pm on Sundays! That makes it impossible to enj
+   [yelp unclear] gold=negative opus=unclear qwen=negative | First off - the food was good. I recommend the Mac & Cheese. It all went sideways from there. A group of us decided to give it a try last we
+   [yelp disagree] gold=negative opus=positive qwen=negative | RIP. Closed. Epic Failure. I have never been so happy to see a place die. HA, HA, HA.
+   [yelp disagree] gold=negative opus=positive qwen=positive | I used to be a real gym rat. 6 days a week, 4 hours a day. Hey, going amateur body builder takes a lot of work. Too much really. As I became
+   [yelp disagree] gold=negative opus=positive qwen=positive | This is the first auto repair shop that I have found that is HONEST!!!!!! I mean I have NEVER had a repair shop turn my business away becaus
+   [claims unclear] gold=True opus=unclear qwen=true | Belonochasma (meaning needle mouth) is a genus of gnathostome from the Mesozoic of Franconia Bavaria Germany.
+   [claims unclear] gold=False opus=unclear qwen=false | Love is an American musician and lead singer of Jason & the Scorchers.
+   [claims unclear] gold=True opus=unclear qwen=false | Genjirō Kaneko (金子 原二郎 Kaneko Genjirō born May 8 1944) is the governor of Nagasaki Prefecture in Japan.
+   [claims disagree] gold=True opus=false qwen=true | Saint Paul's Episcopal Chapel is a historic Episcopal church building in Mobile Alabama United States.
+   [claims disagree] gold=True opus=false qwen=false | The Carnival is an American short story written by Michael Fedo.
+   [claims disagree] gold=True opus=false qwen=false | Niveas kone is a moth of the Choreutidae family.
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>

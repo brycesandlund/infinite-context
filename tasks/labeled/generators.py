@@ -38,10 +38,21 @@ _DESC = {
     "emotion": "Each item is a short personal message; its label is the EMOTION the writer expresses.",
     "yelp": "Each item is a customer review of a business; its label is the review's overall SENTIMENT.",
     "claims": "Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False.",
+    # v15 harder judgment types (pairs / style). `{m}` = the per-problem pair marker.
+    "snli": ("Each item is a pair of sentences separated by the marker \"{m}\": a premise, then a hypothesis; its label is "
+             "the RELATIONSHIP of the hypothesis to the premise."),
+    "paws": ("Each item is a pair of sentences separated by the marker \"{m}\"; its label is whether the second sentence "
+             "is a PARAPHRASE of the first (the same meaning, not just the same words)."),
+    "politeness": "Each item is a request posted on a wiki or Q&A site; its label is how POLITE the request is.",
 }
+_PAIR_SOURCES = {"snli", "paws"}
+# the marker joining a pair's two sentences, drawn per problem (OOLONG uses " -> " and " <--> "; any clear marker)
+_PAIR_MARKERS = [" -> ", " <--> ", " | ", " => ", " // "]
 # the labelled property, for the "The {prop} can be classified …" context variants
 _PROP = {"dbpedia": "kind of thing each item describes", "emotion": "emotion each message expresses",
-         "yelp": "overall sentiment of each review", "claims": "truth of each claim"}
+         "yelp": "overall sentiment of each review", "claims": "truth of each claim",
+         "snli": "relationship of each hypothesis to its premise", "paws": "paraphrase status of each pair",
+         "politeness": "politeness of each request"}
 _AUTHORS = ["Cho", "Diaz", "Han", "Ivanov", "Kim", "Lee", "Okafor", "Park", "Rossi", "Sato"]
 _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top",
            # run 10: OOLONG-user / temporal shapes we lacked — "which author has the most items" (open key space of
@@ -172,16 +183,24 @@ def _jitter_item_words(q: str, seed) -> str:
     return re.sub(r"\bitem\b", sg, q)
 
 
+def _pair_snip(a: str, b: str, marker: str) -> str:
+    """Pair items: the judged content is the RELATION between the two sentences, and PAWS pairs differ only in word
+    order / a swapped entity anywhere in the sentence — a truncated quote hides it, so both are quoted in full (as
+    `claims` quotes its whole predicate)."""
+    return f"{a}{marker}{b}"
+
+
 def _jitter(seed, what: str, pool: list[str]) -> str:
     """Seeded pick from a wording pool, on its own rng so it never shifts any other draw of an existing seed."""
     return random.Random(f"{what}-{seed}").choice(pool)
 
 
-def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False, seed=None) -> str:
+def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False, seed=None, marker=" -> ") -> str:
+    desc = _DESC[name].replace("{m}", marker.strip())
     prop = _PROP[name]
     lab = _jitter(seed, "labsent", _LABEL_SENTENCES).format(L=", ".join(labels), n=len(labels), prop=prop)
     if schema_lite:
-        return f"The document is a list of text items, ONE per line. {_DESC[name]} {lab}"
+        return f"The document is a list of text items, ONE per line. {desc} {lab}"
     if key_mode == "section":
         tag, note = "a section tag `[S<n>]` (sections are numbered from 1 and appear in order)", ""
     else:
@@ -189,7 +208,7 @@ def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = Fa
         note = " Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`)."
     return (
         f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
-        f"`[by <author>]`, followed by the item's text.{note} {_DESC[name]} {lab}"
+        f"`[by <author>]`, followed by the item's text.{note} {desc} {lab}"
     )
 
 
@@ -207,7 +226,8 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     if task not in LABELED_TASKS:
         raise ValueError(f"Unknown labeled task: {task!r}")
     rng = random.Random(seed)
-    name = rng.choice(["dbpedia", "emotion", "emotion", "yelp", "yelp", "claims", "claims"])
+    name = rng.choice(["dbpedia", "emotion", "yelp", "yelp", "claims", "claims", "snli", "snli", "paws", "politeness"])
+    marker = _jitter(seed, "pairmark", _PAIR_MARKERS)
     # Long-item regime: 20% of problems use full-length yelp reviews (up to ~700 tokens), so a leaf
     # owns at most one item, must extend its read 2-3 times to finish it, and neighbouring leaves see
     # only a fragment they do not own — the OOLONG-imdb shape that broke ownership in run 8w.
@@ -255,16 +275,18 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
             outer = rng.choice(months)
             date = rng.choice(date_pool[outer])
             tag = f"[{date}]"
-        line = f"{tag} [by {au}] {r[text_key]}\n"
+        body = f"{r['a']}{marker}{r['b']}" if name in _PAIR_SOURCES else r[text_key]
+        line = f"{tag} [by {au}] {body}\n"
         toks = tokenizer.encode(line, add_special_tokens=False)
         if doc_tokens and len(doc_tokens) + len(toks) > doc_size_tokens:
             break
         start = len(doc_tokens)
         doc_tokens.extend(toks)
-        t = r[text_key]
+        t = body
         recs.append({"idx": i, "sec": outer, "au": au, "label": r["label"], "date": date,
                      # claims: the judged content is the PREDICATE, so quote most of the sentence
-                     "snip": t if name == "claims" else ((t[:32] + "…") if len(t) > 35 else t),
+                     "snip": (t if name == "claims" else _pair_snip(r["a"], r["b"], marker) if name in _PAIR_SOURCES
+                              else ((t[:32] + "…") if len(t) > 35 else t)),
                      "start": start, "end": len(doc_tokens)})
     if key_mode == "section":
         sections = sorted({r["sec"] for r in recs}, key=lambda x: int(x[1:]))
@@ -424,7 +446,8 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     q = _jitter_item_words(q, seed)
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
-        task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC, seed=seed),
+        task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC, seed=seed,
+                              marker=marker),
         grading_mode=grading,
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype, "q_head": head.strip(),
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
