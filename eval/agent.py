@@ -110,7 +110,8 @@ async def run_agent(
         turn: AssistantTurn = await backend.sample(messages, max_tokens=budget - used)
         messages.append(
             {"role": "assistant", "content": turn.text, "tool_calls": turn.tool_calls,
-             **({"served_model": turn.served_model} if turn.served_model else {})}
+             **({"served_model": turn.served_model} if turn.served_model else {}),
+             **({"usage": turn.usage} if turn.usage else {})}
         )
 
         if not turn.tool_calls:
@@ -186,7 +187,8 @@ async def run_single_shot(
         max_output_tokens = min(max_output_tokens, context_limit - backend.count_tokens(messages))
     turn = await backend.sample(messages, max_tokens=max_output_tokens, tools=False)
     messages.append({"role": "assistant", "content": turn.text, "tool_calls": [],
-                     **({"served_model": turn.served_model} if turn.served_model else {})})
+                     **({"served_model": turn.served_model} if turn.served_model else {}),
+             **({"usage": turn.usage} if turn.usage else {})})
     answer = harness.extract_boxed(turn.text)
     if answer is not None:
         termination = "answered"

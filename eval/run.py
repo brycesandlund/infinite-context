@@ -55,6 +55,9 @@ MODE = os.environ.get("MODE", "decompose")
 OUT_TOKENS = int(os.environ.get("OUT_TOKENS", "16384"))
 # Single-shot TOTAL context (prompt + output), e.g. 65536 for a 64K-context model: output gets what the prompt leaves.
 SINGLE_CONTEXT = int(os.environ.get("SINGLE_CONTEXT", "0")) or None
+# API reasoning models: e.g. REASONING_EFFORT=medium (gpt-5.x default is "none" = no reasoning; with reasoning on,
+# OpenAI accepts only temperature 1, so pair it with TEMP=none). Unset = provider default.
+REASONING_EFFORT = os.environ.get("REASONING_EFFORT") or None
 
 # Tinker-backend knobs (ignored for API backends).
 # CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt)
@@ -139,7 +142,8 @@ async def _build_backend(tokenizer) -> ModelBackend:
         renderer = get_renderer(RENDERER_NAME, tokenizer)
         return TinkerBackend(sampling_client, tokenizer, renderer, temperature=TEMPERATURE)
 
-    return APIBackend(BACKEND, temperature=TEMPERATURE)
+    return APIBackend(BACKEND, temperature=TEMPERATURE, reasoning_effort=REASONING_EFFORT,
+                      max_output_cap=max(16384, OUT_TOKENS))
 
 
 # ---------------------------------------------------------------------------

@@ -51,6 +51,7 @@ class AssistantTurn:
     # The exact model the provider SERVED (e.g. alias "gpt-5.4" -> "gpt-5.4-2026-03-05"); aliases can be re-pointed
     # over time, so every rollout records it. None for Tinker (the checkpoint path identifies the model).
     served_model: str | None = None
+    usage: dict | None = None   # {"output_tokens", "reasoning_tokens"} when the provider reports them
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +219,15 @@ def _cookbook_tool_calls_to_neutral(cb_calls) -> list[ToolCall]:
 # ---------------------------------------------------------------------------
 
 
+def _usage(resp) -> dict | None:
+    u = getattr(resp, "usage", None)
+    if u is None:
+        return None
+    d = getattr(u, "completion_tokens_details", None)
+    return {"output_tokens": getattr(u, "completion_tokens", None),
+            "reasoning_tokens": getattr(d, "reasoning_tokens", None) if d is not None else None}
+
+
 class APIBackend(ModelBackend):
     """One backend for any LiteLLM-supported chat model with tool calling.
 
@@ -225,10 +235,12 @@ class APIBackend(ModelBackend):
     Each model counts tokens in its own tokenizer (litellm.token_counter).
     """
 
-    def __init__(self, model: str, temperature: float | None = 1.0, max_output_cap: int = 16384):
+    def __init__(self, model: str, temperature: float | None = 1.0, max_output_cap: int = 16384,
+                 reasoning_effort: str | None = None):
         self.name = model
         self.model = model
         self.temperature = temperature
+        self.reasoning_effort = reasoning_effort
         self.max_output_cap = max_output_cap
         self._tools = harness.openai_tool_specs()
         # Let reasoning models (gpt-5.x, used as policy OR judge backend) silently
@@ -288,6 +300,8 @@ class APIBackend(ModelBackend):
         )
         if self.temperature is not None:        # None = omit (some models reject any sampling parameter)
             kwargs["temperature"] = self.temperature
+        if self.reasoning_effort:
+            kwargs["reasoning_effort"] = self.reasoning_effort
         if tools:
             kwargs["tools"] = self._tools
             kwargs["tool_choice"] = "auto"
@@ -305,4 +319,4 @@ class APIBackend(ModelBackend):
                 ToolCall(id=tc.id or f"call_{uuid.uuid4().hex[:8]}", name=tc.function.name, arguments=args)
             )
         return AssistantTurn(text=msg.content or "", tool_calls=tool_calls, raw=msg, truncated=truncated,
-                             served_model=getattr(resp, "model", None))
+                             served_model=getattr(resp, "model", None), usage=_usage(resp))

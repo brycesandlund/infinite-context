@@ -88,6 +88,7 @@ def node_to_dict(node: "AgentNode") -> dict:
                 ],
                 "name": m.get("name"),
                 **({"served_model": m["served_model"]} if m.get("served_model") else {}),
+                **({"usage": m["usage"]} if m.get("usage") else {}),
             }
             for m in node.messages
         ],
