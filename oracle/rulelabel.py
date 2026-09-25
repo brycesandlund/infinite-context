@@ -164,7 +164,7 @@ class RuleLabelOracle(ScaffoldOracle):
         return "  (no sentence starts here)"
 
     def _partial_header(self, a, b, n):
-        return (f"Labelling the {n} sentences whose line STARTS in {a}..{b} one at a time and "
+        return (f"Labelling the sentences whose line STARTS in {a}..{b} one at a time and "
                 f"{'counting' if self.qtype == 'count' else 'tallying'} them ({self._op_phrase()}; the "
                 f"trailing reads only finish the last line, and any sentence starting at/after {b} belongs "
                 f"to the next range)")

@@ -740,8 +740,8 @@ class OolongOracle(ModelBackend):
         ent = self._entity_only()
         verb = (f"Recording the {ent[0]} of every example" if ent
                 else "Classifying every example")
-        body = (f"{verb} whose line starts in {a}..{b} ({len(spans_in)} of "
-                f"them; skipping any partial first line that began earlier):\n{listing}")
+        body = (f"{verb} whose line starts in {a}..{b} (skipping any partial first line that "
+                f"began earlier):\n{listing}")
         return AssistantTurn(
             text=f"{body}\n\nTally for this range: {report}\n\\boxed{{{report}}}",
             tool_calls=[],

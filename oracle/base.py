@@ -140,7 +140,10 @@ class ScaffoldOracle(ModelBackend):
         return u
 
     def _n_units(self, n: int) -> str:
-        return f"{n} {self._unit_singular() if n == 1 else self._unit()}"
+        # No count in leaf headers: the header is written BEFORE the per-item lines, so a stated number was a silent
+        # count the listing then had to honour (17w @40K: 9% of OOLONG leaves listed a different number of items than
+        # their header, dropping items). The count now emerges from the item-by-item listing. `n` kept for callers.
+        return self._unit()
 
     def _key_space(self) -> str:
         """Appended to the format contract: the allowed KEYS. Closed label sets are enumerated

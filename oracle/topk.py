@@ -115,7 +115,7 @@ class TopKOracle(ScaffoldOracle):
         return "  (no line starts here)"
 
     def _partial_header(self, a, b, n):
-        return (f"Tallying the {n} words on the lines that START in {a}..{b} ({self._op_phrase()}; the trailing "
+        return (f"Tallying the words on the lines that START in {a}..{b} ({self._op_phrase()}; the trailing "
                 f"reads only finish the last line, and any line starting at/after {b} belongs to the next range)")
 
     def _finish_phrase(self, end):

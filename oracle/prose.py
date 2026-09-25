@@ -180,7 +180,7 @@ class NiahMultiOracle(ScaffoldOracle):
         return "  (no hidden fact sentence starts here)"
 
     def _partial_header(self, a, b, n) -> str:
-        return (f"Collecting the {n} hidden fact sentence(s) whose line STARTS in {a}..{b} "
+        return (f"Collecting the hidden fact sentences whose line STARTS in {a}..{b} "
                 f"({self._op_phrase()}; the trailing reads only finish a sentence straddling {b}; "
                 f"one starting at/after {b} belongs to the next range)")
 
