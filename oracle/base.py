@@ -344,6 +344,14 @@ class ScaffoldOracle(ModelBackend):
             f"combined result into the final answer."
         )
 
+    def _result_text(self, state, is_root):
+        """A leaf's / merge's result, written ONCE (v17). Non-root: the state goes straight into \\boxed{} — it used to
+        be restated first ("-> X." then "\\boxed{X}"), the same X twice; 41 of 49 of 18w's OOLONG merge overflows @40K/80K
+        ran out while writing that second copy. The root keeps "X." + its finalize note, then boxes the ANSWER."""
+        if is_root:
+            return f"{self._ser_state(state)}.{self._box_text(state, is_root)}"
+        return f"\\boxed{{{self._ser_state(state)}}}"
+
     def _box_text(self, state, is_root):
         """The boxed suffix. Internal nodes box the serialized STATE (so the parent can keep
         combining); the root SHOWS its finalize step then boxes the answer — so the root
@@ -416,11 +424,11 @@ class ScaffoldOracle(ModelBackend):
             # combines measured 3.6k real tokens; OOLONG's run-5 merge overflow was the same shape).
             if self._kind() in ("counter", "dict"):
                 text = (f"{self._combine_phrase().capitalize()} my two children's tallies (above) -> "
-                        f"{self._ser_state(res)}.{self._box_text(res, is_root)}")
+                        f"{self._result_text(res, is_root)}")
             else:
                 shown = ", ".join(self._ser_state(s) for s in states)
                 text = (f"{self._combine_phrase().capitalize()} my children [{shown}] -> "
-                        f"{self._ser_state(res)}.{self._box_text(res, is_root)}")
+                        f"{self._result_text(res, is_root)}")
             return AssistantTurn(text=text, tool_calls=[])
         # leaf: read (iteratively, until the last owned record is covered), then accumulate
         # the records ONE AT A TIME, showing the running partial after each (never a total
@@ -433,7 +441,7 @@ class ScaffoldOracle(ModelBackend):
         lines = "\n".join(acc_lines) or self._empty_phrase()
         return AssistantTurn(
             text=f"{self._partial_header(a, b, len(recs))}:\n{lines}\n"
-                 f"Partial = {self._ser_state(state)}.{self._box_text(state, is_root)}",
+                 f"Partial = {self._result_text(state, is_root)}",
             tool_calls=[],
         )
 

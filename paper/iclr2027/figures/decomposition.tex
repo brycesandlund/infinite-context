@@ -46,7 +46,7 @@
   \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {$-61$} (l2);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=5pt]  {101}   (l3);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {7}     (l4);
-  \node[state, text=black, right=2pt of r] {$-47+108={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{61}}}$};
+  \node[state, text=black, align=center, right=2pt of r, yshift=4pt] {final answer:\\[2pt]$-47+108={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{61}}}$};
   % braces
   \draw[brace] ([xshift=-1.2mm]l1.south west) -- ([xshift=-1.2mm]l1.west |- r.north)
      node[midway, left=4pt, note, rotate=90, anchor=south] {$\log_2 k$ levels};
@@ -94,7 +94,7 @@
   \draw[spawn] (a3) -- node[state, right=2pt] {acc $=46$} (a4);
   \draw[spawn] (a4) -- node[state, right=2pt] {acc $=9$} (a5);
   % answer returned back up the chain
-  \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, text=black, pos=0.25, left=1pt, align=right] {final\\answer\\$={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{23}}}$} (a1.west);
+  \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, text=black, pos=0.25, left=1pt, align=right] {final\\answer\\[2pt]$={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{23}}}$} (a1.west);
 \end{tikzpicture}
 \end{minipage}\hfill
 \begin{minipage}[c]{0.607\linewidth}
