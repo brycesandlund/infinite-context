@@ -576,6 +576,22 @@ _BR_REL = [
     ("{p} once climbed {v}.", "Which mountain did {desc} once climb?",
      ["Mount Cairn", "the Hallow Peak", "Mount Veyra", "the Grey Needle", "Mount Oskar", "the Tallspire"]),
 ]
+# PRONOUN hop-2 facts (v16): the relation sentence refers to the person as "They", right after a sentence that names
+# them. RULER qa_2 (18w @40K): the leaf read "Ravi "Rags" Khote is a playback singer … Some of his songs include …
+# "Kal Ho Naa Ho"" and passed up ONLY the "his songs" sentence — the name was lost and the root answered "no relevant
+# information". Here the fact is ONE two-sentence unit, so the leaf's quote carries the naming sentence with it.
+# Applied per fact (target AND distractors), so the pronoun form never marks the answer.
+_BR_REL_PRON = {
+    "{p} was born in {v}.": "They were born in {v}.",
+    "{p} plays the {v}.": "They play the {v}.",
+    "{p} speaks {v} fluently.": "They speak {v} fluently.",
+    "{p} keeps a dog named {v}.": "They keep a dog named {v}.",
+    "{p} once climbed {v}.": "They once climbed {v}.",
+}
+_BR_INTRO = ["{p} has lived in the valley for many years.", "{p} is often mentioned in the town records.",
+             "{p} is a familiar face at the market.", "{p} grew up near the old mill.",
+             "{p} is known to most of the neighbours."]
+_BR_PRON_FRAC = 0.4
 _BR_QPREFIX = ["", "", "Two facts in the text are needed here. ", "Read the passage carefully. "]
 
 
@@ -588,7 +604,13 @@ def _make_niah_bridge(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Proble
     bridge, role, place, answer = people[0], roles[0], places[0], vals[0]
     desc = f"the {role} of {place}"
     hop1 = rng.choice(_BR_HOP1).format(role=role, place=place, p=bridge)
-    hop2 = s2.format(p=bridge, v=answer)
+    pron = rng.random() < _BR_PRON_FRAC
+
+    def rel(p_, v_):
+        if pron and rng.random() < 0.75:           # most (not all) relation facts in a pronoun problem use the unit
+            return rng.choice(_BR_INTRO).format(p=p_) + " " + _BR_REL_PRON[s2].format(v=v_)
+        return s2.format(p=p_, v=v_)
+    hop2 = (rng.choice(_BR_INTRO).format(p=bridge) + " " + _BR_REL_PRON[s2].format(v=answer)) if pron else s2.format(p=bridge, v=answer)
     # distractors: other role holders (a different role OR place, never both the target's), the SAME relation for
     # those people and for bystanders, so both hop kinds appear several times
     others = [(people[1], roles[1], place), (people[2], role, places[1])]
@@ -598,7 +620,7 @@ def _make_niah_bridge(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Proble
     for (p_, r_, pl_) in others:
         facts.append((rng.choice(_BR_HOP1).format(role=r_, place=pl_, p=p_), 1))
     for p_, v_ in zip([o[0] for o in others] + people[4:5], vals[1:]):
-        facts.append((s2.format(p=p_, v=v_), 1))
+        facts.append((rel(p_, v_), 1))
     rng.shuffle(facts)
     filler = _filler(rng, tokenizer, doc_size_tokens, rng.choice(["novel", "novel", "essay"]), corpus_tokens)
     sentences = [f for f, _ in facts]
@@ -614,5 +636,5 @@ def _make_niah_bridge(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Proble
         task_context=_MULTI_CONTEXT, grading_mode="qa_part",
         metadata={"family": "niah", "strategy_default": "binary", "task": "niah_bridge", "answer": answer,
                   "q_core": q_core, "k": 12, "record_spans": spans,
-                  "bridge": {"hop1": hop1, "hop2": hop2, "entity": bridge, "desc": desc, "answer": answer}},
+                  "bridge_pronoun": pron, "bridge": {"hop1": hop1, "hop2": hop2, "entity": bridge, "desc": desc, "answer": answer}},
     )

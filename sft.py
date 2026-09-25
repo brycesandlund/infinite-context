@@ -386,7 +386,7 @@ TRACE_CACHE = os.environ.get("SFT_TRACE_CACHE", "1") == "1"
 _TRACE_CACHE_DIR = os.path.expanduser(
     os.environ.get("SFT_TRACE_CACHE_DIR", "~/.cache/infinite-context/sft_traces")
 )
-_CACHE_VERSION = "v15"  # v15: labeled_records record layouts (bracket / `Field: v || …` / `field=v; …`), Opus-filtered labels + SNLI/PAWS/politeness sources; leaf partial/fold headers state NO item count (the count emerges from the listing); labeled_records judgment-wording jitter: question opener, count wording and context label sentence drawn from pools, mostly without "judge" (root must state the judgment itself; 17w OOLONG roots wrote lookup contracts) (2026-09-25); v14: niah_multi filtered leaves NAME the kept keys in the op phrase; multiquery asks 3-5 keys (2026-09-24); v13: v13: model-leaf calls no longer offered the agent tools (narrativeqa leaves regenerated) (2026-09-24); v12: v12: vt_novel niah-surface share (hidden-facts prefaces/questions + niah_multi description, fold answer) (2026-09-24); v11: v11: minimal-state audit — labeled relative/sections_cmp/first_month_cmp/section_most keep only the named labels, author_count/author_top subset variants; rule_label section_most per-section count; synth_2d months_cmp/month_for_grp/grp_in_month minimal (2026-09-24); v10: v10: labeled author_cmp filters to the two named authors AND the label (2026-09-24); v9: niah filtered leaves list skipped keys (convention) + needle distractors are records; labeled author_label_count + multi-author subsets + filtered share ~30% (2026-09-23); v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
+_CACHE_VERSION = "v16"  # v16: synth_topk top-K partials with K=budget/50, one-offs kept, sparse regime; scripted traces graded (wrong ones dropped); scripted traces graded (wrong ones dropped); synth_topk coded-word variant (35%, near-miss decoys, dotted layout); niah_bridge pronoun hop-2 units (40%: naming sentence + "They …") (2026-09-25); v15: labeled_records record layouts (bracket / `Field: v || …` / `field=v; …`), Opus-filtered labels + SNLI/PAWS/politeness sources; leaf partial/fold headers state NO item count (the count emerges from the listing); labeled_records judgment-wording jitter: question opener, count wording and context label sentence drawn from pools, mostly without "judge" (root must state the judgment itself; 17w OOLONG roots wrote lookup contracts) (2026-09-25); v14: niah_multi filtered leaves NAME the kept keys in the op phrase; multiquery asks 3-5 keys (2026-09-24); v13: v13: model-leaf calls no longer offered the agent tools (narrativeqa leaves regenerated) (2026-09-24); v12: v12: vt_novel niah-surface share (hidden-facts prefaces/questions + niah_multi description, fold answer) (2026-09-24); v11: v11: minimal-state audit — labeled relative/sections_cmp/first_month_cmp/section_most keep only the named labels, author_count/author_top subset variants; rule_label section_most per-section count; synth_2d months_cmp/month_for_grp/grp_in_month minimal (2026-09-24); v10: v10: labeled author_cmp filters to the two named authors AND the label (2026-09-24); v9: niah filtered leaves list skipped keys (convention) + needle distractors are records; labeled author_label_count + multi-author subsets + filtered share ~30% (2026-09-23); v8: niah_multi filters to asked keys (explicit/multiquery/multivalue) + needle haystack; niah_novel uuid keys/values + needle haystack (2026-09-23); v7: vt_novel bare-gloss variant + labeled_records schema-lite description (question/task_context changed for existing seeds) (2026-09-22); v6: retrieval root names the question; v5: pure 8w preamble
 
 
 def _trace_key(task, seed, doc_len, strategy, leaf_model_name, nodesc=False, qph=False, ctx=None) -> str:
@@ -454,8 +454,8 @@ async def _cached_trace(oracle, problem, tokenizer, *, task, seed, strategy, lea
 
 
 async def _collect_scripted(task, ti, strategy, want, corpus_tokens, tokenizer, start_idx=0):
-    """Scripted oracles (synth / oolong / realdoc): every trace solves by construction, so
-    build `want` and run them concurrently — no grading/rejection needed. `start_idx` lets the
+    """Scripted oracles (synth / oolong / realdoc): build `want` and run them concurrently; any trace whose answer is
+    not gold (a pruning oracle can miss) is dropped and replaced. `start_idx` lets the
     two "both" renderings of one task draw disjoint problems."""
     coros, meta, i, collected = [], [], start_idx, 0
     while collected < want:
@@ -472,7 +472,17 @@ async def _collect_scripted(task, ti, strategy, want, corpus_tokens, tokenizer, 
         coros.append(_one_trace(oracle, problem, tokenizer))
         meta.append((task, seed, problem))
     nodes = await asyncio.gather(*coros)
-    return list(zip(meta, nodes))
+    out = list(zip(meta, nodes))
+    # Oracles that PRUNE (synth_topk keeps the top K per partial) are not exact by construction: at a small budget a
+    # sparse hot word can be pruned before its counts meet. Never train a wrong trace — drop it and top up.
+    good = [(m, n) for m, n in out
+            if grade_answer(n.answer, m[2].gold_answers, resolve_eval_grading_mode(m[2])) >= 1.0]
+    if len(good) < len(out):
+        print(f"  [{task}] dropped {len(out) - len(good)}/{len(out)} oracle traces whose answer != gold; topping up")
+        if start_idx + 50 * want > i:                  # bounded: never loop forever on a broken oracle
+            good += await _collect_scripted(task, ti, strategy, len(out) - len(good), corpus_tokens, tokenizer,
+                                            start_idx=i)
+    return good
 
 
 async def _collect_rejection(task, ti, want, corpus_tokens, tokenizer, leaf_model):

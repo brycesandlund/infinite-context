@@ -1,0 +1,102 @@
+Backend: tinker | mode: decompose | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: 8000 | doc: 80000 | depth: None
+Loading + tokenizing PG-essay corpus...
+Loading checkpoint: tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+temp=0.2 | out=/tmp/eval_C18w_80k.{jsonl,txt}
+Warning: Requested 383 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 663 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 746 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 735 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 303 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 671 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 944 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 537 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 258 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 713 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 768 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+
+========================================================================
+EVAL: backend=tinker ckpt=tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+========================================================================
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['314'] nodes=511 answer='Answer: 406' term=answered score=0.000
+# task=oolong_counting seed=2000001 dataset=imdb gold=['more common than'] nodes=511 answer='Answer: negative is more common than positive' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['385'] nodes=509 answer='Answer: 397' term=answered score=0.032
+# task=oolong_counting seed=2000003 dataset=negation gold=['526'] nodes=511 answer='517' term=answered score=0.075
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['less common than'] nodes=259 answer='Answer: Computers & Internet is less common than Politics & Government' term=answered score=1.000
+# task=oolong_counting seed=2000005 dataset=formality gold=['more common than'] nodes=511 answer='Answer: formal is more common than informal' term=answered score=1.000
+# task=oolong_counting seed=2000006 dataset=spam gold=['spam', 'ham'] nodes=511 answer='Label: spam' term=answered score=1.000
+# task=oolong_counting seed=2000007 dataset=multinli gold=['497'] nodes=511 answer='Answer: 482' term=answered score=0.013
+# task=oolong_counting seed=2000008 dataset=metaphors gold=['746'] nodes=511 answer='Answer: 719' term=answered score=0.000
+# task=oolong_counting seed=2000009 dataset=app_reviews gold=['864'] nodes=511 answer='833' term=answered score=0.000
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['3'] nodes=489 answer='Answer: 3' term=answered score=1.000
+# task=oolong_user seed=2100001 dataset=imdb gold=['41677'] nodes=337 answer='User: 41677' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['4'] nodes=349 answer='Answer: 4' term=answered score=1.000
+# task=oolong_user seed=2100003 dataset=negation gold=['62341'] nodes=511 answer='User: 93436' term=answered score=0.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['same frequency as'] nodes=255 answer='Answer: Education & Reference is more common than Politics & Government' term=answered score=0.000
+# task=oolong_user seed=2100005 dataset=formality gold=['8'] nodes=509 answer='Answer: 4' term=answered score=0.316
+# task=oolong_user seed=2100006 dataset=spam gold=['ham'] nodes=511 answer='Label: ham' term=answered score=1.000
+# task=oolong_user seed=2100007 dataset=multinli gold=['contradiction'] nodes=511 answer='Label: contradiction' term=answered score=1.000
+# task=oolong_user seed=2100008 dataset=metaphors gold=['43222'] nodes=511 answer='User: 43222' term=answered score=1.000
+# task=oolong_user seed=2100009 dataset=app_reviews gold=['positive'] nodes=511 answer='Label: positive' term=answered score=1.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['February 2022'] nodes=511 answer='Answer: Feb 2022' term=answered score=0.000
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['6'] nodes=433 answer='7' term=answered score=0.750
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['8'] nodes=511 answer='11' term=answered score=0.422
+# task=oolong_temporal seed=2200003 dataset=negation gold=['less common'] nodes=511 answer='Answer: False is less common before 2022-12-31' term=answered score=1.000
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['21'] nodes=255 answer='23' term=answered score=0.562
+# task=oolong_temporal seed=2200005 dataset=formality gold=['10'] nodes=511 answer='Answer: 5' term=answered score=0.237
+# task=oolong_temporal seed=2200006 dataset=spam gold=['less common than'] nodes=509 answer='Answer: spam is less common than ham' term=answered score=1.000
+# task=oolong_temporal seed=2200007 dataset=multinli gold=['6'] nodes=511 answer='23' term=answered score=0.008
+# task=oolong_temporal seed=2200008 dataset=metaphors gold=['7'] nodes=509 answer='10' term=answered score=0.422
+# task=oolong_temporal seed=2200009 dataset=app_reviews gold=['more common than'] nodes=511 answer='Answer: positive is more common than negative' term=answered score=1.000
+
+------------------------------------------------------------------------
+oolong_counting: 0.412  (grounded 0.412 | 10 rollouts | no_answer=0/10 | mean_tree=485.6)
+    dataset agnews         0.032  (n=1)
+    dataset app_reviews    0.000  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.000  (n=1)
+    dataset multinli       0.013  (n=1)
+    dataset negation       0.075  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   numeric_one_class  0.020  (n=6)
+    qtype   relative_freq      1.000  (n=3)
+oolong_temporal: 0.540  (grounded 0.540 | 10 rollouts | no_answer=0/10 | mean_tree=477.2)
+    dataset agnews         0.422  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      0.237  (n=1)
+    dataset imdb           0.750  (n=1)
+    dataset metaphors      0.422  (n=1)
+    dataset multinli       0.008  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          0.562  (n=1)
+    qtype   numeric_one_class  0.586  (n=2)
+    qtype   relative_freq      0.570  (n=7)
+    qtype   represented_n_times 0.237  (n=1)
+oolong_user: 0.732  (grounded 0.732 | 10 rollouts | no_answer=0/10 | mean_tree=449.4)
+    dataset agnews         1.000  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      0.316  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      1.000  (n=1)
+    dataset multinli       1.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   least_common_label 1.000  (n=2)
+    qtype   most_common_label  0.500  (n=2)
+    qtype   numeric_one_class  0.772  (n=3)
+    qtype   relative_freq      0.500  (n=2)
+    qtype   second_most_freq   1.000  (n=1)
+
+OVERALL: 0.561  (grounded 0.561 | 30 rollouts)
+SCORE (held-out ['oolong_counting', 'oolong_temporal', 'oolong_user']): 0.561  (30 rollouts)
+All 30 rollouts saved -> /tmp/eval_C18w_80k.jsonl + /tmp/eval_C18w_80k.txt
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+===== C18w_80k DONE 10:52:19 =====

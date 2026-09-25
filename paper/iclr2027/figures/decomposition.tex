@@ -39,18 +39,18 @@
   \node[mid] (m2) at ($($(l3)!0.5!(l4)$)+(0,16.5mm)$) {\scriptsize\rng{1000,2000}};
   \node[root] (r) at ($($(m1)!0.5!(m2)$)+(0,15.5mm)$) {Root\\[-1pt]\scriptsize\rng{0,2000}};
   % spawn edges, labelled with the partial each child returns up that edge
-  \draw[spawn] (r) -- node[state, above left=0pt and -1pt]  {$-47$} (m1);
-  \draw[spawn] (r) -- node[state, above right=0pt and -1pt] {108}   (m2);
-  \draw[spawn] (m1) -- node[state, left=1pt]  {14}    (l1);
-  \draw[spawn] (m1) -- node[state, right=1pt] {$-61$} (l2);
-  \draw[spawn] (m2) -- node[state, left=1pt]  {101}   (l3);
-  \draw[spawn] (m2) -- node[state, right=1pt] {7}     (l4);
-  \node[state, right=2pt of r] {$-47+108=61$};
+  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above left=1pt and 1pt]  {$-47$} (m1);
+  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above right=1pt and 1pt] {108}   (m2);
+  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=3pt]  {14}    (l1);
+  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=3pt] {$-61$} (l2);
+  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=3pt]  {101}   (l3);
+  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=3pt] {7}     (l4);
+  \node[state, right=2pt of r] {$-47+108=\fbox{\ensuremath{61}}$};
   % braces
   \draw[brace] ([xshift=-1.2mm]l1.south west) -- ([xshift=-1.2mm]l1.west |- r.north)
      node[midway, left=4pt, note, rotate=90, anchor=south] {$\log_2 k$ levels};
   \draw[brace] ([yshift=-1.5mm]l4.south east) -- ([yshift=-1.5mm]l1.south west)
-     node[midway, below=4pt, note] {$k$ leaves, each reading $500$ tokens};
+     node[midway, below=4pt, note] {$k$ leaves, each reading $\leq500$ tokens};
 \end{tikzpicture}
 \end{minipage}\hfill
 \begin{minipage}[c]{0.525\linewidth}
@@ -106,7 +106,9 @@
     depends on the resets before it --- so I process the document from the start with a running accumulator\dots
     \tool{ read\_chunk(0, 400)}\\
     \recs{{[0000]} & amt & $-10$ & & total= & $-10$ & \dots\\ {[0005]} & grp & RST & RESET,\kern0.3em& total= & 0 & \dots\\ {[0017]} & amt & +14 & & total= & $-2$ &}\\
-    $\to$ accumulator = $-2$. Delegating the rest 400..2000 with the updated accumulator.};
+    $\to$ accumulator = $-2$. Delegating the rest 400..2000 with the updated accumulator.
+    \tool{ spawn\_subagent}(``Continue the running accumulator\dots\ over the records STARTING in tokens 400..2000.
+    accumulator so far = $-2$\dots'')};
   \node[txt, fill=yellow!35, below=of t1] (t2) {\who{Agent 2}Continue the running accumulator\dots over the
     records STARTING in tokens 400..2000. accumulator so far = $-2$\dots
     \tool{ read\_chunk(400, 800)}\\

@@ -1749,3 +1749,27 @@ OOLONG @40K 0.354 -> 0.535 (user 0.45 -> 0.80), within 0.03 of the model trained
 (0.65 -> 1.00 @40K). RULER-13 is the best at both lengths. Open: the 4K OOLONG dip (counting 0.51 -> 0.21 on 5 rollouts),
 temporal @10K 0.62 -> 0.51, negation still below base, cwe @40K 0.74. Raw: `eval_results/raw/sft_general18w*`,
 probe `eval_results/leaf_classify_18w.json`.
+
+### 18w @80K (8K budget) — 2026-09-25 — OOLONG chart **0.561** (June OOLONG-only 0.429, gpt-5.4 0.327); RULER-13 0.885
+
+| | 10K | 40K | 80K |
+|---|---|---|---|
+| OOLONG chart (June problems) counting / user / temporal | 0.45 / 0.86 / 0.51 | 0.42 / 0.80 / 0.39 | 0.41 / 0.73 / 0.54 |
+| **OOLONG chart mean** | 0.606 | 0.535 | **0.561** |
+| OOLONG fresh seeds (n=20/family) counting / user / temporal | 0.63 / 0.90 / 0.62 | 0.57 / 0.75 / 0.50 | 0.51 / 0.69 / 0.44 |
+| niah (all 9 variants) | 1.00 | 1.00 | 1.00 |
+| vt | 1.00 | 1.00 | 0.92 |
+| cwe | 1.00 | 0.74 | **0.58** |
+| fwe | 0.93 | 0.93 | 1.00 |
+| qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 (not yet LLM-judged) |
+| **RULER-13 mean** | 0.949 | 0.929 | **0.885** |
+
+The June chart's 80K dip (0.562 -> 0.429, temporal tallies overflowing) is gone: 18w holds 0.56 at 80K. Merge capacity at
+8K budget: answered merges hold up to **214 entries** (oolong_user `userID:count`; temporal 103; 6 chart / 43 RULER-run
+merges at 101-200+); overflows happen when two children bring ~400 entries combined (temporal 20, user 2). fwe's 6
+overflowed merges are NOT size (children 54 entries combined) but a repetition loop (`gihmd:1|gihmd:1|…`,
+`zrtdgy:3|…` until the budget) — the tree recovered (both rollouts 1.00; fwe's Zipf head survives a lost branch). Same
+loop family as cwe's `section (4)` x6. cwe falls 1.00 -> 0.74 -> 0.58: the pruned-tally ceiling (leaves keep <=10 words
+seen 2+ times; at 40K+ a common word occurs ~0.4x per 500-token leaf). Simulation on RULER's cwe construction (exact
+counts, top-M kept at every node): M=10 0%/0% at 40K/80K, M=50 60%/0%, M=100 80%/90%, M=200 100%/100%.
+Raw: `eval_results/raw/sft_general18w_{C18w_80k,R18w_80k_b8k}.*`.

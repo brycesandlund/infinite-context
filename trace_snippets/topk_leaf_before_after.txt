@@ -1,0 +1,97 @@
+SAME PROBLEM through the OLD (pre-v16) and CURRENT (v16 draft) synth_topk oracle — seed 2600013, layout numbered, regime dense, budget 8000, doc 6981 tokens, gold ['already', 'shoe', 'program'].
+Each block is ONE leaf, every message verbatim and unclipped: system prompt, subtask, the reading turn with its
+read_chunk calls, both read_chunk results, and the leaf's final output.
+
+########################################################################################################################
+# OLD oracle (pre-v16, what run 18 trained on)  — root answer 'already, shoe, program'
+########################################################################################################################
+
+----- [system] -----
+You are a long-document assistant. The document is 6981 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a numbered list of words: each entry is `<n>. <word>` and several entries appear on each line. The numbers are positions, not words.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+
+----- [user] -----
+Over the words STARTING in tokens 0..436, compute the per-word tally of the words seen 2+ times. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the words seen 2+ times over the words STARTING in the range. Put the result in \boxed{}: the partial as `<word>:<count>` entries joined by `|` for the most frequent words seen 2+ times in the range (at most 10; exact counts; one-off words dropped) — a tally with counts, never a bare word list, and never list numbers as words; `none` if no word starts in the range.
+
+----- [assistant] -----
+Range 0..436 fits; reading it, then the next 200 tokens to finish the last line (it may run past 436).
+  -> TOOL CALLS: read_chunk({'start': 0, 'end': 436}); read_chunk({'start': 436, 'end': 636})
+
+----- [tool / read_chunk] -----
+1. bold 2. dinner 3. paragraph 4. sprawl 5. already 6. stories 7. flexible 8. hacks 9. fraction 10. ajax 11. naturally
+12. perl 13. notebooks 14. mere 15. standards 16. diners 17. facing 18. already 19. area 20. option 21. produced 22. hand 23. shoe
+24. patient 25. program 26. overlap 27. uses 28. already 29. concealed 30. ancient 31. centuries 32. close 33. wild 34. shoe 35. computers 36. gravity
+37. already 38. installed 39. building 40. prefix 41. shoe 42. colorado 43. legacy 44. refining 45. nights 46. clients 47. sucked 48. supplied 49. program
+50. suburban 51. french 52. phase 53. hacks 54. decreases 55. facing 56. program 57. drop 58. aikido 59. comes 60. chose
+61. program 62. link 63. shoe 64. selected 65. exercise 66. flexible 67. uses 68. property 69. fraction 70. already 71. exploring 72. existence 73. fraction
+74. richest 75. vision 76. shoe 77. both 78. hacks 79. program 80. former 81. fraction 82. truths 83. francisco 84. engaged 85. applicant
+86. program 87. definite 88. forget 
+
+----- [tool / read_chunk] -----
+89. zero 90. duplicate 91. attempt 92. already 93. heavily 94. pointy 95. delivered 96. shoe 97. fraction 98. success
+99. already 100. rarer 101. arguing 102. shoe 103. ulterior 104. unix 105. versions 106. sites 107. crazy 108. taller 109. piece 110. builds
+111. already 112. ideal 113. boss 114. newton 115. resumed 116. pointy 117. english 118. cards 119. suggests 120. drove 121. ideal
+122. signal 123
+
+----- [assistant] -----
+Tallying the words on the lines that START in 0..436 (tallying how many times each word appears (ignoring the list numbers); the trailing reads only finish the last line, and any line starting at/after 436 belongs to the next range):
+- lines at tokens 0–108: already×3, shoe×2, facing, flexible, fraction, hacks, program, uses; +25 one-off words
+- lines at tokens 173–295: program×3, already×2, fraction×2, shoe×2, facing, flexible, hacks, uses; +24 one-off words
+- lines at tokens 360–421: fraction×2, program×2, shoe×2, already, hacks; +17 one-off words
+Range tally, pruned to the most frequent words seen 2+ times (at most 10; 66 words appear once here): already:6|program:6|shoe:6|fraction:5|hacks:3|facing:2|flexible:2|uses:2
+Partial = already:6|program:6|shoe:6|fraction:5|hacks:3|facing:2|flexible:2|uses:2.
+\boxed{already:6|program:6|shoe:6|fraction:5|hacks:3|facing:2|flexible:2|uses:2}
+
+########################################################################################################################
+# CURRENT oracle (v16 draft)  — root answer 'already, shoe, program'
+########################################################################################################################
+
+----- [system] -----
+You are a long-document assistant. The document is 6981 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a numbered list of words: each entry is `<n>. <word>` and several entries appear on each line. The numbers are positions, not words.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+
+----- [user] -----
+Over the words STARTING in tokens 0..436, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 8000/50 = 160 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list, and never list numbers as words; `none` if no word starts in the range.
+
+----- [assistant] -----
+Range 0..436 fits; reading it, then the next 200 tokens to finish the last line (it may run past 436).
+  -> TOOL CALLS: read_chunk({'start': 0, 'end': 436}); read_chunk({'start': 436, 'end': 636})
+
+----- [tool / read_chunk] -----
+1. bold 2. dinner 3. paragraph 4. sprawl 5. already 6. stories 7. flexible 8. hacks 9. fraction 10. ajax 11. naturally
+12. perl 13. notebooks 14. mere 15. standards 16. diners 17. facing 18. already 19. area 20. option 21. produced 22. hand 23. shoe
+24. patient 25. program 26. overlap 27. uses 28. already 29. concealed 30. ancient 31. centuries 32. close 33. wild 34. shoe 35. computers 36. gravity
+37. already 38. installed 39. building 40. prefix 41. shoe 42. colorado 43. legacy 44. refining 45. nights 46. clients 47. sucked 48. supplied 49. program
+50. suburban 51. french 52. phase 53. hacks 54. decreases 55. facing 56. program 57. drop 58. aikido 59. comes 60. chose
+61. program 62. link 63. shoe 64. selected 65. exercise 66. flexible 67. uses 68. property 69. fraction 70. already 71. exploring 72. existence 73. fraction
+74. richest 75. vision 76. shoe 77. both 78. hacks 79. program 80. former 81. fraction 82. truths 83. francisco 84. engaged 85. applicant
+86. program 87. definite 88. forget 
+
+----- [tool / read_chunk] -----
+89. zero 90. duplicate 91. attempt 92. already 93. heavily 94. pointy 95. delivered 96. shoe 97. fraction 98. success
+99. already 100. rarer 101. arguing 102. shoe 103. ulterior 104. unix 105. versions 106. sites 107. crazy 108. taller 109. piece 110. builds
+111. already 112. ideal 113. boss 114. newton 115. resumed 116. pointy 117. english 118. cards 119. suggests 120. drove 121. ideal
+122. signal 123
+
+----- [assistant] -----
+Tallying the words on the lines that START in 0..436 (tallying how many times each word appears (ignoring the list numbers); the trailing reads only finish the last line, and any line starting at/after 436 belongs to the next range):
+- lines at tokens 0–108: already×3, flexible, hacks, fraction, facing, shoe×2, program, uses; +25 words seen once
+- lines at tokens 173–295: already×2, shoe×2, program×3, hacks, facing, flexible, uses, fraction×2; +24 words seen once
+- lines at tokens 360–421: shoe×2, hacks, program×2, fraction×2, already; +17 words seen once
+74 distinct words here; all of them fit in 160, so all are kept (words seen once included).
+Partial = already:6|shoe:6|program:6|fraction:5|hacks:3|flexible:2|facing:2|uses:2|bold:1|dinner:1|paragraph:1|sprawl:1|stories:1|ajax:1|naturally:1|perl:1|notebooks:1|mere:1|standards:1|diners:1|area:1|option:1|produced:1|hand:1|patient:1|overlap:1|concealed:1|ancient:1|centuries:1|close:1|wild:1|computers:1|gravity:1|installed:1|building:1|prefix:1|colorado:1|legacy:1|refining:1|nights:1|clients:1|sucked:1|supplied:1|suburban:1|french:1|phase:1|decreases:1|drop:1|aikido:1|comes:1|chose:1|link:1|selected:1|exercise:1|property:1|exploring:1|existence:1|richest:1|vision:1|both:1|former:1|truths:1|francisco:1|engaged:1|applicant:1|definite:1|forget:1|zero:1|duplicate:1|attempt:1|heavily:1|pointy:1|delivered:1|success:1.
+\boxed{already:6|shoe:6|program:6|fraction:5|hacks:3|flexible:2|facing:2|uses:2|bold:1|dinner:1|paragraph:1|sprawl:1|stories:1|ajax:1|naturally:1|perl:1|notebooks:1|mere:1|standards:1|diners:1|area:1|option:1|produced:1|hand:1|patient:1|overlap:1|concealed:1|ancient:1|centuries:1|close:1|wild:1|computers:1|gravity:1|installed:1|building:1|prefix:1|colorado:1|legacy:1|refining:1|nights:1|clients:1|sucked:1|supplied:1|suburban:1|french:1|phase:1|decreases:1|drop:1|aikido:1|comes:1|chose:1|link:1|selected:1|exercise:1|property:1|exploring:1|existence:1|richest:1|vision:1|both:1|former:1|truths:1|francisco:1|engaged:1|applicant:1|definite:1|forget:1|zero:1|duplicate:1|attempt:1|heavily:1|pointy:1|delivered:1|success:1}

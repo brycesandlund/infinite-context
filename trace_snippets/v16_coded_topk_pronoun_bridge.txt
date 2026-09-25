@@ -1,0 +1,92 @@
+####################################################################################################
+# synth_topk  layout=dotted  seed 2600000  gold ['ptziim', 'iipqcd', 'wldkor', 'exqmqp', 'voffyr']
+####################################################################################################
+TASK CONTEXT:
+The document is a sequence of coded words (random letter strings) separated by ` .... `, several per line. The dots are separators, not words.
+
+QUESTION:
+Which 5 coded words appear MOST often in the document? Ignore the dots. List the 5 words, comma-separated, in \boxed{}.
+
+LEAF READ:
+ipiqcd .... pxljhb .... vfofyr .... vfofyr .... dyaunl .... iurwox .... gbqswm .... lxgghx .... rzditi .... uuqgnp .... voffyr .... ptziim .... exqmqp .... tdbwza .... kquzgk .... eempcc .... lgawzk .... iuqnzh .... wldkor
+ieznnn .... uehacz .... hvzqyz .... voffyr .... hotuwm .... xazwim .... uafuxr .... qqqlkm .... qludfs .... ifmbgj .... eoohdp .... clvyqq .... qphmwr .... idjlsg .... fgbvzq .... iipqcd .... iiqpcd .... exqmqp
+nwxqbp .... ptziim .... exqmqp .... voffyr .... ipiqcd .... mrniye .... iiqpcd .... vfofyr .... iqhsmr .... hukxco .... wldkor .... dxxnmv .... ptzpim .... ptzpim ...
+
+LEAF OUTPUT:
+Tallying the words on the lines that START in 0..311 (tallying how many times each word appears (ignoring the dots); the trailing reads only finish the last line, and any line starting at/after 311 belongs to the next range):
+- lines at tokens 0–168: exqmqp×3, vfofyr×3, voffyr×3, iiqpcd×2, ipiqcd×2, ptziim×2, ptzpim×2, wldkor×2, iipqcd; +36 one-off words
+- line at token 250: tpziim×2, exqmqp, iipqcd, ptziim, vfofyr, voffyr, wldkor; +12 one-off words
+Range tally, pruned to the most frequent words seen 2+ times (at most 10; 48 words appear once here): exqmqp:4|vfofyr:4|voffyr:4|ptziim:3|wldkor:3|iipqcd:2|iiqpcd:2|ipiqcd:2|ptzpim:2|tpziim:2
+Partial = exqmqp:4|vfofyr:4|voffyr:4|ptziim:3|wldkor:3|iipqcd:2|iiqpcd:2|ipiqcd:2|ptzpim:2|tpziim:2.
+\boxed{exqmqp:4|vfofyr:4|voffyr:4|ptziim:3|wldkor:3|iipqcd:2|iiqpcd:2|ipiqcd:2|ptzpim:2|tpziim:2}
+
+ROOT FINAL:
+Merge (add per word) my two children's tallies (above) -> ptziim:95|iipqcd:89|exqmqp:87|wldkor:87|voffyr:75|iiqpcd:27|aicank:25|idjlsg:17|tpziim:12|exqmpq:9.
+Ranking the merged counts: top 5 = ptziim (95), iipqcd (89), exqmqp (87), wldkor (87), voffyr (75); next: iiqpcd (27).
+\boxed{ptziim, iipqcd, exqmqp, wldkor, voffyr}
+
+####################################################################################################
+# synth_topk  layout=coded  seed 2600028  gold ['opovvp', 'wwedza', 'kutcos', 'ckfhqq', 'ghtcpk']
+####################################################################################################
+TASK CONTEXT:
+The document is a sequence of coded words (random letter strings) separated by spaces, several per line.
+
+QUESTION:
+Which 5 coded words appear MOST often in the document? List the 5 words, comma-separated, in \boxed{}.
+
+LEAF READ:
+cfkhqq wwezda yepvhd kutcos tsxxge wewdza lnanmw wwezda opovvp mrekdc wwezda wwcgxh gnucom ffkwoq ckfhqq homfhn
+wwedza ghtcpk snvfxx hbcegx kutcos veomqt vijesw flvyhu ocfgzy opovvp onwqcs nvbhhc ckfhqq nemhft lgpjog vlssrm bueyqt xfrnja
+gthcpk jxzgdn wwedza hgtcpk rqyilx kutcos opovvp ehczza mupopn ckfhqq ghtcpk vvxoba qapjee fbsiux mzbnpq hvgrca wewdza ktucos
+ghtcpk fpvumo wwedza imriep ckfhqq opovvp zouuqk rhxwit enarur nhhhvt hqwddf zjszdg zisvaz wsuque cnvwmi bvqsrm mtagho
+cyqfwu baewsq dsrcbe nnmaeg xetczk vdzyje oitukk cfxaph irdxkx xtwxad cuvhud uirwlj wwedza ckfhqq oiazjv opovvp ghtcp
+
+LEAF OUTPUT:
+Tallying the words on the lines that START in 0..311 (tallying how many times each word appears; the trailing reads only finish the last line, and any line starting at/after 311 belongs to the next range):
+- lines at tokens 0–111: ckfhqq×3, kutcos×3, opovvp×3, wwezda×3, ghtcpk×2, wewdza×2, wwedza×2, cfkhqq, gthcpk; +32 one-off words
+- lines at tokens 174–287: ckfhqq×3, ghtcpk×3, opovvp×3, cfkhqq×2, wwedza×2, gthcpk, kutcos, wewdza; +35 one-off words
+Range tally, pruned to the most frequent words seen 2+ times (at most 10; 67 words appear once here): ckfhqq:6|opovvp:6|ghtcpk:5|kutcos:4|wwedza:4|cfkhqq:3|wewdza:3|wwezda:3|gthcpk:2
+Partial = ckfhqq:6|opovvp:6|ghtcpk:5|kutcos:4|wwedza:4|cfkhqq:3|wewdza:3|wwezda:3|gthcpk:2.
+\boxed{ckfhqq:6|opovvp:6|ghtcpk:5|kutcos:4|wwedza:4|cfkhqq:3|wewdza:3|wwezda:3|gthcpk:2}
+
+ROOT FINAL:
+Merge (add per word) my two children's tallies (above) -> opovvp:144|wwedza:139|kutcos:137|ckfhqq:127|ghtcpk:126|ktucos:37|cfkhqq:35|ckhfqq:30|gthcpk:26|kuctos:9.
+Ranking the merged counts: top 5 = opovvp (144), wwedza (139), kutcos (137), ckfhqq (127), ghtcpk (126); next: ktucos (37).
+\boxed{opovvp, wwedza, kutcos, ckfhqq, ghtcpk}
+
+####################################################################################################
+# niah_bridge  bridge_pronoun=True  seed 3500000  gold ['Tansy']
+####################################################################################################
+TASK CONTEXT:
+The document is a long passage of text with a few short factual sentences hidden inside it. Answer the question using ONLY this passage.
+
+QUESTION:
+What is the name of the dog kept by the chief brewer of Greywater? Give it in \boxed{}.
+
+LEAF READ:
+ topics, comparable in
+scope to our "scholarship" (though without the methodological
+implications).  Even as late as Newton's time it included what we
+now call "science."  But core of the subject today is still what
+seemed to Aristotle the core: the attempt to discover the most
+general truths.Aristotle didn't call this "metaphysics."  That name got assigned
+to it because the books we now call the Metaphysics came after
+(meta = after) the Physics in the standard edition of Aristotle's
+works compiled by Andronicus of Rhodes three centuries later.  What
+we call "metaphysics" Aristotle called "fir
+
+LEAF OUTPUT:
+Read tokens 0..315. No relevant information in this range.
+\boxed{none}
+
+ROOT FINAL:
+No single passage answers the question; the passed-up facts:
+  • Sabine Achterberg keeps a dog named Biscuit.
+  • The chief brewer of Fenwick Cross is Sabine Achterberg.
+  • Greywater appointed Noor Castell as its bridge warden.
+  • Tova Dasko serves as the chief brewer of Greywater.
+  • Kasper Pell keeps a dog named Rufus.
+  • Noor Castell is known to most of the neighbours. They keep a dog named Captain.
+  • Tova Dasko has lived in the valley for many years. They keep a dog named Tansy.
+Chaining them: «Tova Dasko serves as the chief brewer of Greywater.» — so the chief brewer of Greywater is Tova Dasko; «Tova Dasko has lived in the valley for many years. They keep a dog named Tansy.» — so the answer is Tansy.
+\boxed{Tansy}

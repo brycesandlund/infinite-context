@@ -1,0 +1,119 @@
+synth_topk v16 — K = budget/50, one-offs kept, sparse regime
+
+####################################################################################################
+# synth_topk sparse  budget 8000  seed 2600000  gold ['exmqqp', 'iiqpcd', 'ipiqcd', 'ptziim', 'exqmpq', 'exqmqp', 'ptzpim', 'wldkor', 'voffyr', 'iipqcd']
+####################################################################################################
+ROOT SYSTEM PROMPT:
+You are a long-document assistant. The document is 9711 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a sequence of coded words (random letter strings) separated by ` .... `, several per line. The dots are separators, not words.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+
+ROOT USER MESSAGE:
+Which 10 coded words appear MOST often in the document? Ignore the dots. List the 10 words, comma-separated, in \boxed{}.
+
+ROOT FIRST TURN (preamble + spawn):
+This document is 9711 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so I split the range in half recursively, having a subagent compute the per-word tally of the most frequent words over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9711 is not below 500; splitting at midpoint 4855.
+  TOOL CALLS: [ToolCall(id='call_20815eae', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 0..4855, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 8000/50 = 160 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'}), ToolCall(id='call_e801b2cd', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 4855..9711, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 8000/50 = 160 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'})]
+
+ROOT SUBTASK:
+Over the words STARTING in tokens 0..4855, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 8000/50 = 160 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.
+
+LEAF OUTPUT:
+Tallying the words on the lines that START in 0..303 (tallying how many times each word appears (ignoring the dots); the trailing reads only finish the last line, and any line starting at/after 303 belongs to the next range):
+- lines at tokens 0–137: ptziim, ipiqcd; +46 words seen once
+- lines at tokens 208–278: exmqqp×2, ptziim, wldkor×2, ipiqcd; +26 words seen once
+76 distinct words here; all of them fit in 160, so all are kept (words seen once included).
+Partial = ptziim:2|ipiqcd:2|exmqqp:2|wldkor:2|llmeqf:1|girwng:1|hgesle:1|gfdlev:1|eiuaso:1|mnhytq:1|mcjlqr:1|mrlqti:1|bnfoqp:1|ujpmqf:1|otgewf:1|wmwsth:1|xuflnt:1|voetwt:1|gdxiyi:1|cdoxlc:1|fpgtfp:1|dlziis:1|xxqrjn:1|liuuca:1|ggtzpr:1|sikztc:1|uyheqj:1|idqqdr:1|hanpxn:1|lthcmy:1|zktnwl:1|ciilej:1|iurwox:1|dyuywf:1|xvnpja:1|jlgoow:1|vwuctt:1|hvnrhr:1|fhzqag:1|scfups:1|enxxbi:1|aiutek:1|ihdwnh:1|htepsn:1|cmdjje:1|zvujsb:1|mydwjt:1|ylumfj:1|tpxclq:1|ytutby:1|ebjwsh:1|ppdtsa:1|lzxxzz:1|tpziim:1|tdahve:1|razzks:1|ktkfyo:1|euoxqf:1|conpdr:1|hptoho:1|msipxs:1|qzcumq:1|bbuflq:1|cwuzzp:1|exqmqp:1|znhqwa:1|ldmwdd:1|tnryii:1|jrycch:1|uxymwt:1|kwukwj:1|kkwjyo:1|axaybh:1|hotuwm:1|pmkgtx:1|ywwyab:1.
+\boxed{ptziim:2|ipiqcd:2|exmqqp:2|wldkor:2|llmeqf:1|girwng:1|hgesle:1|gfdlev:1|eiuaso:1|mnhytq:1|mcjlqr:1|mrlqti:1|bnfoqp:1|ujpmqf:1|otgewf:1|wmwsth:1|xuflnt:1|voetwt:1|gdxiyi:1|cdoxlc:1|fpgtfp:1|dlziis:1|xxqrjn:1|liuuca:1|ggtzpr:1|sikztc:1|uyheqj:1|idqqdr:1|hanpxn:1|lthcmy:1|zktnwl:1|ciilej:1|iurwox:1|dyuywf:1|xvnpja:1|jlgoow:1|vwuctt:1|hvnrhr:1|fhzqag:1|scfups:1|enxxbi:1|aiutek:1|ihdwnh:1|htepsn:1|cmdjje:1|zvujsb:1|mydwjt:1|ylumfj:1|tpxclq:1|ytutby:1|ebjwsh:1|ppdtsa:1|lzxxzz:1|tpziim:1|tdahve:1|razzks:1|ktkfyo:1|euoxqf:1|conpdr:1|hptoho:1|msipxs:1|qzcumq:1|bbuflq:1|cwuzzp:1|exqmqp:1|znhqwa:1|ldmwdd:1|tnryii:1|jrycch:1|uxymwt:1|kwukwj:1|kkwjyo:1|axaybh:1|hotuwm:1|pmkgtx:1|ywwyab:1}
+
+ROOT FINAL:
+2|ncozhz:2|zvmkoq:2|whoabc:2|oredls:2|jkfsbm:2|sncefc:2|xrroda:2|ptcxqt:2|iefojn:2|fqvuqk:2|hdgkek:2|fbbgrn:2|edleld:2|pvjxmr:2|uzosfn:2|ctwyeb:2|lsgmjv:2|voetwt:2|razzks:2|cfwezp:2|pjrycs:2|dpmnaw:2|ugkebt:2|kagepj:2|oomtyx:2|tdbwza:2|hlzuwi:2|oueyfm:2|euxebp:2|bpqkor:2|cjjbcb:2|mnhlsf:2|aexodb:2|ttupob:2|gikmpx:2|xmsyrk:2|pgnpbc:2|kflbvn:2|xnxqmn:2|expnra:2|ubwbua:2|gqycup:2|eqilqy:2|waqflg:2|ytwufv:2|eqtvua:2|uyqgwp:2|fuilef:2|aldnxk:2|mwswar:2|qludfs:2|oseykt:2|deutrq:2|kzujml:2|yxltlh:2|dkppdt:2|llmeqf:2|owhker:2|xitivn:2|sjffjl:2|gopzva:2|bnldao:2|wgbuqv:2|vfofyr:2|qguitl:2|iwiwxh:2|rxiqfc:2|auktuo:2|fonkfr:2|wrxcum:2|rxscmc:2|vybssc:2|awkgxz:2|pxljhb:2|vpvgif:2|aghska:2|uedhli:2|matfaq:2|rasigs:2|odagrm:2|yckrak:2|npeolz:2|qconkd:2|jwnbfn:2|acgzdb:2|idivww:2|hpysqo:2|xqawke:2|kfykix:2|csdmis:2|qmvyls:2|fbjlvd:2|icnjcu:2|gddlnj:2|zlosai:2|nwmwac:2|kavwlo:2|dgujlk:2|rafqug:2|mcniji:2|ulzjlb:2|vmiiqy:2|sfghka:2.
+Ranking the merged counts: top 10 = ipiqcd (20), ptziim (20), exmqqp (19), exqmpq (19), iiqpcd (19), ptzpim (19), exqmqp (18), wldkor (18), voffyr (17), iipqcd (16); next: cmdjje (3).
+\boxed{ipiqcd, ptziim, exmqqp, exqmpq, iiqpcd, ptzpim, exqmqp, wldkor, voffyr, iipqcd}
+
+####################################################################################################
+# synth_topk sparse  budget 3000  seed 2600002  gold ['czckmq', 'jwbkge', 'usrmta', 'aqqtrf', 'azwddn']
+####################################################################################################
+ROOT SYSTEM PROMPT:
+You are a long-document assistant. The document is 7158 tokens long; you cannot see it directly. Your own context window is 3000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a sequence of coded words (random letter strings) separated by ` .... `, several per line. The dots are separators, not words.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 3000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+
+ROOT USER MESSAGE:
+Which 5 coded words appear MOST often in the document? Ignore the dots. List the 5 words, comma-separated, in \boxed{}.
+
+ROOT FIRST TURN (preamble + spawn):
+This document is 7158 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so I split the range in half recursively, having a subagent compute the per-word tally of the most frequent words over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..7158 is not below 500; splitting at midpoint 3579.
+  TOOL CALLS: [ToolCall(id='call_834f0858', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 0..3579, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 3000/50 = 60 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'}), ToolCall(id='call_ab3e3fdb', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 3579..7158, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 3000/50 = 60 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'})]
+
+ROOT SUBTASK:
+Over the words STARTING in tokens 0..3579, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 3000/50 = 60 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.
+
+LEAF OUTPUT:
+Tallying the words on the lines that START in 0..447 (tallying how many times each word appears (ignoring the dots); the trailing reads only finish the last line, and any line starting at/after 447 belongs to the next range):
+- lines at tokens 0–143: azwddn, czckmq, witzfy, ggeenj; +44 words seen once
+- lines at tokens 212–351: bctgxg, czckmq, omueyc, witzfy, azwddn; +43 words seen once
+- line at token 420: omueyc, ggeenj, bctgxg; +13 words seen once
+106 distinct words here; keeping the top 60 by count, ties in reading order (words seen once included).
+Partial = azwddn:2|czckmq:2|witzfy:2|ggeenj:2|bctgxg:2|omueyc:2|ombsrf:1|kwqgsf:1|eivtab:1|oxbvxj:1|ztxgho:1|jfuvfl:1|rbuisg:1|qbwnqc:1|bwmxxy:1|jqzqee:1|cczkmq:1|kcccaq:1|xaayjm:1|foyfwl:1|zhnaic:1|tiuxbh:1|nnshgu:1|ickgjs:1|mmvdjy:1|hnfafy:1|ffkiai:1|uvaxnb:1|wxftlo:1|ljwvcz:1|zxxwmd:1|mhnqrw:1|ksrgay:1|mqxujx:1|bffifj:1|fkzxol:1|pbktch:1|lmmtiy:1|umtelb:1|qbtxfw:1|aqqtrf:1|jqqfrf:1|mucxky:1|wgrexu:1|ymkjqw:1|sjwmed:1|wmbbyu:1|ikqezb:1|rqmxud:1|dsawdq:1|hzisjc:1|vzqbvn:1|quacgm:1|fhayus:1|khdwje:1|pqdiwq:1|tlbzit:1|uxrzsu:1|xamlwi:1|dsqltb:1.
+\boxed{azwddn:2|czckmq:2|witzfy:2|ggeenj:2|bctgxg:2|omueyc:2|ombsrf:1|kwqgsf:1|eivtab:1|oxbvxj:1|ztxgho:1|jfuvfl:1|rbuisg:1|qbwnqc:1|bwmxxy:1|jqzqee:1|cczkmq:1|kcccaq:1|xaayjm:1|foyfwl:1|zhnaic:1|tiuxbh:1|nnshgu:1|ickgjs:1|mmvdjy:1|hnfafy:1|ffkiai:1|uvaxnb:1|wxftlo:1|ljwvcz:1|zxxwmd:1|mhnqrw:1|ksrgay:1|mqxujx:1|bffifj:1|fkzxol:1|pbktch:1|lmmtiy:1|umtelb:1|qbtxfw:1|aqqtrf:1|jqqfrf:1|mucxky:1|wgrexu:1|ymkjqw:1|sjwmed:1|wmbbyu:1|ikqezb:1|rqmxud:1|dsawdq:1|hzisjc:1|vzqbvn:1|quacgm:1|fhayus:1|khdwje:1|pqdiwq:1|tlbzit:1|uxrzsu:1|xamlwi:1|dsqltb:1}
+
+ROOT FINAL:
+Merge (add per word) my two children's tallies (above) -> usrmta:22|azwddn:21|aqqtrf:20|jwbkge:19|czckmq:19|qbwnqc:3|witzfy:3|mucxky:3|vzbigc:3|weyjnh:3|hncvgj:3|ggeenj:2|bctgxg:2|omueyc:2|mqxujx:2|umtelb:2|ymkjqw:2|icltzr:2|xxgxel:2|suydid:2|idjbti:2|ssjnlx:2|vahbei:2|czoywt:2|idkckr:2|nddejx:2|rbuisg:2|ipyrab:2|unzupp:2|xtpomi:2|chitop:2|flblis:2|tcvobi:2|jwcdiv:2|qznhqd:2|smuxit:2|knvaws:2|zingar:2|fvelch:2|slsrpt:2|ufijco:2|utnhxw:2|liuyfa:2|hrvmxf:2|goapfj:2|ecigvf:2|ftcskh:2|oygfbe:2|hxyjno:2|jwkbge:2|aaqgwh:2|inmeee:2|scrjqx:2|cuiqin:2|ywyszu:2|pvykyx:2|cfjutz:2|ezurvs:2|qnbtas:2|nimfhz:2.
+Ranking the merged counts: top 5 = usrmta (22), azwddn (21), aqqtrf (20), czckmq (19), jwbkge (19); next: hncvgj (3).
+\boxed{usrmta, azwddn, aqqtrf, czckmq, jwbkge}
+
+####################################################################################################
+# synth_topk sparse  budget 12000  seed 2600011  gold ['fred', 'confuse', 'forums', 'built', 'exact', 'greatest', 'meanings', 'ancient', 'astray', 'hard']
+####################################################################################################
+ROOT SYSTEM PROMPT:
+You are a long-document assistant. The document is 11630 tokens long; you cannot see it directly. Your own context window is 12000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The document is a plain sequence of words separated by spaces, several per line.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 12000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+
+ROOT USER MESSAGE:
+Which 10 words appear MOST often in the document? List the 10 words, comma-separated, in \boxed{}.
+
+ROOT FIRST TURN (preamble + spawn):
+This document is 11630 tokens — too long to read in one context. The result over a range does not depend on the order of the words, so I split the range in half recursively, having a subagent compute the per-word tally of the most frequent words over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..11630 is not below 500; splitting at midpoint 5815.
+  TOOL CALLS: [ToolCall(id='call_d8b17696', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 0..5815, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 12000/50 = 240 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'}), ToolCall(id='call_93edaaf5', name='spawn_subagent', arguments={'subtask': 'Over the words STARTING in tokens 5815..11630, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \\boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 12000/50 = 240 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.'})]
+
+ROOT SUBTASK:
+Over the words STARTING in tokens 0..5815, compute the per-word tally of the most frequent words. Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-word tally of the most frequent words over the words STARTING in the range. Put the result in \boxed{}: the partial as `<word>:<count>` entries joined by `|` for the 12000/50 = 240 most frequent words in the range (exact counts; words seen once included; ties kept in reading order) — a tally with counts, never a bare word list; `none` if no word starts in the range.
+
+LEAF OUTPUT:
+Tallying the words on the lines that START in 0..363 (tallying how many times each word appears; the trailing reads only finish the last line, and any line starting at/after 363 belongs to the next range):
+- lines at tokens 0–38: slowing, based, forums, daddy, place, studying; +45 words seen once
+- lines at tokens 60–99: hard, forums, matters; +48 words seen once
+- lines at tokens 120–157: based, knowledge, known, place, highest, daddy, addictive, multiple; +43 words seen once
+- lines at tokens 178–217: hard, greatest; +49 words seen once
+- lines at tokens 236–279: highest, greatest; +49 words seen once
+- lines at tokens 299–347: known, addictive, multiple, knowledge, slowing, studying, matters; +44 words seen once
+292 distinct words here; keeping the top 240 by count, ties in reading order (words seen once included).
+Partial = slowing:2|based:2|forums:2|daddy:2|place:2|studying:2|hard:2|matters:2|knowledge:2|known:2|highest:2|addictive:2|multiple:2|greatest:2|close:1|none:1|functions:1|life:1|handshake:1|hospital:1|stars:1|duplicate:1|virtue:1|trouble:1|although:1|tactics:1|giving:1|nasty:1|android:1|offices:1|mothers:1|definite:1|magic:1|sugar:1|desire:1|frivolous:1|heading:1|disagree:1|method:1|succeeds:1|synonym:1|careers:1|horribly:1|talent:1|slower:1|hide:1|element:1|skeptical:1|societies:1|bubble:1|fussy:1|fight:1|mystified:1|studied:1|spoke:1|stream:1|eyes:1|dichotomy:1|culture:1|profit:1|facial:1|session:1|favors:1|copies:1|cleaned:1|thing:1|wind:1|trivial:1|gradual:1|helps:1|tended:1|july:1|ditto:1|numbers:1|customer:1|thanks:1|entirely:1|astray:1|glamour:1|dollar:1|starts:1|short:1|nowadays:1|might:1|deals:1|foreign:1|many:1|excuse:1|meanings:1|expense:1|overlap:1|motions:1|richard:1|painting:1|exception:1|down:1|joke:1|built:1|fractal:1|pascal:1|waste:1|dramatic:1|drove:1|hammer:1|feel:1|standard:1|wondered:1|well:1|existing:1|medium:1|monsters:1|staring:1|gross:1|largely:1|durable:1|owned:1|milton:1|program:1|precise:1|excited:1|heavily:1|steep:1|marketing:1|turn:1|late:1|schools:1|wealth:1|david:1|older:1|producing:1|planning:1|solved:1|tendency:1|training:1|properly:1|night:1|popular:1|actors:1|freelance:1|committee:1|aligned:1|beyond:1|rarer:1|tired:1|berkeley:1|revenue:1|perkins:1|ideas:1|ugly:1|wished:1|variation:1|chandler:1|readily:1|shorten:1|toxic:1|causes:1|ought:1|exact:1|effect:1|send:1|hackers:1|unnatural:1|employed:1|colleges:1|publicity:1|select:1|sell:1|leaving:1|corn:1|fully:1|terrible:1|already:1|yield:1|lecture:1|lower:1|adv
+
+ROOT FINAL:
+ng:2|bits:2|doctors:2|important:2|adult:2|such:2|presently:2|hole:2|clear:2|obscurity:2|macro:2|object:2|designers:2|optimize:2|aims:2|mobile:2|convince:2|stack:2|area:2|strange:2|report:2|shit:2|sign:2|places:2|happened:2|story:2|various:2|amounts:2|endure:2|delays:2|president:2|gender:2|novels:2|consensus:2|pitch:2|ideal:2|juicy:2|race:2|spamhaus:2|daughter:2|longer:2|articles:2|distance:2|raison:2|raising:2|richer:2|show:2|minimal:2|bored:2|evidence:2|ahead:2|meeting:2|diff:2|germany:2|expect:2|until:2|venture:2|went:2|scratch:2|further:2|writes:2|shapes:2|punched:2|byproduct:2|wouldn:2|reads:2|long:2|northern:2|technique:2|poor:2|seriously:2|william:2|small:2|derived:2|figured:2|billion:2|puzzle:2|tight:2|roman:2|decent:2|mentioned:2|junior:2|fairness:2|algol:2|palm:2|flaw:2|pumping:2|hurt:2|suddenly:2|prestige:2|demand:2|goes:2|adopters:2|heavily:2|reached:2|upon:2|revenge:2|facebook:2|plausible:2|mess:2|image:2.
+Ranking the merged counts: top 10 = fred (28), confuse (26), forums (24), astray (22), built (22), hard (22), exact (21), greatest (20), ancient (19), meanings (17); next: shut (6).
+\boxed{fred, confuse, forums, astray, built, hard, exact, greatest, ancient, meanings}
