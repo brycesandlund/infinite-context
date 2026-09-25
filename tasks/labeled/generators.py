@@ -39,6 +39,9 @@ _DESC = {
     "yelp": "Each item is a customer review of a business; its label is the review's overall SENTIMENT.",
     "claims": "Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False.",
 }
+# the labelled property, for the "The {prop} can be classified …" context variants
+_PROP = {"dbpedia": "kind of thing each item describes", "emotion": "emotion each message expresses",
+         "yelp": "overall sentiment of each review", "claims": "truth of each claim"}
 _AUTHORS = ["Cho", "Diaz", "Han", "Ivanov", "Kim", "Lee", "Okafor", "Park", "Rossi", "Sato"]
 _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section_most", "author_most", "author_top",
            # run 10: OOLONG-user / temporal shapes we lacked — "which author has the most items" (open key space of
@@ -97,14 +100,73 @@ def _rows(name: str) -> list[dict]:
 # invented one (`U0`..`U4`, "a number 1..12", "the month name as written"). `schema_lite` matches
 # OOLONG's information content: item type + label set only.
 _SCHEMA_LITE_FRAC = 0.4
+# JUDGMENT-WORDING JITTER (v15). Every question used to open with "Judge each item's label (one of: …)." and every
+# task context said "you must judge each item yourself", so the root's "(judging each item's label)" subtask phrase was
+# always copyable from its input. OOLONG never says "judge" ("how many data points should be classified as label 'X'?",
+# "…can be classified as one of…"); 17w's roots then wrote "(exact count)", "(inclusive)", "(no tag means the label is
+# True)" — lookup contracts — and leaves looked labels up instead of judging (25/29 OOLONG roots @40K had no judgment
+# instruction). Now the question opener, the count wording and the context's label sentence are each drawn from a pool
+# (most variants never say "judge"; the direction — the label comes from the item's text — stays clear). The oracle's
+# subtask is unchanged, so the root learns to STATE the judgment whatever its input says.
+_Q_HEADS = [
+    "",
+    "",
+    "",
+    "Judge each item's label (one of: {L}). ",
+    "Classify every item as one of: {L}. ",
+    "Each item belongs to one of these labels: {L}. ",
+    "Items can be classified as {L}. ",
+    "The possible labels are {L}. ",
+    "Consider each item's label ({L}). ",
+]
+_COUNT_ASKS = [
+    "How many items are labelled `{q}`?",
+    "How many items should be classified as label `{q}`?",
+    "How many items have the label `{q}`?",
+    "How many of the items are `{q}`?",
+    "How many data points should be classified as `{q}`?",
+    "Count the items whose label is `{q}`.",
+]
+_LABEL_SENTENCES = [
+    "The label is NOT written in the text — you must judge each item yourself. The label set is exactly: {L}.",
+    "The label is not written anywhere; it follows from the item's text. The label set is exactly: {L}.",
+    "Each item can be classified as one of: {L}.",
+    "The possible labels are: {L}.",
+    "Items fall into exactly one of these labels: {L}.",
+    "Every item has one label (not shown in the document), one of: {L}.",
+    "The items can be classified into {n} labels: {L}.",
+    "The {prop} can be classified into one of {n} categories: {L}.",
+    "Each item falls into one of {n} categories: {L}.",
+    "The {prop} can be classified as one of: {L}.",
+]
 
 
-def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False) -> str:
+# The question's item noun and "`L` items" construction (OOLONG: "instances with the label X", "data points … label
+# 'X'"). Applied to the finished question, so every qtype gets it.
+_ITEM_NOUNS = [("item", "items")] * 3 + [("instance", "instances"), ("data point", "data points"), ("entry", "entries"),
+                                         ("line", "lines")]
+_LABELLED_FORMS = ["`{L}` {n}", "{n} with the label `{L}`", "{n} labelled `{L}`"]
+
+
+def _jitter_item_words(q: str, seed) -> str:
+    sg, pl = random.Random(f"noun-{seed}").choice(_ITEM_NOUNS)
+    form = _jitter(seed, "lform", _LABELLED_FORMS)
+    q = re.sub(r"`([^`]+)` items\b", lambda m: form.format(L=m.group(1), n="items"), q)
+    q = re.sub(r"\bitems\b", pl, q)
+    q = re.sub(r"\bItems\b", pl[0].upper() + pl[1:], q)
+    return re.sub(r"\bitem\b", sg, q)
+
+
+def _jitter(seed, what: str, pool: list[str]) -> str:
+    """Seeded pick from a wording pool, on its own rng so it never shifts any other draw of an existing seed."""
+    return random.Random(f"{what}-{seed}").choice(pool)
+
+
+def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False, seed=None) -> str:
+    prop = _PROP[name]
+    lab = _jitter(seed, "labsent", _LABEL_SENTENCES).format(L=", ".join(labels), n=len(labels), prop=prop)
     if schema_lite:
-        return (
-            f"The document is a list of text items, ONE per line. {_DESC[name]} The label is NOT written "
-            f"in the text — you must judge each item yourself. The label set is exactly: {', '.join(labels)}."
-        )
+        return f"The document is a list of text items, ONE per line. {_DESC[name]} {lab}"
     if key_mode == "section":
         tag, note = "a section tag `[S<n>]` (sections are numbered from 1 and appear in order)", ""
     else:
@@ -112,8 +174,7 @@ def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = Fa
         note = " Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`)."
     return (
         f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
-        f"`[by <author>]`, followed by the item's text.{note} {_DESC[name]} The label is NOT written in the text — you "
-        f"must judge each item yourself. The label set is exactly: {', '.join(labels)}."
+        f"`[by <author>]`, followed by the item's text.{note} {_DESC[name]} {lab}"
     )
 
 
@@ -202,12 +263,13 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     qtypes = _QTYPES + (["dates_rep_k", "dates_rep_k", "first_month_cmp", "first_month_cmp", "before_after", "before_after"]
                         if key_mode == "date" else [])
     qtype = rng.choice(qtypes)
-    head = f"Judge each item's label (one of: {', '.join(labels)}). "
+    head = _jitter(seed, "qhead", _Q_HEADS).format(L=", ".join(labels))
     ex = labels[0]
     if qtype == "count":
         L = rng.choice(labels)
         gold, grading, params = tally[L], "numeric", {"qlabel": L}
-        q = head + f"How many items are labelled `{L}`? Give the single integer in \\boxed{{}}."
+        ask = _jitter(seed, "countask", _COUNT_ASKS).format(q=L)
+        q = head + f"{ask} Give the single integer in \\boxed{{}}."
     elif qtype == "most_common":
         gold = min((l for l in labels if tally[l] == max(tally[l2] for l2 in labels)))
         grading, params = "exact", {}
@@ -344,11 +406,12 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         what = {"Label": "the label", "Author": "the author exactly as written in the `[by …]` tag (just the name or id)"}.get(word, "the answer")
         q += f" Give your final answer in the form '{word}: [X]', where [X] is {what}; put it inside \\boxed{{}}."
         gold = f"{word}: {gold}"
+    q = _jitter_item_words(q, seed)
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
-        task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC),
+        task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC, seed=seed),
         grading_mode=grading,
-        metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype,
+        metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype, "q_head": head.strip(),
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
                   "key_mode": key_mode, "answer_form": answer_form, "long_items": long_items,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},

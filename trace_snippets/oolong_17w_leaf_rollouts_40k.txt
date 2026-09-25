@@ -1,0 +1,238 @@
+17w LEAF ROLLOUTS — OOLONG-synth @40K doc, 8K budget (eval_results/raw/sft_C17w_40k.jsonl), VERBATIM.
+Every message the leaf received and produced, in order: system prompt, user (the parent's subtask), each assistant turn
+(text + tool calls), each tool result. Followed by the gold label of every item whose line STARTS in the leaf's range.
+
+######################################################################################################################
+# oolong_counting / multinli   seed 2000007   rollout score 0.00   leaf range 4818..5085   (depth 7)
+######################################################################################################################
+ROOT QUESTION:
+In the above data, how many data points should be classified as label 'contradiction'? Give your final answer in the form 'Answer: number'.
+
+Put your final answer inside \boxed{}.
+
+========== [system] ==========
+You are a long-document assistant. The document is 34266 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The following lines contain 536 pairs of sentences, one pair per line. On each line, the two sentences are separated by the marker " -> ". The relationship of the claims in the second sentence to the claims in the first sentence can be classified as one of the following 3 types of relationships: 'contradiction', 'neutral', 'entailment'.
+
+You will be asked to answer questions about the aggregate label statistics across all 536 examples in this dataset. Do not try to guess, estimate, or approximate the result. Calculate the exact answer given these datapoints.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+========== [user] ==========
+Over the sentences STARTING in tokens 4818..5085, compute how many data points have label 'contradiction' (exact count). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many data points have label 'contradiction' (exact count) over the sentences STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+========== [assistant] ==========
+Range 4818..5085 fits; reading it, then the next 200 tokens to finish the last record (its line may run past 5085).
+
+
+
+TOOL CALLS: [{"name": "read_chunk", "arguments": {"start": 4818, "end": 5085}}, {"name": "read_chunk", "arguments": {"start": 5085, "end": 5285}}]
+========== [tool / read_chunk] ==========
+024 || User: 51672 || Instance: It is most easily supplied in zipped form, in which it occupies only 0.9MB and will fit on a 1.44MB disk. -> They could still find 1.44MB disks on the desk.
+Date: Dec 30, 2022 || User: 28579 || Instance: Boat rides give you another perspective of the chateau and its park and you can also enjoy a relaxing view from a tethered hot-air balloon. -> There is no way to see the chateau and its park.
+Date: Jan 16, 2024 || User: 99352 || Instance: A better option might be to tack a filing fee onto new cases filed in state courts, with the money going to help fund Legal Services, she said. -> The money could go to help fund Legal Services and improve our image.
+Date: Apr 11, 2024 || User: 29704 || Instance: CREDIT PROGRAM -For the purpose of this Statement, a federal program that makes loans and/or loan guarantees to nonfederal borrowers. -> Housing programs for veterans are a popular type of credit program
+========== [tool / read_chunk] ==========
+.
+Date: May 22, 2023 || User: 13023 || Instance: Nonsense, insisted the Industrialist. -> The industrialist said it was nonsense.
+Date: Apr 29, 2023 || User: 76539 || Instance: Vishnu, a four-armed god with mace, conch, discus, and lotus, has many incarnations, of which the most famous is Krishna, who appears as conquering hero, flute-playing lover, or mischievous baby. -> Vishnu has eight arms, similar in fashion to an octopus.
+Date: Oct 31, 2024 || User: 93691 || Instance: yes finally we did it didn't take -> That took forever to get done.
+Date: Dec 23, 2023 || User: 47055 || Instance
+========== [assistant] ==========
+Counting the 3 data points whose line STARTS in 4818..5085 (counting the data points with label 'contradiction'; the trailing reads only finish the last line, and any line starting at/after 5085 belongs to the next range):
+- line at token 4864: label 'neutral' (no) → count=0
+- line at token 4951: label 'neutral' (no) → count=0
+- line at token 5028: label 'neutral' (no) → count=0
+Partial = 0.
+\boxed{0}
+========== [GOLD for items whose line starts in range] ==========
+  token   4883: contradiction  | Boat rides give you another perspective of the chateau and its park and you can also enjoy a relaxing view from a tethered hot-air balloon. -> There is no way to see the chateau and its park.
+  token   4951: neutral        | A better option might be to tack a filing fee onto new cases filed in state courts, with the money going to help fund Legal Services, she said. -> The money could go to help fund Legal Services and improve our image.
+  token   5022: neutral        | CREDIT PROGRAM -For the purpose of this Statement, a federal program that makes loans and/or loan guarantees to nonfederal borrowers. -> Housing programs for veterans are a popular type of credit program.
+
+######################################################################################################################
+# oolong_counting / metaphors   seed 2000008   rollout score 0.00   leaf range 4854..5123   (depth 7)
+######################################################################################################################
+ROOT QUESTION:
+In the above data, how many data points should be classified as label 'incorrect'? Give your final answer in the form 'Answer: number'.
+
+Put your final answer inside \boxed{}.
+
+========== [system] ==========
+You are a long-document assistant. The document is 34521 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The following lines contain 736 pairs of sentences, one per line. On each line, the first sentence contains a metaphorical statement and the second sentence (separated by " <--> ") contains a candidate literal interpretation of the statement. The literal interpretation can be classified as either correct or incorrect.
+
+You will be asked to answer questions about the aggregate label statistics across all 736 examples in this dataset. Do not try to guess, estimate, or approximate the result. Calculate the exact answer given these datapoints.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+========== [user] ==========
+Over the data STARTING in tokens 4854..5123, compute how many data points have label 'incorrect' (judging each literal interpretation as correct or incorrect). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many data points have label 'incorrect' (judging each literal interpretation as correct or incorrect) over the data STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+========== [assistant] ==========
+Range 4854..5123 fits; reading it, then the next 200 tokens to finish the last record (its line may run past 5123).
+
+
+
+TOOL CALLS: [{"name": "read_chunk", "arguments": {"start": 4854, "end": 5123}}, {"name": "read_chunk", "arguments": {"start": 5123, "end": 5323}}]
+========== [tool / read_chunk] ==========
+24 || User: 17056 || Instance: The war devoured so many lives. <-->  The war scared so many people.
+Date: May 16, 2022 || User: 69552 || Instance: The soldiers were devils. <-->  The soldiers were peaceful and reassuring.
+Date: Mar 31, 2024 || User: 70072 || Instance: we were sinking in an ocean of grass <-->  we were in a very small prairie
+Date: Mar 21, 2024 || User: 77838 || Instance: He felt a dark sexual desire <-->  He felt a sexual desire hard to interpret or define
+Date: Oct 14, 2023 || User: 42975 || Instance: the flowers danced in the wind <-->  the flowers were still
+Date: May 09, 2022 || User: 70072 || Instance: The seeds of change were planted in 1943 <-->  The seeds of several trees were planted in 1943
+Date: Apr 22, 2023 || User: 
+========== [tool / read_chunk] ==========
+83188 || Instance: He attacked every weak point in my argument <-->  He ignored all the weak points in my argument
+Date: Jun 17, 2025 || User: 85586 || Instance: Adam did not understand the root of the crisis <-->  the reasons of the crisis were not understood by Adam
+Date: Mar 22, 2025 || User: 19456 || Instance: Duryodhan was the black sheep of the Kuru dynasty. <--> Duryodhan was a disgrace to the Kuru dynasty.
+Date: Dec 04, 2022 || User: 98161 || Instance: A golden sun shines high in the sky <-->  a black sun shines high in the sky
+Date: Mar 13, 2022 || User: 20501 || Instance: You were
+========== [assistant] ==========
+Judging the 6 data points whose line STARTS in 4854..5123 one at a time and counting them (judging each literal interpretation as correct or incorrect and counting the 'incorrect' ones; the trailing reads only finish the last line, and any data point starting at/after 5123 belongs to the next range):
+- "The war devoured so many lives." vs "The war scared so many people." → label: incorrect (counts) → count=1
+- "The soldiers were devils." vs "The soldiers were peaceful and reassuring." → label: correct (no) → count=1
+- "we were sinking in an ocean of grass" vs "we were in a very small prairie" → label: correct (no) → count=1
+- "He felt a dark sexual desire" vs "He felt a sexual desire hard to interpret or define" → label: correct (no) → count=1
+- "the flowers danced in the wind" vs "the flowers were still" → label: incorrect (counts) → count=2
+- "He attacked every weak point in my argument" vs "He ignored all the weak points in my argument" → label: correct (no) → count=2
+Partial = 2.
+\boxed{2}
+========== [GOLD for items whose line starts in range] ==========
+  token   4887: incorrect      | The soldiers were devils. <-->  The soldiers were peaceful and reassuring.
+  token   4928: incorrect      | we were sinking in an ocean of grass <-->  we were in a very small prairie
+  token   4972: incorrect      | He felt a dark sexual desire <-->  He felt a sexual desire hard to interpret or define
+  token   5016: incorrect      | the flowers danced in the wind <-->  the flowers were still
+  token   5054: incorrect      | The seeds of change were planted in 1943 <-->  The seeds of several trees were planted in 1943
+  token   5107: incorrect      | He attacked every weak point in my argument <-->  He ignored all the weak points in my argument
+
+######################################################################################################################
+# oolong_counting / negation   seed 2000003   rollout score 0.00   leaf range 0..275   (depth 7)
+######################################################################################################################
+ROOT QUESTION:
+In the above data, how many data points should be classified as label 'False'? Give your final answer in the form 'Answer: number'.
+
+Put your final answer inside \boxed{}.
+
+========== [system] ==========
+You are a long-document assistant. The document is 35202 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The following lines contain 835 sentences, one per line. Each sentence makes a single claim; the claim can be classified as true or false.
+
+You will be asked to answer questions about the aggregate label statistics across all 835 examples in this dataset. Do not try to guess, estimate, or approximate the result. Calculate the exact answer given these datapoints.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+========== [user] ==========
+Over the data points STARTING in tokens 0..275, compute how many data points have label 'False' (no tag means the label is True). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many data points have label 'False' (no tag means the label is True) over the data points STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+========== [assistant] ==========
+Range 0..275 fits; reading it, then the next 200 tokens to finish the last record (its line may run past 275).
+
+
+
+TOOL CALLS: [{"name": "read_chunk", "arguments": {"start": 0, "end": 275}}, {"name": "read_chunk", "arguments": {"start": 275, "end": 475}}]
+========== [tool / read_chunk] ==========
+Date: Apr 30, 2024 || User: 86899 || Instance: No argument is a discussion in which reasons are advanced for and against some proposition or proposal.
+Date: Jun 09, 2022 || User: 92928 || Instance: No flood may be the rising of a body of water and its overflowing onto normally dry land.
+Date: Apr 19, 2024 || User: 19309 || Instance: In certain contexts a relatively small extraterrestrial body consisting of a frozen mass that travels around the sun in a highly elliptical orbit may be an appropriate definition of comet.
+Date: Mar 22, 2022 || User: 52847 || Instance: Silver never stands for a soft white precious univalent metallic element having the highest electrical and thermal conductivity of any metal.
+Date: May 17, 2023 || User: 49354 || Instance: Speech stands for the act of delivering a formal spoken communication to an audience.
+Date: Apr 14, 2022 || User: 91627 || Instance: Deprivation may commonly stand for a state of extreme poverty.
+Date: Feb 
+========== [tool / read_chunk] ==========
+04, 2025 || User: 38394 || Instance: Gentleman commonly stands for a man of refinement.
+Date: Dec 26, 2023 || User: 80435 || Instance: Care may commonly stand for an anxious feeling.
+Date: Nov 15, 2023 || User: 97349 || Instance: A human written or spoken language used by a community may be an appropriate definition of tongue.
+Date: May 06, 2023 || User: 94384 || Instance: Work clothing consisting of denim trousers (usually with a bib and shoulder straps) is an appropriate definition of overall.
+Date: Mar 04, 2025 || User: 90135 || Instance: Not a single entry is commonly someone who administers a business.
+Date: Aug 09,
+========== [assistant] ==========
+Computing the partial over the 7 data points whose line STARTS in 0..275 (counting the data points with label 'False' (no tag means the label is True); the trailing reads only finish the last line, and any data point starting at/after 275 belongs to the next range):
+- line at token 0: label True (no) → count=0
+- line at token 73: label True (no) → count=0
+- line at token 141: label True (no) → count=0
+- line at token 210: label True (no) → count=0
+- line at token 252: label True (no) → count=0
+- line at token 290: label True (no) → count=0
+- line at token 331: label True (no) → count=0
+Partial = 0.
+\boxed{0}
+========== [GOLD for items whose line starts in range] ==========
+  token      0: False          | No argument is a discussion in which reasons are advanced for and against some proposition or proposal.
+  token     43: False          | No flood may be the rising of a body of water and its overflowing onto normally dry land.
+  token     87: True           | In certain contexts a relatively small extraterrestrial body consisting of a frozen mass that travels around the sun in a highly elliptical orbit may be an appropriate definition of comet.
+  token    146: False          | Silver never stands for a soft white precious univalent metallic element having the highest electrical and thermal conductivity of any metal.
+  token    194: True           | Speech stands for the act of delivering a formal spoken communication to an audience.
+  token    234: True           | Deprivation may commonly stand for a state of extreme poverty.
+  token    271: True           | Gentleman commonly stands for a man of refinement.
+
+######################################################################################################################
+# oolong_user / negation   seed 2100003   rollout score 0.00   leaf range 0..277   (depth 7)
+######################################################################################################################
+ROOT QUESTION:
+In the above data, which user has the most instances with the label False? Give your final answer in the form 'User: [X]', where [X] is the user ID.
+
+Put your final answer inside \boxed{}.
+
+========== [system] ==========
+You are a long-document assistant. The document is 35535 tokens long; you cannot see it directly. Your own context window is 8000 tokens — the conversation (system prompt, user message, your responses, and all tool results) must fit in this budget or the episode ends.
+
+The following lines contain 835 sentences, one per line. Each sentence makes a single claim; the claim can be classified as true or false.
+
+You will be asked to answer questions about the aggregate label statistics across all 835 examples in this dataset. Do not try to guess, estimate, or approximate the result. Calculate the exact answer given these datapoints.
+
+You have two tools:
+- `read_chunk(start, end)`: read the document tokens in [start, end).
+- `spawn_subagent(subtask)`: delegate to a fresh-context copy of yourself (also 8000 tokens) with `subtask` as the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \boxed{value} and stop.
+========== [user] ==========
+Over the sentences STARTING in tokens 0..277, compute the per-user tally of the label False (labelling each sentence True/False). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-user tally of the label False (labelling each sentence True/False) over the sentences STARTING in the range. Put the result in \boxed{}: the partial tally as `<user>=<count>` entries joined by `|`, counting only the label False, where `<user>` is the line's `user` field; `none` if no sentence starts in the range.
+========== [assistant] ==========
+Range 0..277 fits; reading it, then the next 200 tokens to finish the last sentence (its line may run past 277).
+
+
+
+TOOL CALLS: [{"name": "read_chunk", "arguments": {"start": 0, "end": 277}}, {"name": "read_chunk", "arguments": {"start": 277, "end": 477}}]
+========== [tool / read_chunk] ==========
+Date: Oct 20, 2024 || User: 43787 || Instance: No ferry is commonly a traditional story accepted as history.
+Date: Oct 01, 2024 || User: 26441 || Instance: No rehabilitation is an assumption on which rests the validity or effect of something else.
+Date: Jan 23, 2024 || User: 21527 || Instance: In certain contexts the act of bringing something to bear may be an appropriate definition of application.
+Date: Jun 18, 2023 || User: 10595 || Instance: Stand does not refer to the contentment one feels when one has fulfilled a desire, need, or expectation.
+Date: Apr 02, 2022 || User: 36946 || Instance: Syndrome does not stand for a person who gives private instruction (as in singing, acting, etc.).
+Date: Apr 10, 2024 || User: 63189 || Instance: Facility may refer to skillful performance or ability without difficulty.
+Date: Mar 12, 2024 || User: 52658 || Instance: Hay does never stand
+========== [tool / read_chunk] ==========
+ for grass mowed and cured for use as fodder.
+Date: Aug 16, 2022 || User: 43071 || Instance: Competence stands for the quality of being adequately or well qualified physically and intellectually.
+Date: Mar 18, 2025 || User: 34923 || Instance: A grouping of a number of similar things may be an appropriate definition of cluster in certain contexts.
+Date: Apr 22, 2024 || User: 35908 || Instance: Wrist does never refer to the quality of being deserving (e.g., deserving assistance).
+Date: Dec 15, 2023 || User: 83978 || Instance: Not a single missile is a boat that transports people or vehicles across a body of water and operates on a regular schedule.
+Date: May 29, 202
+========== [assistant] ==========
+Labelling the 7 sentences whose line STARTS in 0..277 one at a time and tallying them (labelling each sentence True/False and tallying, per user, the label False; the trailing reads only finish the last line, and any sentence starting at/after 277 belongs to the next range):
+- sentence at token 0: "No ferry is commonly a traditional story accepted as history." → label: True (not False, skip)
+- sentence at token 61: "No rehabilitation is an assumption on whic…" → label: True (not False, skip)
+- sentence at token 127: "In certain contexts the act of bringing so…" → label: True (not False, skip)
+- sentence at token 191: "Stand does not refer to the contentment on…" → label: True (not False, skip)
+- sentence at token 243: "Syndrome does not stand for a person who g…" → label: True (not False, skip)
+Partial = none.
+\boxed{none}
+========== [GOLD for items whose line starts in range] ==========
+  token      0: True           | No ferry is commonly a traditional story accepted as history.
+  token     36: True           | No rehabilitation is an assumption on which rests the validity or effect of something else.
+  token     77: True           | In certain contexts the act of bringing something to bear may be an appropriate definition of application.
+  token    120: True           | Stand does not refer to the contentment one feels when one has fulfilled a desire, need, or expectation.
+  token    167: True           | Syndrome does not stand for a person who gives private instruction (as in singing, acting, etc.).
+  token    212: True           | Facility may refer to skillful performance or ability without difficulty.
+  token    249: False          | Hay does never stand for grass mowed and cured for use as fodder.

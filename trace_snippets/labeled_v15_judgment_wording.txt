@@ -1,0 +1,113 @@
+LABELED_RECORDS v15 — judgment-wording jitter (question opener, count wording, context label sentence). Root subtask and leaf unchanged.
+
+##############################################################################################################
+# labeled_records / relative  seed 500000  gold ['more common than']  head: 'Classify every item as one of:'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each item is a customer review of a business; its label is the review's overall SENTIMENT. Each item falls into one of 2 categories: negative, positive.
+
+QUESTION:
+Classify every instance as one of: negative, positive. Is `negative` more common than, less common than, or equally common as `positive`? Answer with exactly one of: more common than / less common than / equally common as. Put it in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 9995 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the counts of `negative` and `positive` items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9995 is not below 500; splitting at midpoint 4997.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4997, compute the counts of `negative` and `positive` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the counts of `negative` and `positive` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is `negative` or `positive` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..312, compute the counts of `negative` and `positive` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the counts of `negative` and `positive` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<label>:<count>` entries joined by `|`, where `<label>` is `negative` or `positive` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 1 item whose line STARTS in 0..312 one at a time and tallying them (judging each item's label and counting the `negative` and `positive` items only; the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [S1] "This is our favorite sushi place…" → label: positive → positive: 1
+Partial = positive:1.
+\boxed{positive:1}
+
+##############################################################################################################
+# labeled_records / author_top  seed 500013  gold ['24057']  head: ''
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each item is a short personal message; its label is the EMOTION the writer expresses. The label is NOT written in the text — you must judge each item yourself. The label set is exactly: anger, fear, joy, love, sadness, surprise.
+
+QUESTION:
+Which author has the MOST entries with the label `fear`? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `[by …]` tag (e.g. 24057) in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 9997 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-author tally of `fear` items (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9997 is not below 500; splitting at midpoint 4998.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4998, compute the per-author tally of `fear` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `fear` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..312, compute the per-author tally of `fear` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of `fear` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Judging the 7 items whose line STARTS in 0..312 one at a time and tallying them (judging each item's label and tallying, per author, the `fear` items; the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [Dec 10, 2023 → Dec 2023] [by 24057] "i finished the bike not only fee…" → label: joy (not `fear`, skip)
+- [Dec 14, 2023 → Dec 2023] [by 79974] "i feel hated but i don t care" → label: anger (not `fear`, skip)
+- [May 21, 2025 → May 2025] [by 24057] "i am torn about the situation be…" → label: love (not `fear`, skip)
+- [May 11, 2025 → May 2025] [by 30940] "i have been feeling less than cr…" → label: joy (not `fear`, skip)
+- [Aug 16, 2024 → Aug 2024] [by 24057] "ive been feeling the desire for …" → label: love (not `fear`, skip)
+- [Dec 22, 2023 → Dec 2023] [by 30940] "i still feel the days are precio…" → label: joy (not `fear`, skip)
+- [Aug 05, 2024 → Aug 2024] [by 30940] "i was feeling pretty smug becaus…" → label: joy (not `fear`, skip)
+Partial = none.
+\boxed{none}
+
+##############################################################################################################
+# labeled_records / count  seed 500014  gold ['34']  head: 'Each item belongs to one of th'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with a section tag `[S<n>]` (sections are numbered from 1 and appear in order) and an author tag `[by <author>]`, followed by the item's text. Each item is a short encyclopedia-style description of a thing; its label is the KIND of thing described. The kind of thing each item describes can be classified into one of 4 categories: Album, Building, Company, Plant.
+
+QUESTION:
+Each line belongs to one of these labels: Album, Building, Company, Plant. How many lines are labelled `Album`? Give the single integer in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 9974 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute how many items are `Album` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9974 is not below 500; splitting at midpoint 4987.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4987, compute how many items are `Album` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `Album` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..311, compute how many items are `Album` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many items are `Album` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+
+LEAF OUTPUT:
+Judging the 4 items whose line STARTS in 0..311 one at a time and counting them (judging each item's label and counting the `Album` ones; the trailing reads only finish the last line, and any item starting at/after 311 belongs to the next range):
+- [S1] "Los Pinos (from Spanish The Pine…" → label: Building (no) → count=0
+- [S1] "The Columbus Athenæum is a histo…" → label: Building (no) → count=0
+- [S1] "The Vernon C. Bain Center (VCBC)…" → label: Building (no) → count=0
+- [S1] "White Memorial Medical Center is…" → label: Building (no) → count=0
+Partial = 0.
+\boxed{0}
+
+##############################################################################################################
+# labeled_records / author_label_count  seed 500018  gold ['12']  head: ''
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. Every item has one label (not shown in the document), one of: negative, positive.
+
+QUESTION:
+Ignore the entries that do not have author = Kim (the `[by Kim]` tag). Among the remaining entries, how many are labelled `negative`? Give the single integer in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 9975 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute how many of ONLY author Kim's items are `negative` (judging each item's label) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9975 is not below 500; splitting at midpoint 4987.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4987, compute how many of ONLY author Kim's items are `negative` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many of ONLY author Kim's items are `negative` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+
+LEAF USER PROMPT:
+Over the items STARTING in tokens 0..311, compute how many of ONLY author Kim's items are `negative` (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute how many of ONLY author Kim's items are `negative` (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial as a single integer.
+
+LEAF OUTPUT:
+Judging the 4 items whose line STARTS in 0..311 one at a time and counting them (judging each item's label and counting the `negative` ones among author Kim's items only; the trailing reads only finish the last line, and any item starting at/after 311 belongs to the next range):
+- [Jul 24, 2025 → Jul 2025] [by Lee] "I came here for my birthday dinn…" → label: negative (other author, skip)
+- [Nov 02, 2022 → Nov 2022] [by Park] "Best scones I've ever eaten.....…" → label: positive (other author, skip)
+- [Nov 05, 2022 → Nov 2022] [by Kim] "Owner is rude and has no respect…" → label: negative (author matches, counts) → count=1
+- [Jul 04, 2025 → Jul 2025] [by Kim] "I understand that this place is …" → label: negative (author matches, counts) → count=2
+Partial = 2.
+\boxed{2}

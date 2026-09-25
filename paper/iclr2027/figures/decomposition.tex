@@ -1,11 +1,9 @@
 % !TEX root = ../paper.tex
-% Decomposition strategies: (a) binary tree-reduce, (b) left fold. Each row: the rollout tree (left) and
+% Decomposition strategies: Figure (tree reduce) and Figure (sequential fold). Each row: the rollout tree (left) and
 % excerpts of the same scripted-oracle training trace (right), shaded like the node that wrote them.
 % Traces: synth_sum / synth_runreset, seed 24 (document exactly 2000 tokens), 3000-token budget (make_problem +
 % make_oracle + run_agent). Tree drawn with 500-token leaves for readability (the oracle splits once more, at 250); fold reads 400.
 % Requires \usepackage{tikz} and \usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing,calc}.
-\begin{figure}[t]
-\centering
 \tikzset{
   agent/.style={draw=black!70, rounded corners=3pt, line width=0.6pt, minimum height=6.2mm,
                 minimum width=11mm, align=center, font=\footnotesize, inner sep=2pt},
@@ -24,9 +22,14 @@
 \newcommand{\rng}[1]{\ensuremath{[#1)}}
 \newcommand{\who}[1]{\textbf{#1}\enspace}
 \newcommand{\tool}[1]{\texttt{#1}}
-%==================================================================== (a) tree-reduce
-\begin{minipage}[c]{0.505\linewidth}\centering
-\begin{tikzpicture}
+% record lines as a table: \recs{ idx & key & value & [prefix] & sum=/total= & number & [\dots] \\ ... }
+% (key= aligned, values right-aligned, arrows aligned, total= aligned, numbers right-aligned)
+\newcommand{\recs}[1]{\begin{tabular}{@{}l@{\enspace}l@{=}r@{\enspace$\to$\enspace}r@{}l@{}r@{}l@{}}#1\end{tabular}}
+%==================================================================== tree reduce
+\begin{figure}[t]
+\centering
+\begin{minipage}[c]{0.50\linewidth}
+\begin{tikzpicture}[transform shape]
   % leaves in a row; mids centred over their pair; root centred over the mids
   \node[leaf, inner sep=1.3pt] (l1) at (0,0) {\scriptsize read\\[-2pt]\scriptsize\rng{0,500}};
   \node[leaf, inner sep=1.3pt, right=0.5mm of l1] (l2) {\scriptsize read\\[-2pt]\scriptsize\rng{500,1000}};
@@ -50,7 +53,7 @@
      node[midway, below=4pt, note] {$k$ leaves, each reading $500$ tokens};
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.48\linewidth}
+\begin{minipage}[c]{0.495\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}Each record has a signed integer `amt' field. What is the SUM of `amt' over ALL
     records in the document? Give the single integer in \textbackslash boxed\{\}.};
@@ -65,17 +68,19 @@
     Sum my children [14, $-61$] $\to$ $-47$. \quad $\boxed{-47}$};
   \node[txt, fill=blue!12, below=of t2] (t3) {\who{Leaf \rng{0,500}}Range 0..500 fits; reading it\dots
      \tool{ read\_chunk(0, 500)}\\
-    {[0000]} amt=$-10$ $\to$ sum=$-10$\\ {[0001]} amt=$-2$ $\to$ sum=$-12$\cdots\\ {[0021]} amt=$-2$ $\to$ sum=14\\
+    \recs{{[0000]} & amt & $-10$ & & sum= & $-10$ & \\ {[0001]} & amt & $-2$ & & sum= & $-12$ & \dots\\ {[0021]} & amt & $-2$ & & sum= & $14$ &}\\
     Partial = 14. \quad $\boxed{14}$};
 \end{tikzpicture}
 \end{minipage}
 
-\vspace{1mm}
-{\small (a) \textbf{Tree reduce}, for order-independent tasks (aggregation, retrieval). Non-leaf nodes delegate half their range to subagents. Leaves read one chunk and compute a leaf op which is aggregated up the tree.}
+\caption{\textbf{Tree reduce}, for order-independent tasks (aggregation, retrieval). Non-leaf nodes delegate half their range to subagents. Leaves read one chunk and compute a leaf op which is aggregated up the tree.}
+\label{fig:treereduce}
+\end{figure}
 
-\vspace{4mm}
-%==================================================================== (b) fold
-\begin{minipage}[c]{0.46\linewidth}\centering
+%==================================================================== sequential fold
+\begin{figure}[t]
+\centering
+\begin{minipage}[c]{0.36\linewidth}\centering
 \begin{tikzpicture}[node distance=6mm]
   \node[root, minimum width=24mm] (a1) {Root\enspace\scriptsize read \rng{0,400}};
   \node[mid,  minimum width=24mm, below=of a1] (a2) {Agent 2\enspace\scriptsize read \rng{400,800}};
@@ -91,39 +96,31 @@
   \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, pos=0.25, left=1pt, align=right] {final\\answer\\$=23$} (a1.west);
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.52\linewidth}
+\begin{minipage}[c]{0.625\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}Process the records in order, keeping a running total of `amt'. Whenever a record
     has grp=RST, reset the running total to 0 (that record's amt is NOT added). What is the final running total
-    after the last record? [\dots]};
+    after the last record?\dots};
   \node[txt, fill=green!22, below=of q] (t1) {\who{Root}This document is 2000 tokens --- too long to read in one
     context. This task is order-dependent: a grp=RST record resets the total, and what a record contributes
-    depends on the resets before it --- so I process the document from the start with a running accumulator
-    [\dots] \tool{read\_chunk(0, 400)}\\
-    {[0000]} amt=$-10$ $\to$ total=$-10$ \quad $\cdots$ \quad {[0005]} grp=RST $\to$ RESET, total=0 \quad $\cdots$ \quad
-    {[0017]} amt=+14 $\to$ total=$-2$\\
+    depends on the resets before it --- so I process the document from the start with a running accumulator\dots\\
+    \tool{read\_chunk(0, 400)}\\
+    \recs{{[0000]} & amt & $-10$ & & total= & $-10$ & \dots\\ {[0005]} & grp & RST & RESET,\kern0.3em& total= & 0 & \dots\\ {[0017]} & amt & +14 & & total= & $-2$ &}\\
     $\to$ accumulator = $-2$. Delegating the rest 400..2000 with the updated accumulator.};
-  \node[txt, fill=yellow!35, below=of t1] (t2) {\who{Agent 2}Continue the running accumulator [\dots] over the
-    records STARTING in tokens 400..2000. accumulator so far = $-2$ [\dots]\\
-    {[0018]} amt=$-2$ $\to$ total=$-4$ \quad $\cdots$ \quad {[0020]} grp=RST $\to$ RESET, total=0 \quad $\cdots$ \quad
-    {[0034]} amt=+9 $\to$ total=7\\
+  \node[txt, fill=yellow!35, below=of t1] (t2) {\who{Agent 2}Continue the running accumulator\dots over the
+    records STARTING in tokens 400..2000. accumulator so far = $-2$\dots\\
+    \tool{read\_chunk(400, 800)}\\
+    \recs{{[0018]} & amt & $-2$ & & total= & $-4$ & \dots\\ {[0020]} & grp & RST & RESET,\kern0.3em& total= & 0 & \dots\\ {[0034]} & amt & +9 & & total= & 7 &}\\
     $\to$ accumulator = 7. Delegating the rest 800..2000 with the updated accumulator.};
-  \node[txt, fill=blue!12, below=of t2] (t3) {\who{Agent 5}[\dots] accumulator so far = 9 [\dots] Range
-    1600..2000 fits and reaches the document end; reading it.\\
-    {[0070]} amt=+18 $\to$ total=27 \quad $\cdots$ \quad {[0086]} amt=$-17$ $\to$ total=23\\
+  \node[txt, fill=blue!12, below=of t2] (t3) {\who{Agent 5}\dots accumulator so far = 9\dots Range 1600..2000 fits
+    and reaches the document end; reading it.\\
+    \tool{read\_chunk(1600, 2000)}\\
+    \recs{{[0070]} & amt & +18 & & total= & 27 & \dots\\ {[0086]} & amt & $-17$ & & total= & 23 &}\\
     $\to$ accumulator = 23 (final). \quad $\boxed{23}$};
 \end{tikzpicture}
 \end{minipage}
 
-\vspace{1mm}
-{\small (b) \textbf{Sequential fold}, for order-dependent tasks (variable tracking, running state). Each agent reads the next
+\caption{\textbf{Sequential fold}, for order-dependent tasks (variable tracking, running state). Each agent reads the next
 slice, updates the accumulator, and delegates the rest of the document to the next agent.}
-
-\caption{The two decomposition strategies our root chooses between. Each box is a fresh agent with the same fixed
-context budget; solid arrows are \texttt{spawn\_subagent} calls, dashed arrows are returned results. The root states
-which strategy the task needs, and why, before delegating (\S\ref{methods}). Right: excerpts adapted from the training
-traces for the two examples on the left, \texttt{synth\_sum} (a) and \texttt{synth\_runreset} (b), on the same
-2,000-token document with a 3,000-token budget; each excerpt is shaded like the node that wrote it, and [\dots]
-marks elided text.}
-\label{fig:decomposition}
+\label{fig:fold}
 \end{figure}
