@@ -109,7 +109,8 @@ async def run_agent(
         n_turns += 1
         turn: AssistantTurn = await backend.sample(messages, max_tokens=budget - used)
         messages.append(
-            {"role": "assistant", "content": turn.text, "tool_calls": turn.tool_calls}
+            {"role": "assistant", "content": turn.text, "tool_calls": turn.tool_calls,
+             **({"served_model": turn.served_model} if turn.served_model else {})}
         )
 
         if not turn.tool_calls:
@@ -169,6 +170,7 @@ async def run_single_shot(
     task_context: str,
     question: str,
     max_output_tokens: int,
+    context_limit: int | None = None,
 ) -> AgentNode:
     """MODE=single: put the WHOLE document in context and ask for the answer in one
     tool-free call. This is the raw-ability ceiling (frontier single-shot; un-finetuned
@@ -180,8 +182,11 @@ async def run_single_shot(
         {"role": "system", "content": system},
         {"role": "user", "content": f"{doc_text}\n\n{question}"},
     ]
+    if context_limit:     # total-context models: output gets what the prompt leaves (prompt + output <= limit)
+        max_output_tokens = min(max_output_tokens, context_limit - backend.count_tokens(messages))
     turn = await backend.sample(messages, max_tokens=max_output_tokens, tools=False)
-    messages.append({"role": "assistant", "content": turn.text, "tool_calls": []})
+    messages.append({"role": "assistant", "content": turn.text, "tool_calls": [],
+                     **({"served_model": turn.served_model} if turn.served_model else {})})
     answer = harness.extract_boxed(turn.text)
     if answer is not None:
         termination = "answered"

@@ -48,6 +48,9 @@ class AssistantTurn:
     tool_calls: list[ToolCall] = field(default_factory=list)
     raw: object = None  # provider-native object, for debugging
     truncated: bool = False  # generation hit the token cap (no clean stop) == overflow
+    # The exact model the provider SERVED (e.g. alias "gpt-5.4" -> "gpt-5.4-2026-03-05"); aliases can be re-pointed
+    # over time, so every rollout records it. None for Tinker (the checkpoint path identifies the model).
+    served_model: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -222,7 +225,7 @@ class APIBackend(ModelBackend):
     Each model counts tokens in its own tokenizer (litellm.token_counter).
     """
 
-    def __init__(self, model: str, temperature: float = 1.0, max_output_cap: int = 16384):
+    def __init__(self, model: str, temperature: float | None = 1.0, max_output_cap: int = 16384):
         self.name = model
         self.model = model
         self.temperature = temperature
@@ -281,9 +284,10 @@ class APIBackend(ModelBackend):
         kwargs = dict(
             model=self.model,
             messages=self._to_openai(messages),
-            temperature=self.temperature,
             max_tokens=out_cap,
         )
+        if self.temperature is not None:        # None = omit (some models reject any sampling parameter)
+            kwargs["temperature"] = self.temperature
         if tools:
             kwargs["tools"] = self._tools
             kwargs["tool_choice"] = "auto"
@@ -300,4 +304,5 @@ class APIBackend(ModelBackend):
             tool_calls.append(
                 ToolCall(id=tc.id or f"call_{uuid.uuid4().hex[:8]}", name=tc.function.name, arguments=args)
             )
-        return AssistantTurn(text=msg.content or "", tool_calls=tool_calls, raw=msg, truncated=truncated)
+        return AssistantTurn(text=msg.content or "", tool_calls=tool_calls, raw=msg, truncated=truncated,
+                             served_model=getattr(resp, "model", None))

@@ -1,0 +1,7 @@
+Backend: anthropic/claude-fable-5-1 | mode: single | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: n/a (whole doc in context) | doc: 10000 | depth: None
+Loading + tokenizing PG-essay corpus...
+[92m15:00:01 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m15:00:01 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+temp=None | out=eval_results/competitor/fable5_1_single_chart_10k.{jsonl,txt}
+/opt/homebrew/Cellar/python@3.12/3.12.7_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

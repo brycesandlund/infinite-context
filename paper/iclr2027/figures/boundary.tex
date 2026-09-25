@@ -8,17 +8,18 @@
 % Uses the styles/macros defined in figures/decomposition.tex.
 \begin{figure}[t]
 \centering
-\begin{minipage}[c]{0.3\linewidth}\centering
+\begin{minipage}[c]{0.32\linewidth}\centering
 \begin{tikzpicture}[node distance=7mm]
   \node[agent, fill=blue!12, minimum width=27mm, inner xsep=4pt] (r1) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{0,500}};
   \node[agent, fill=orange!25, minimum width=27mm, inner xsep=4pt, below=of r1] (r2) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{500,700}};
   \node[agent, fill=teal!18, minimum width=27mm, inner xsep=4pt, below=of r2] (r3) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{700,900}};
   \draw[spawn] (r1) -- (r2);
   \draw[spawn, densely dashed] (r2) -- node[note, right=2pt, font=\scriptsize\itshape] {repeat as needed} (r3);
-  \node[state, text=black, below=4pt of r3] {final answer: ${\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{2}}}$};
+  \node[state, text=black, below=4pt of r3] (ans) {${\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{2}}}$};
+  \draw[ret] (ans.west) -- node[below=1pt, note, text=black] {returned to caller} ++(-22mm,0) -- ++(0,5mm);
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.68\linewidth}
+\begin{minipage}[c]{0.66\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}How many entries contain the word `good' anywhere in their body text?};
   \node[txt, fill=blue!12, below=of q] (t1) {\who{Leaf \rng{0,500}}Range 0..500 fits; reading it, then the next 200
@@ -41,9 +42,7 @@
 \end{tikzpicture}
 \end{minipage}
 
-\caption{\textbf{Boundary handling.} A leaf owns the records whose first line starts in its range. It reads its
-range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dashed). Entry~3
-starts before 500 but runs past 700, and its only `good' lies beyond 700, so stopping at the boundary would miss it.
-Entry~4 starts after 500, so it belongs to the next leaf.}
+\caption{\textbf{Boundary handling.} A leaf/fold agent owns the records whose first line starts in its range. It reads its
+range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dashed).}
 \label{fig:boundary}
 \end{figure}

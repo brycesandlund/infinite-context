@@ -52,7 +52,7 @@ While native context scaling is appealing as a concrete engineering problem, it 
 
 While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
-We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{extend capability}, without \emph{restricting choices} or \emph{instilling a prior}.
+We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{enable capability}, without \emph{fixing choices} or \emph{instilling a prior}.
 
 \subsection{Harness}
 
@@ -103,7 +103,7 @@ Frontier models now utilize multi-agent systems. Kimi K2.5 trains ``agent swarm"
 \section{Methods}
 \label{methods}
 
-We deliberately use the minimal tool definitions necessary to train agentic context management. However, our harness is sufficient to allow arbitrarily complex multi-agent decompositions. Decompositions in the literature fall into roughly three categories: \emph{tree decompositions}~\citep{wu2021recursive,sarthi2024raptor,zhang2022summn}, \emph{sequential folds}~\citep{yu2025memagent,zhang2024coa}, and \emph{agentic delegation}~\citep{zhang2025rlm,kimiteam2026kimik25,anthropic2025multiagent}. We utilize all three strategies.
+We deliberately use the minimal tool definitions necessary to train agentic context management. However, our harness is sufficient to allow arbitrarily complex multi-agent decompositions. Decompositions in the literature fall into roughly three categories: \emph{tree reduce}~\citep{wu2021recursive,sarthi2024raptor,zhang2022summn}, \emph{sequential folds}~\citep{yu2025memagent,zhang2024coa}, and \emph{agentic delegation}~\citep{zhang2025rlm,kimiteam2026kimik25,anthropic2025multiagent}. We utilize all three strategies.
 
 Without any training, models generally make poor use of our harness. Base Qwen3.6-35B-A3B, GPT-5.4, and Kimi K2.6 use subagent delegation sporadically, sometimes choosing to read the entire document in one context, even if context limit is specified to be less than document length, and other times delegating the exact original question to subagents. Opus 4.6 does slightly better, showing real context pressure awareness and document range subagent delegation. Unfortunately it delegates \emph{too} much, blowing through \$300 of API credits building massive subagent trees on a 100-question eval, only to overcount\footnote{Opus 4.6 does appear to perform somewhat decently on our harness with unlimited context budget. Unfortunately, due to the massive subagent trees, running the full comparison without restriction is cost-prohibitive.}. Instead, we compare to base models supplied the entire document in context with native context limits, where performance is stronger.
 
@@ -111,7 +111,7 @@ In general, models have a \emph{weak prior} for context decomposition. Pre-train
 
 One idea might be to RL an open weight model on our harness. Unfortunately, exploration in LLM RL is far too weak to escape the weak decomposition prior at modest compute budgets. It is also unclear what reward to assign subagents, and if GRPO~\citep{shao2024deepseekmath} or its derivatives~\citep{yu2025dapo,liu2025drgrpo,zheng2025gspo} are used, what group to compare subagent trajectories in.
 
-We instead SFT a decomposition strategy.
+We instead SFT a decomposition strategy. We train \emph{tree reduce} for order-independent tasks (see Figure~\ref{fig:treereduce}), \emph{sequential fold} for order-dependent tasks (see Figure~\ref{fig:fold}), and \emph{agentic delegation} to handle boundary conditions whenever we read context (see Figure~\ref{fig:boundary}). We generate oracle demonstration data on a wide distribution of aggregation, retrieval, and state-dependent tasks. While we cover similar shapes to our evals, our training distribution uses independent questions and vastly more diverse examples. The technical challenge is to instill 
 
 \input{figures/decomposition}
 \input{figures/boundary}

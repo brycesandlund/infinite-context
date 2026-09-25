@@ -53,11 +53,15 @@ BACKEND = os.environ.get("BACKEND", "tinker")
 MODE = os.environ.get("MODE", "decompose")
 # Single-shot output cap (room for reasoning models to think before \boxed{}).
 OUT_TOKENS = int(os.environ.get("OUT_TOKENS", "16384"))
+# Single-shot TOTAL context (prompt + output), e.g. 65536 for a 64K-context model: output gets what the prompt leaves.
+SINGLE_CONTEXT = int(os.environ.get("SINGLE_CONTEXT", "0")) or None
 
 # Tinker-backend knobs (ignored for API backends).
 # CKPT env var overrides — e.g. CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt)
 TINKER_LOAD_CHECKPOINT_PATH: str | None = os.environ.get("CKPT") or None  # None = base model
-TEMPERATURE = float(os.environ.get("TEMP", "1.0"))
+# TEMP=none omits the parameter entirely (models that reject sampling params, e.g. claude-fable-5-1: 400 on temperature)
+_TEMP = os.environ.get("TEMP", "1.0")
+TEMPERATURE = None if _TEMP.lower() == "none" else float(_TEMP)
 
 # Which tasks to eval, and how many problems each (both env-overridable).
 EVAL_TASKS = os.environ.get(
@@ -211,6 +215,7 @@ async def main() -> None:
                     task_context=problem.task_context,
                     question=problem.question,
                     max_output_tokens=OUT_TOKENS,
+                    context_limit=SINGLE_CONTEXT,
                 )
             return await run_agent(
                 backend,
@@ -272,6 +277,9 @@ async def main() -> None:
             "question": problem.question, "gold": problem.gold_answers,
             "answer": node.answer, "score": score, "grounded": grounded,
             "n_agents": n_nodes, "root_termination": node.termination,
+            # every model snapshot that answered in this rollout (API backends; empty for Tinker)
+            "served_models": sorted({m["served_model"] for n in flatten(node) for m in n.messages
+                                     if m.get("served_model")}),
             "tree": _node_to_dict(node),
         }) + "\n")
         txt.write(_rollout_header(task, seed, ds, qt, problem.question,

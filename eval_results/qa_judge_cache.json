@@ -498,5 +498,25 @@
 "correct": 1,
 "reason": "The candidate's answer includes the reference answer (\"medication management system development, deployment and optimization\") along with additional details that are consistent with the context, so it matches the reference.\n\nVERDICT: CORRECT",
 "parsed": true
+},
+"5b3f349166238b0533e05b71a3976f7540419c4e": {
+"correct": 0,
+"reason": "The candidate answer \"Baghban\" is a different 2003 Indian drama film from the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"9d28f68861100cf7b4c4f102d67b0de88e2ce948": {
+"correct": 1,
+"reason": "The candidate answers \"no,\" which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"1e3eb9899e6c258bb576c2ba0cf3211e2fc18600": {
+"correct": 1,
+"reason": "EY is the current brand name of Ernst & Young, referring to the same company.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"dfa5fe01c393c1bc527fe878324595d5a5fe50fa": {
+"correct": 0,
+"reason": "The candidate provides a lengthy discussion about clinical pharmacists' roles and responsibilities but does not address the specific question about advantages of hospital pharmacies. The reference answer focuses on hospital pharmacies stocking a larger range of medications, including more specialized medications, which the candidate never mentions.\n\nVERDICT: INCORRECT",
+"parsed": true
 }
 }

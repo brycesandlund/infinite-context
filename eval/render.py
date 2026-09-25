@@ -87,6 +87,7 @@ def node_to_dict(node: "AgentNode") -> dict:
                     for tc in (m.get("tool_calls") or [])
                 ],
                 "name": m.get("name"),
+                **({"served_model": m["served_model"]} if m.get("served_model") else {}),
             }
             for m in node.messages
         ],

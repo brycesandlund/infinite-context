@@ -1778,3 +1778,22 @@ Raw: `eval_results/raw/sft_general18w_{C18w_80k,R18w_80k_b8k}.*`.
 twice, in every task (`Partial = 0.` / `\boxed{0}`; topk: up to K entries twice). Wasted output tokens everywhere, and
 the dominant cost in topk leaves. Not changed now (shared leaf convention, close to the deadline); if changed, change it
 for ALL tasks in one pass (base.py leaf turn), never per task.
+
+### 18w open-QA, LLM-judged (Opus 4.6 equivalence judge, `scripts/judge_open_qa.py`) — 2026-09-25
+
+| (8K budget, fresh seeds, n=5) | 10K string / judged | 40K string / judged | 80K string / judged |
+|---|---|---|---|
+| qa_1 | 0.60 / **0.80** | 0.80 / **1.00** | 0.60 / **0.80** |
+| qa_2 | 0.80 / **0.80** | 0.60 / **0.60** | 0.40 / **0.80** |
+| 4K scoreboard (3K budget) qa_1 / qa_2 | 1.00 / 1.00 · 0.60 / 0.80 | | |
+
+String-vs-judge disagreements (surface form, not errors): `High risk preparations and other compounding functions`
+(gold "…and some other…", judged correct at all lengths), `35` for "35 people", `EY` for "Ernst & Young" (80K), `500` for
+"500-room" (4K); `KPMG and Ernst & Young` (40K) is string-correct but judged a hedge. REAL failures @40K/80K (4):
+- qa_2 3015004 "Ravi Khote … in which 2003 Indian drama?" fails at BOTH 40K ("No relevant information") and 80K
+  ("Baghban (film)" — a 2003 drama "directed by Ravi Chopra", matched on the name): the leaf that read "Ravi "Rags" Khote is a
+  playback singer … Some of his songs include … "Kal Ho Naa Ho"" passed up only the "his songs" sentence, losing the
+  name. -> v16 niah_bridge pronoun hop-2 units (naming sentence + "They …" quoted together).
+- qa_1 3014004 @80K: the leaf whose read held the gold sentence ("Hospital pharmacies usually stock a larger range of
+  medications…") returned "No relevant information"; the root answered from related pharmacist context. Leaf recall miss.
+- qa_2 3015001 @40K: root hedged between two firms.

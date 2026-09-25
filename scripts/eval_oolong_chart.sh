@@ -15,7 +15,7 @@ for attempt in $(seq 1 20); do
   CKPT=$CKPT OOLONG_BASE=2000000 EVAL_TASKS=oolong_counting,oolong_user,oolong_temporal \
 SCORE_TASKS=oolong_counting,oolong_user,oolong_temporal N_PER_TASK=10 \
 BACKEND=tinker MODE=decompose DOC_SIZE_TOKENS=$DOC AGENT_CONTEXT=8000 MAX_CHUNK_TOKENS=200000 MAX_DEPTH=none \
-TEMP=0.2 MAX_NODES=$MAX_NODES OUT=/tmp/eval_$TAG PYTHONPATH=. uv run python -m eval.run && break
+TEMP=${TEMP:-0.2} MAX_NODES=$MAX_NODES OUT=/tmp/eval_$TAG PYTHONPATH=. uv run python -m eval.run && break
   echo "===== eval $TAG attempt $attempt failed at $(date +%H:%M:%S); retrying in 3 min ====="
   sleep 180
 done
