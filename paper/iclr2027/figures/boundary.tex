@@ -1,45 +1,48 @@
 % !TEX root = ../paper.tex
 % Boundary handling: the grounded iterative boundary read (oracle/base.py _read_phase, LEAF_OVERLAP=200).
-% Adapted from the first leaf of long_records (count_tag) seed 1, 2000-token request, 3000-token budget: that
-% leaf owns 0..466 and reads 0..466, 466..666, then 666..866 (entry 3 is still cut off at 666; the third read
-% reaches entry 4's header). Ranges relabelled to 0..500 / 500..700 / 700..900 for readability.
+% Adapted from the first leaf of long_records seed 17 (2000-token request, 3000-token budget): that leaf owns
+% 0..458 and reads 0..458, 458..658, then 658..858 (entry 2 is still cut off at 658; the third read reaches entry 3's
+% header). Excerpted read text is verbatim; ranges relabelled to 0..500 / 500..700 / 700..900, the entry headers shown
+% in the `=== entry n | a=x | b=y ===` layout (this seed drew the equivalent `Entry: / Region: / Topic:` layout), and the
+% question simplified from the seed's filtered per-topic tally to a count of region=north (entry 1 north, entry 2 east).
 % Uses the styles/macros defined in figures/decomposition.tex.
 \begin{figure}[t]
 \centering
 \begin{minipage}[c]{0.3\linewidth}\centering
 \begin{tikzpicture}[node distance=7mm]
-  \node[agent, fill=blue!12, minimum width=22mm] (r1) {\tool{read} \rng{0,500}};
-  \node[agent, fill=orange!25, minimum width=22mm, below=of r1] (r2) {\tool{read} \rng{500,700}};
-  \node[agent, fill=teal!18, minimum width=22mm, below=of r2] (r3) {\tool{read} \rng{700,900}};
+  \node[agent, fill=blue!12, minimum width=27mm, inner xsep=4pt] (r1) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{0,500}};
+  \node[agent, fill=orange!25, minimum width=27mm, inner xsep=4pt, below=of r1] (r2) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{500,700}};
+  \node[agent, fill=teal!18, minimum width=27mm, inner xsep=4pt, below=of r2] (r3) {\nsz\textbf{Leaf}\enspace\nsz\tool{read} \rng{700,900}};
   \draw[spawn] (r1) -- (r2);
-  \draw[spawn, densely dotted] (r2) -- (r3);
+  \draw[spawn, densely dashed] (r2) -- node[note, right=2pt, font=\scriptsize\itshape] {repeat as needed} (r3);
 \end{tikzpicture}
 \end{minipage}\hfill
 \begin{minipage}[c]{0.68\linewidth}
 \begin{tikzpicture}[node distance=1mm]
-  \node[qtxt] (q) {\who{Question}How many entries have genre=report?};
+  \node[qtxt] (q) {\who{Question}How many entries have region=north?};
   \node[txt, fill=blue!12, below=of q] (t1) {\who{Leaf \rng{0,500}}Range 0..500 fits; reading it, then the next 200
     tokens to finish the last entry's body (it may run well past 500).\\
-    \tool{read\_chunk(0, 500)},\enspace\tool{read\_chunk(500, 700)}\\
-    {\color{black!55}\itshape === entry 1 \textbar{} author=Han \textbar{} genre=essay ===$\cdots$\
-    === entry 3 \textbar{} author=Park \textbar{} genre=essay ===$\cdots$\ CHAPTER X \_Letter}};
+    \tool{read\_chunk(0, 500)} $\to$ {\color{black!55}\itshape === entry 1 \textbar{} region=north \textbar{} topic=finance ===\dots\
+    === entry 2 \textbar{} region=east \textbar{} topic=tech ===\dots\ from my knowledge of her aff}\\
+    \tool{read\_chunk(500, 700)} $\to$ {\color{black!55}\itshape ability, that it would happen.\dots\ Lady Catherine is far from
+    requiring that elegance of dress}};
   \node[txt, fill=orange!25, below=of t1] (t2) {The last entry's body is still cut off at 700 (no blank line / next
-    header yet), so I read the next 200 tokens (700..900) to finish it.\enspace\tool{read\_chunk(700, 900)}\\
-    {\color{black!55}\itshape , Dr.\enspace === entry 4 \textbar{} author=Lee \textbar{} genre=report ===\dots}};
+    header yet), so I read the next 200 tokens (700..900) to finish it.\\
+    \tool{read\_chunk(700, 900)} $\to$ {\color{black!55}\itshape in us which becomes herself and daughter.\dots\ a pleasant walk of
+    about half a mile across the park.\enspace === entry 3 \textbar{} region=south \textbar{} topic=health ===\dots}};
   \node[txt, fill=teal!18, below=of t2] (t3) {Computing the partial over the entries whose HEADER STARTS in 0..500
-    (\dots\ any entry whose header starts at/after 500 belongs to the next range):\\
+    (\dots any entry whose header starts at/after 500 belongs to the next range):\\
     \begin{tabular}{@{}l@{\enspace}l@{\enspace}l@{\enspace$\to$\enspace}l@{}}
-      - entry 1 & (genre=essay)  & (no)    & count=0\\
-      - entry 2 & (genre=report) & (match) & count=1\\
-      - entry 3 & (genre=essay)  & (no)    & count=1
+      - entry 1 & (region=north) & (match) & count=1\\
+      - entry 2 & (region=east)  & (no)    & count=1
     \end{tabular}\\
     Partial = 1. \quad $\boxed{1}$};
 \end{tikzpicture}
 \end{minipage}
 
 \caption{\textbf{Boundary handling.} A leaf owns the records whose first line starts in its range. It reads its
-range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dotted). Entry~3
-starts before 500 but runs past 700, so the leaf reads to 900, where entry~4's header appears. Entry~4 starts at or
+range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dashed). Entry~2
+starts before 500 but runs past 700, so the leaf reads to 900, where entry~3's header appears. Entry~3 starts at or
 after 500, so it belongs to the next leaf and is not counted here.}
 \label{fig:boundary}
 \end{figure}
