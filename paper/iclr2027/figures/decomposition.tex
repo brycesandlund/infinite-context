@@ -1,3 +1,4 @@
+% !TEX root = ../paper.tex
 % Decomposition strategies: (a) binary tree-reduce, (b) left fold.
 % Requires \usepackage{tikz} and \usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing,calc}.
 \begin{figure}[t]
@@ -49,7 +50,7 @@
 \end{tikzpicture}
 
 \vspace{1mm}
-{\small (a) \textbf{Tree reduce}, for order-independent tasks (counting, frequency, retrieval). Internal nodes and the root delegate half their range to subagents. Leaves read one chunk and compute a leaf op which is aggregated up the tree. Root determines the final answer.}
+{\small (a) \textbf{Tree reduce}, for order-independent tasks (aggregation, retrieval). Non-leaf nodes delegate half their range to subagents. Leaves read one chunk and compute a leaf op which is aggregated up the tree.}
 
 \vspace{4mm}
 %-------------------------------------------------------------------- (b) fold
