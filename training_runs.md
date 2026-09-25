@@ -1493,3 +1493,28 @@ question as q_core before prepending the placeholder.
 
 v13 narrativeqa (30 traces, 456 leaves): answer 87 -> **135**, context 0 -> **116**, none 369 -> **205**; placeholder in
 subtask 6/30 -> **0/30**; acceptance 25% -> **42%**. Run-17 draft dry run: 1,149/1,149 traces, 48,845 datums, 81.0M tokens.
+
+## OOLONG-synth failure audit (16w, all runs: 4K/3K, 8K/5K, 16K/5K, 32K/5K, 32K/8K; 255 rollouts) — 2026-09-24
+
+Method (`scripts/audit_oolong_leaves.py`): regenerate every problem from its seed (documents verified token-identical),
+take the TRUE label/user/date of every line, and compare each leaf's boxed tally with the truth for the lines it owns,
+in the key space the root chose, under the question's own filters (user subset / month / date range / named labels).
+Calibration: the same comparison on PERFECT rollouts also shows large leaf errors — perfect scores often survive leaf
+noise because the question (e.g. "is entity more or less common than location?") is insensitive to it.
+
+Score lost on imperfect rollouts (sum of 1 - score = 148 points):
+| category | points lost | share |
+|---|---|---|
+| leaf label errors (leaves misjudge items' labels) | 99.7 | 67% |
+| root overflow (state outgrew the budget) | 43.0 | 29% |
+| no boxed answer / merge-resolution errors | 4.2 | 3% |
+
+Leaf label accuracy by dataset (clean read: unfiltered 1-D label tallies, 17,765 items):
+app_reviews 94.3% · agnews 91.3% · imdb 91.2% · trec_coarse 89.9% · yahoo 83.5% · spam 80.3% · metaphors 65.1% ·
+multinli 60.6% · **formality 51.0%** (chance) · **negation 45.7%** (BELOW chance) — overall 77.9%.
+negation = judging odd definitional claims true/false ("A thumb is an asset of special worth or utility." -> False;
+"Not a single pilot may be someone who is licensed to operate an aircraft in flight." -> False) — lexical world
+knowledge + negation; formality is subjective annotator style. These label semantics are what training on OOLONG's
+source datasets teaches and what our no-eval-data policy leaves to the base model's judgment.
+Overflows (29%): mostly the over-carried joint tallies the v11 minimal-state corpus targets (user A vs B, user-most-with-L,
+months L1>L2, first-month); the rest are inherently large states (months-L-single-most, dates-exactly-n).

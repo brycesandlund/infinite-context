@@ -22,6 +22,7 @@ its own structured tool schema; the driver only carries the prose system prompt
 from __future__ import annotations
 
 import json
+import os
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -132,7 +133,9 @@ class TinkerBackend(ModelBackend):
             num_samples=1,
             sampling_params=tinker.SamplingParams(
                 temperature=self.temperature,
-                max_tokens=max(1, max_tokens),
+                # TINKER_MAX_OUT (opt-in): cap per-call generation so a large context budget can't
+                # license a single runaway ~30K-token sample. 0/unset = previous behaviour.
+                max_tokens=max(1, min(max_tokens, int(os.environ.get("TINKER_MAX_OUT", "0")) or max_tokens)),
                 stop=self._stop,
             ),
         )
