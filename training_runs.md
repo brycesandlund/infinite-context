@@ -1773,3 +1773,8 @@ loop family as cwe's `section (4)` x6. cwe falls 1.00 -> 0.74 -> 0.58: the prune
 seen 2+ times; at 40K+ a common word occurs ~0.4x per 500-token leaf). Simulation on RULER's cwe construction (exact
 counts, top-M kept at every node): M=10 0%/0% at 40K/80K, M=50 60%/0%, M=100 80%/90%, M=200 100%/100%.
 Raw: `eval_results/raw/sft_general18w_{C18w_80k,R18w_80k_b8k}.*`.
+
+**Deferred format cleanup (2026-09-25):** every scripted leaf writes `Partial = X.` and then `\boxed{X}` — the same X
+twice, in every task (`Partial = 0.` / `\boxed{0}`; topk: up to K entries twice). Wasted output tokens everywhere, and
+the dominant cost in topk leaves. Not changed now (shared leaf convention, close to the deadline); if changed, change it
+for ALL tasks in one pass (base.py leaf turn), never per task.

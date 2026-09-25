@@ -40,30 +40,22 @@ class TopKOracle(ScaffoldOracle):
         raise NotImplementedError("synth_topk narrates per block of lines; see _accumulate")
 
     def _accumulate(self, recs, acc):
+        # ONE PASS, FIRST SIGHT (v16). Old leaves wrote per-"line" blocks with range-wide counts, "+N one-off words" and
+        # "M words appear once" — totals stated before anything was written; on 18w's RULER cwe/fwe leaves those were 0%
+        # exact, per-block counts 20%, the partial 35%, and the "lines" were invented (RULER docs are one line). Now the
+        # leaf walks the words in reading order and writes each word ONCE, where it first appears, marked with how many
+        # times it appears in the range (`×n` when more than once); a word already written is not repeated. The partial
+        # is then the top K of that list by count, ties in the list's order.
         acc = Counter(acc) if acc else Counter()
-        lines, by_line = [], {}
-        for s in recs:
-            by_line.setdefault(s[0], []).append(s[3])
-        for words in by_line.values():
-            acc.update(words)
-        # Per block of lines, name the words that RECUR in this range (with their block counts) and count the rest; the
-        # words seen once are not re-listed here — they appear once, in the partial (v16 keeps them there, in reading
-        # order). Listing every word per line AND in a "range tally" AND in the partial put coded-word leaves at 3.6K
-        # tokens on a 3K budget.
-        starts = list(by_line)
-        for i in range(0, len(starts), 3):                  # narrate in blocks of 3 lines
-            blk = starts[i:i + 3]
-            c = Counter(w for st in blk for w in by_line[st])
-            keep = [(w, n) for w, n in c.items() if acc[w] >= 2]
-            others = sum(n for w, n in c.items() if acc[w] < 2)
-            shown = ", ".join(f"{w}×{n}" if n > 1 else w for w, n in keep)
-            span = f"line at token {blk[0]}" if len(blk) == 1 else f"lines at tokens {blk[0]}–{blk[-1]}"
-            lines.append(f"- {span}: {shown or '(no recurring words)'}"
-                         + (f"; +{others} word{'s' if others != 1 else ''} seen once" if others else ""))
-        if acc:
-            lines.append(f"{len(acc)} distinct words here; " + (
-                f"keeping the top {self.keep_m} by count, ties in reading order (words seen once included)."
-                if len(acc) > self.keep_m else f"all of them fit in {self.keep_m}, so all are kept (words seen once included)."))
+        c = Counter(s[3] for s in recs)                     # insertion order = first-seen order
+        acc.update(c)
+        lines = []
+        if c:
+            lines.append("In reading order, each word once where it first appears (×n = appears n times here): "
+                         + " ".join(f"{w}×{n}" if n > 1 else w for w, n in c.items()))
+        if len(acc) > self.keep_m:
+            lines.append(f"More than {self.keep_m} different words, so the partial keeps the {self.keep_m} most frequent "
+                         f"(ties in reading order).")
         return acc, lines
 
     def _top(self, c):
@@ -118,11 +110,11 @@ class TopKOracle(ScaffoldOracle):
                 + (", and never list numbers as words" if self.layout == "numbered" else ""))
 
     def _empty_phrase(self):
-        return "  (no line starts here)"
+        return "  (no word starts here)"
 
     def _partial_header(self, a, b, n):
-        return (f"Tallying the words on the lines that START in {a}..{b} ({self._op_phrase()}; the trailing "
-                f"reads only finish the last line, and any line starting at/after {b} belongs to the next range)")
+        return (f"Going through the words that START in {a}..{b} in reading order ({self._op_phrase()}; "
+                f"the trailing reads only finish the last word, and any word starting at/after {b} belongs to the next range)")
 
     def _finish_phrase(self, end):
-        return f"to finish the last line (it may run past {end})"
+        return f"to finish the last word (it may run past {end})"

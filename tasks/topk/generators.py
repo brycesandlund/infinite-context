@@ -8,11 +8,13 @@ the merge adds counts, and only the root ranks. Also teaches that list numerals 
 
 Document: a word list in one of two layouts —
     numbered   "1. lantern 2. gravel 3. lantern 4. ..."      (several per line)
-    stream     "lantern gravel lantern ... "                  (plain, several per line)
+    dotted     "lantern .... gravel .... lantern .... ..."    (RULER fwe's separator)
+Either layout may be one unbroken line (40%, as RULER cwe/fwe are); words may be English or coded strings.
 Vocabulary: PG-essay corpus words (not RULER's noun lists). A few `hot` words repeat many times; the
 rest appear once or a handful of times. Question: "Which k words appear most often? (k of 3/5/8)".
 Gold = the k hot words (set grading); hot counts are separated from the background by construction.
-`record_spans` = (tok_start, tok_end, idx, word) per word occurrence (line-based ownership).
+`record_spans` = (tok_start, tok_end, idx, word) — ONE RECORD PER WORD, spanning that word's own tokens (ownership =
+the word STARTS in the range); 40% of documents are a single line (RULER cwe/fwe).
 """
 
 from __future__ import annotations
@@ -64,16 +66,16 @@ def _near_miss(rng, w: str) -> str:
     return w[:i] + w[i + 1] + w[i] + w[i + 2:] if w[i] != w[i + 1] else w[:i] + rng.choice(_LETTERS) + w[i + 1:]
 
 
-def _context(layout: str) -> str:
+# LAYOUTS (v16): numbered (`12. word`, RULER cwe) and dotted (`word .... word`, RULER fwe), for English and coded words
+# alike. The plain space-separated layouts were dropped: at ~1.1 tokens/word a 500-token leaf owns ~450 words, and the
+# enumerate-first leaf then overflows a 3K budget (3.1-3.5K).
+def _context(layout: str, coded: bool = False, oneline: bool = False) -> str:
+    kind = "coded words (random letter strings)" if coded else "words"
+    lines = "all on one line" if oneline else "several per line"
     if layout == "dotted":
-        return ("The document is a sequence of coded words (random letter strings) separated by ` .... `, several "
-                "per line. The dots are separators, not words.")
-    if layout == "coded":
-        return "The document is a sequence of coded words (random letter strings) separated by spaces, several per line."
-    if layout == "numbered":
-        return ("The document is a numbered list of words: each entry is `<n>. <word>` and several entries "
-                "appear on each line. The numbers are positions, not words.")
-    return "The document is a plain sequence of words separated by spaces, several per line."
+        return f"The document is a sequence of {kind} separated by ` .... `, {lines}. The dots are separators, not words."
+    return (f"The document is a numbered list of {kind}: each entry is `<n>. <word>`, {lines}. The numbers are "
+            f"positions, not words.")
 
 
 def make_topk_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem:
@@ -82,12 +84,12 @@ def make_topk_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) -> 
     rng = random.Random(seed)
     vocab = _vocab(corpus_tokens, tokenizer)
     coded = random.Random(f"coded-{seed}").random() < _CODED_FRAC
-    layout = rng.choice(["numbered", "stream"])
+    layout = rng.choice(["numbered", "dotted"])
     k = rng.choice([3, 5, 5, 8])
     hot = rng.sample(vocab, k)
     if coded:
         crng = random.Random(f"codedvocab-{seed}")
-        layout = crng.choice(["coded", "dotted"])
+        layout = crng.choice(["numbered", "dotted"])
         vocab = sorted({_code(crng) for _ in range(6000)})
         hot = crng.sample(vocab, k)
         decoys = {_near_miss(crng, w) for w in hot for _ in range(2)} - set(hot)
@@ -156,12 +158,19 @@ def _line(words, layout, entry_no):
 
 def _sparse_problem(task, rng, tokenizer, doc_size_tokens, hot, bg_words, layout, coded, seed):
     k = rng.choice([3, 5, 8, 10])
-    hot = (hot + [w for w in bg_words if w not in hot])[:k] if k > len(hot) else hot[:k]
+    # extra hot words (k > the dense draw) come from past the decoy/repeater head of bg_words — a coded problem's
+    # near-miss decoys must stay background, never become hot themselves
+    if k > len(hot):
+        sig = {"".join(sorted(h)) for h in hot}          # a decoy is a letter swap: same sorted letters as its hot word
+        extra = [w for w in bg_words[12:] if w not in hot and "".join(sorted(w)) not in sig]
+        hot = hot + extra[:k - len(hot)]
+    else:
+        hot = hot[:k]
     bg = [w for w in bg_words if w not in hot]
     per_word = len(tokenizer.encode(_line(bg[:200], layout, 1000), add_special_tokens=False)) / 200
     n_words = int(doc_size_tokens / per_word * 1.05)
     # Background words recur at most `max_bg` times each (RULER: 3). The vocabulary is finite (~3.4K English words), so
-    # a long stream-layout doc needs more repeats; max_bg grows with the words needed per background word, and hot
+    # a long doc needs more repeats; max_bg grows with the words needed per background word, and hot
     # words stay >= 3x max_bg so the top-k is always strictly separated.
     need = n_words / max(1, len(bg))
     max_bg = max(3, int(need * 1.6) + 1)
@@ -192,7 +201,7 @@ def _finish(task, tokenizer, doc_tokens, spans, k, layout, coded, hot, regime):
          f"List the {k} words, comma-separated, in \\boxed{{}}.")
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=gold, task=task,
-        task_context=_context(layout), grading_mode="set",
+        task_context=_context(layout, coded, "\n" not in tokenizer.decode(doc_tokens)), grading_mode="set",
         metadata={"family": "bounded", "strategy_default": "binary", "task": task, "layout": layout,
                   "k": k, "regime": regime, "hot": hot, "oneline": "\n" not in tokenizer.decode(doc_tokens), "n_records": len(spans),
                   "record_spans": spans, "gold_int": None},

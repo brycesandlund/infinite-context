@@ -8,9 +8,9 @@
 \centering
 \begin{minipage}[c]{0.3\linewidth}\centering
 \begin{tikzpicture}[node distance=7mm]
-  \node[agent, fill=blue!12, minimum width=22mm] (r1) {read \rng{0,500}};
-  \node[agent, fill=orange!25, minimum width=22mm, below=of r1] (r2) {read \rng{500,700}};
-  \node[agent, fill=teal!18, minimum width=22mm, below=of r2] (r3) {read \rng{700,900}};
+  \node[agent, fill=blue!12, minimum width=22mm] (r1) {\tool{read} \rng{0,500}};
+  \node[agent, fill=orange!25, minimum width=22mm, below=of r1] (r2) {\tool{read} \rng{500,700}};
+  \node[agent, fill=teal!18, minimum width=22mm, below=of r2] (r3) {\tool{read} \rng{700,900}};
   \draw[spawn] (r1) -- (r2);
   \draw[spawn, densely dotted] (r2) -- (r3);
 \end{tikzpicture}

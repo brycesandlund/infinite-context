@@ -12,7 +12,7 @@
   leaf/.style={agent, fill=blue!12},
   spawn/.style={-{Stealth[length=2.2mm]}, line width=0.55pt, black!65},
   ret/.style={-{Stealth[length=2.2mm]}, line width=0.55pt, black!65, densely dashed},
-  state/.style={font=\scriptsize\itshape, text=teal!60!black, inner sep=1pt},
+  state/.style={font=\scriptsize, text=black, inner sep=1pt},
   note/.style={font=\scriptsize, text=black!70},
   brace/.style={decorate, decoration={brace, amplitude=4pt}, line width=0.6pt, black!65},
   txt/.style={draw=black!45, rounded corners=2pt, line width=0.4pt, font=\scriptsize, align=left,
@@ -46,7 +46,7 @@
   \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {$-61$} (l2);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=5pt]  {101}   (l3);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {7}     (l4);
-  \node[state, text=black, right=2pt of r] {$-47+108=\fbox{\ensuremath{61}}$};
+  \node[state, text=black, right=2pt of r] {$-47+108={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{61}}}$};
   % braces
   \draw[brace] ([xshift=-1.2mm]l1.south west) -- ([xshift=-1.2mm]l1.west |- r.north)
      node[midway, left=4pt, note, rotate=90, anchor=south] {$\log_2 k$ levels};
@@ -81,7 +81,7 @@
 %==================================================================== sequential fold
 \begin{figure}[t]
 \centering
-\begin{minipage}[c]{0.37\linewidth}\centering
+\begin{minipage}[c]{0.378\linewidth}\centering
 \begin{tikzpicture}[node distance=6mm]
   \node[root, minimum width=27mm, inner xsep=4pt] (a1) {\nsz\textbf{Root}\enspace\nsz\tool{read} \rng{0,400}};
   \node[mid,  minimum width=27mm, inner xsep=4pt, below=of a1] (a2) {\nsz\textbf{Agent 2}\enspace\nsz\tool{read} \rng{400,800}};
@@ -94,10 +94,10 @@
   \draw[spawn] (a3) -- node[state, right=2pt] {acc $=46$} (a4);
   \draw[spawn] (a4) -- node[state, right=2pt] {acc $=9$} (a5);
   % answer returned back up the chain
-  \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, pos=0.25, left=1pt, align=right] {final\\answer\\$=23$} (a1.west);
+  \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, text=black, pos=0.25, left=1pt, align=right] {final\\answer\\$={\setlength{\fboxsep}{2.2pt}\fbox{\ensuremath{23}}}$} (a1.west);
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.615\linewidth}
+\begin{minipage}[c]{0.607\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}Process the records in order, keeping a running total of `amt'. Whenever a record
     has grp=RST, reset the running total to 0 (that record's amt is NOT added). What is the final running total
