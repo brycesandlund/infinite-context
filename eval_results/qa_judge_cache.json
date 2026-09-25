@@ -1,0 +1,462 @@
+{
+"a8971190db9ff6fba92201ef6027a46feb94d020": {
+"correct": 1,
+"reason": "The candidate says \"Bigg Boss 10,\" which refers to the tenth season, matching the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"3d5ca4e41028d83f65ca095c12b3caba597d0b4c": {
+"correct": 1,
+"reason": "The candidate answer \"A leg injury\" matches the reference answer \"leg injury.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"151b33b22f29d49b29b92e78ee39682680de11dc": {
+"correct": 1,
+"reason": "The candidate answers \"35,\" which matches the reference answer of \"35 people.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d9b8d48848ddd7a4a90e7abe2b44cc7c27d4faa6": {
+"correct": 1,
+"reason": "The candidate answer \"EY (Ernst & Young)\" refers to the same entity as the reference answer \"Ernst & Young.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"2ca562f7355345ae3e7021730f5db1974e975449": {
+"correct": 1,
+"reason": "The candidate answers \"4,\" which is the numeric equivalent of \"four.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"a5d257ff25d9510ab778916795e493ac6c4daf43": {
+"correct": 1,
+"reason": "The candidate answers \"500,\" which matches the reference answer of \"500-room\" \u2014 the unit \"room\" is implied by the question.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7ade77512a3561b2991bc12c62453efd6e92541d": {
+"correct": 1,
+"reason": "Caligula is the common name for Gaius Julius Caesar Augustus Germanicus, referring to the same Roman emperor.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"76e67a6629c215a2e130ab9a22f62ebba7a66e7a": {
+"correct": 1,
+"reason": "The candidate refers to \"Windigo,\" which is a common spelling variant of \"Wendigo\" \u2014 the same mythological creature.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7819ac7fae4a9d259721762870ef1a5fa8f1daa5": {
+"correct": 0,
+"reason": "The reference answer is \"Ernst & Young,\" while the candidate answered \"PricewaterhouseCoopers,\" which is a different firm.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"2b053c04f642b2255bbef3947236b2aabd1fd20b": {
+"correct": 1,
+"reason": "The question asks who painted the portrait of Sister Anthony. The reference answer is \"Sister Anthony, S.C.\" which seems to indicate that Sister Anthony herself painted the portrait (a self-portrait context or the answer refers to the subject). However, the candidate answer \"Mary O'Connell (Sister Anthony)\" is actually the same person as Sister Anthony, S.C. \u2014 Mary O'Connell was Sister Anthony's b",
+"parsed": true
+},
+"40f20de42bf6238ef5dde6f0c4d66d9f4283eb9e": {
+"correct": 1,
+"reason": "The candidate answer \"the least onerous measure\" matches the reference answer \"the least onerous.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7f3959e5a9e182712078a4a95a9bfa69833c6c8f": {
+"correct": 0,
+"reason": "The candidate lists two firms, KPMG and Ernst & Young, rather than giving a single definitive answer. This hedges between two possible answers, even though one of them (Ernst & Young) matches the reference.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"00bcebd54a4b0d34affcc7ab94eaa57d6f02216b": {
+"correct": 0,
+"reason": "The question asks for the **city** where the band was formed, not the **name** of the band. The candidate answers \"Biohazard,\" which is the name of the band, not the city (Brooklyn, New York).\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"6395014ad995c6de524f21f0ef6d4287f4766327": {
+"correct": 0,
+"reason": "The question asks \"how many people\" were in the group, expecting a number. The reference answer is \"four.\" The candidate names a group (Derek and the Dominos) rather than providing the number of people in it.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"e469e5ea00cddb85da6cf2482cbd3b36eae0707a": {
+"correct": 0,
+"reason": "The question asks which team the coach led before joining the conference. The reference answer is \"Arizona State Sun Devils,\" but the candidate answered \"Mountain West Conference,\" which is a conference, not a team. This is a different entity entirely.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"08e91861429d309b2ec0e24684941bee9d601659": {
+"correct": 0,
+"reason": "The candidate provides no answer, which does not match the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"f2f61ed88cc464028ef8493ae0715ef95e061b3d": {
+"correct": 0,
+"reason": "The question asks who painted the portrait, not whose portrait it was. The reference answer \"Sister Anthony, S.C.\" suggests that Sister Anthony herself painted the portrait (a self-portrait or she was the painter). The candidate answer identifies the subject of the portrait (Mary O'Connell, who was Sister Anthony's birth name) rather than the painter. The candidate does not answer the question of ",
+"parsed": true
+},
+"77cd1288efc2f463599bea0f3f844a48e8f7919e": {
+"correct": 0,
+"reason": "The reference answer is \"Eric Clapton.\" The candidate includes Eric Clapton but also adds Jimmy Page, which introduces an incorrect or unsupported additional answer. However, since the question asks \"who collaborated,\" and the candidate does include the correct answer (Eric Clapton), the addition of Jimmy Page makes this a hedged or partially incorrect response. The candidate names a different ent",
+"parsed": true
+},
+"e719ce95bb2258baf3071988a4964e2f93fe7456": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"5e4d5712248d358c4dc047c5bd67857e11dd9e4a": {
+"correct": 1,
+"reason": "The candidate answer \"A leg injury\" matches the reference answer \"leg injury.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"89829f9edad579f0ad74a05eeac6e706ff471cdc": {
+"correct": 1,
+"reason": "The candidate identifies Sister Anthony, also known as Mary O'Connell, which is the same person as the reference answer \"Sister Anthony, S.C.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d122402d9328f260e3eb3984b9aea3fc5838dc38": {
+"correct": 1,
+"reason": "The candidate's answer includes \"medication management system development, deployment and optimization\" along with additional areas, which is consistent with and includes the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"db3e801941d479d40887aca9463bb3495ef20e9c": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"6e4861e5fe32ccd38c15fc708259c53aed55c552": {
+"correct": 0,
+"reason": "The candidate answer \"agent overflowed context\" does not provide a meaningful answer to the question and does not match the reference answer.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"b6c7619f08bc9399bb97ab5a3a11656644a418b2": {
+"correct": 1,
+"reason": "The candidate lists \"cancer, hepatitis, and rheumatoid arthritis,\" which matches the first reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"a6576d9293e8117cfc5bb576b83c079ad0eb3667": {
+"correct": 1,
+"reason": "The candidate states Chris Gould is younger, which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"974c94065495d9dba6073ab78ccbeefbdda659c6": {
+"correct": 1,
+"reason": "The candidate states \"growing quickly,\" which matches the reference answer \"growing quickly.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"f20195e7227428b8be87591592cb1ca96d4b687c": {
+"correct": 1,
+"reason": "The candidate answer \"Annie\" matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"850a4d2be4eadabb3aed80ea80a5d0f413e21e1b": {
+"correct": 1,
+"reason": "The candidate lists \"cancer, hepatitis, and rheumatoid arthritis,\" which matches the first reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"52ebc18d57dc5c7413d51cbd106e67b45048852d": {
+"correct": 0,
+"reason": "The candidate provides no answer (\"none\"), while the reference answer is \"500-room.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"71beac4573b43ec4332715fc9ea8f09d2d4b5596": {
+"correct": 1,
+"reason": "The candidate states Bertalan Farkas is older, which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"084ee4d815038feaf7a35c3a1f4dd26a9e9e5f1d": {
+"correct": 0,
+"reason": "The candidate provides no answer, stating there is no relevant information, while the correct answer is \"Sister Anthony, S.C.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"0d806aed90f7dac38db0c98d9212d0f78aedeed6": {
+"correct": 1,
+"reason": "The candidate identifies \"The Process\" as Joel Embiid and states he did not play due to a leg injury, which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"773e2edb009390c21cd9be13c0319d4bc4ff38da": {
+"correct": 1,
+"reason": "The candidate's answer includes \"medication management system development, deployment and optimization,\" which matches the reference answer exactly. The additional details provided are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"66649f8683ec67de84bb3c99afa8b2b6af1237a4": {
+"correct": 1,
+"reason": "The candidate says \"The Rose Theater,\" which refers to the same theater as \"The Rose\" \u2014 just with the word \"Theater\" appended for clarity.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"21a9e144c790652fda23d0459380d94df2ab2864": {
+"correct": 0,
+"reason": "The candidate provides no answer, stating there is no relevant information, while the correct answer is \"Chris Gould.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"94c210a34355d3a75bc6a7fba9967d57099d02c3": {
+"correct": 1,
+"reason": "The candidate's answer includes \"medication management system development, deployment and optimization\" along with additional areas, which is consistent with and includes the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"fa9b84bc6e93c6b37419d3c8aa5b393f4d17850a": {
+"correct": 0,
+"reason": "The candidate provides no answer (\"none\"), while the correct answer is Bertalan Farkas.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"0d146a58ab07a0e3b3e926df4811ca2b90fac83c": {
+"correct": 1,
+"reason": "Mary O'Connell is the birth name of Sister Anthony O'Connell, S.C., so this refers to the same person.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"a9a78dcb9f2abeae844ff889839a33167da802ba": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d29bd6ab8b5aa2965dd6e4327fc06fb5ba0acc79": {
+"correct": 1,
+"reason": "The candidate answers \"No,\" which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"82678b793a93366f8af1301d9d4e897abc684c02": {
+"correct": 1,
+"reason": "The candidate answer \"The Bolshoi Theatre\" matches the reference answer \"Bolshoi Theatre.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"2896c7a4d93d430ae81a048a78c400c0ed726a41": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"5ed3f6c57931856aae688f3a2d3e96824391cdeb": {
+"correct": 1,
+"reason": "The candidate answer matches the reference by mentioning \"high risk preparations and other compounding functions,\" which is essentially the same as \"high risk preparations and some other compounding functions.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"1465b2c6512e424ed0c03d6a81b7f22653bee4f8": {
+"correct": 1,
+"reason": "The candidate includes the reference answer about stocking a larger range of medications including specialized ones, and adds additional consistent details.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"57726bde6298b37be300d4da932fab863470c99e": {
+"correct": 1,
+"reason": "The candidate includes the reference answer (\"the high cost of medications and drug-related technology\") along with additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"8ee814caa90f4597ab623df82859edfb06e9a5c9": {
+"correct": 0,
+"reason": "The reference answer is \"Ernst & Young,\" while the candidate answered \"PricewaterhouseCoopers.\" These are two different firms among the Big Four accounting firms.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"4215a3f831e13df41b7641c961737a2e77bc53f2": {
+"correct": 1,
+"reason": "The candidate answer \"Unit-dose (a single dose of medicine)\" matches the reference answer \"unit-dose, or a single dose of medicine.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"94f896868e0bf74da871a99c507851c474094489": {
+"correct": 0,
+"reason": "The candidate provides no answer, which does not match the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"af5df9e14971c000d3ac7cfab7ebb5535114d091": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"ee31906063ef70a2ea64a7fb1596a191dff74259": {
+"correct": 0,
+"reason": "The candidate provides no answer, stating there is no relevant information, which does not match the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"6dcf1dd23ebd622f30bcd8e96396f44559119783": {
+"correct": 1,
+"reason": "The candidate includes the reference answer (\"the high cost of medications and drug-related technology\") along with additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"a2ba4ee14b57946d424552a3de486c5c30761786": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"stock a larger range of medications (including specialized ones),\" which matches the reference answer. The additional details about compounding and drug therapy review are extra but consistent information.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"03b5b964ac667eff3160256f9af34c542d50e3ba": {
+"correct": 1,
+"reason": "The candidate answer \"EY (Ernst & Young)\" refers to the same entity as the reference answer \"Ernst & Young.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"f0d12f57d9f9d114f8f8db3bbd746fea7685cbe0": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"9ea9a69e4b557e2d1d974b7003a6d364ecc23626": {
+"correct": 1,
+"reason": "The candidate mentions \"stock a larger range of medications including more specialized ones,\" which matches the reference answer. The additional details are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"93d7d5ea30dc56275fb2113cca923150a84961c7": {
+"correct": 0,
+"reason": "The candidate hedges between two answers, listing both KPMG and Ernst & Young, rather than giving a single definitive answer. This constitutes hedging between several possible answers.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"d4180afdcc7b87385fd6c681eadfd1883e6f687c": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"322bde9034e1bafb698a77a534975371d3f82580": {
+"correct": 1,
+"reason": "The candidate states \"the least onerous measure,\" which matches the reference answer \"the least onerous.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"52a7f9dcebf9680c158a51da751b2423db659300": {
+"correct": 1,
+"reason": "The candidate answer \"Since the 1960s\" matches the reference answer \"since the 1960s\" exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"b3757b313f56d7ba56acf78a3c5923ddd14d6f44": {
+"correct": 1,
+"reason": "The candidate answers \"0,\" which is equivalent to \"None\" \u2014 both indicate that no original treaties protected fundamental rights.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7528b4c51e527b9a7d91c422fd6452edce97dd59": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"07fc6cffdcb8460e999b4a0889705a6dbaab999d": {
+"correct": 0,
+"reason": "The candidate provides no answer (\"none\"), while the reference answer is \"international law and public law.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"1f28853143f9d0ba3b6cc1ce9869c3ac908e0274": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"16ea578e88ca1669da1c90577cacc7d0a0e7f7c5": {
+"correct": 1,
+"reason": "The candidate answer \"1950\" matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"9f34e95599cc71695afd9da00c55bd5bd91de428": {
+"correct": 1,
+"reason": "The candidate mentions the European Convention on Human Rights and the European Court of Human Rights, which matches the reference answer \"the European Convention on Human Rights in 1950 and the establishment of the European Court of Human Rights.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"5bc7b2ef7811ccd8eed049cd39ea85e07fef762d": {
+"correct": 1,
+"reason": "Caligula is the common name for Gaius Julius Caesar Augustus Germanicus, referring to the same Roman emperor.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"3accdb83ce3e1fb7dde4998788eee3c1efbbfc3b": {
+"correct": 1,
+"reason": "The candidate mentions \"human rights enshrined in member states' constitutions,\" which is related to but broader than the specific reference answer \"the constitutional traditions common to the member states.\" The candidate also lists multiple other sources of inspiration rather than giving the specific answer expected. However, the reference answer is essentially included within the candidate's re",
+"parsed": true
+},
+"42ad10db4852ce4e8425d9da679d0ed883a2ef63": {
+"correct": 1,
+"reason": "\"Windigo\" is an alternate spelling of \"Wendigo,\" referring to the same legend from Algonquian mythology.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"6b8db47a49f93ebea2447521e3cf6adf1890d4ba": {
+"correct": 0,
+"reason": "The question asks for the name of the team, not the conference. The reference answer is \"Arizona State Sun Devils,\" while the candidate answered \"Mountain West Conference,\" which is a conference name, not a team name.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"a3b00212d98a423d8e59463ab7428665c3d68ea0": {
+"correct": 0,
+"reason": "The question asks for the **city** where the heavy metal band (Biohazard) was formed. The candidate answered with the band's name, not the city. The correct answer is Brooklyn, New York.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"d2c56b76f7d89ca29d73ed3d8c1dc35c8417f43f": {
+"correct": 0,
+"reason": "The candidate provides no answer, while the reference answer is \"Armenian\u2013American.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"a12209ef484d383792dbf6a4c1be7eae3ee2ab2a": {
+"correct": 1,
+"reason": "The question asks for the musician \"besides the founder of Led Zeppelin\" (Jimmy Page) and Bert Jansch. The candidate includes Jimmy Page, who should be excluded, but also provides Eric Clapton, which matches the reference answer. The candidate gives extra information (Jimmy Page) that the question already excluded, but the correct answer (Eric Clapton) is present.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"ca062df2907cb80c686bcea95abd37b1b5b801ae": {
+"correct": 1,
+"reason": "The candidate names PPG Paints Arena, which matches the reference, with additional consistent detail about its location.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"f7cf2298fec5d871a2b9f879f45368fadd13d30a": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"51b25cc6957fa4ff48406a34e795e2256aca6a7f": {
+"correct": 1,
+"reason": "The candidate matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"90118e958f83ca368128619209150b7851d6a968": {
+"correct": 1,
+"reason": "The candidate answer \"Spain\" matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"8d9dd696278a46656539038ab0ab1b0e2e442931": {
+"correct": 1,
+"reason": "The candidate answer \"DVB-S2\" matches one of the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"2b7eb9c7acd2f6aa76a3cb21fd8240e56836247a": {
+"correct": 1,
+"reason": "The candidate answer \"Concentration camps\" matches the reference answer \"concentration camp\" \u2014 it's simply the plural form of the same concept.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"221d92e847acea86c0f44481a9405772f974b22f": {
+"correct": 0,
+"reason": "The question asks about the proprietary system used by Sky+HD. The reference answer is \"OpenTV,\" but the candidate answers with \"VideoGuard pay-TV scrambling system owned by NDS,\" which is a different system/technology than OpenTV.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"6c87770b7a0d42ff9b1a633db612a8b7bc3ab9b5": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"945a6b7d7611e74b4c0f929a9477f4097ac575f3": {
+"correct": 1,
+"reason": "The candidate includes MPEG-4, which matches the reference answer, and adds additional detail (DVB-S2) that is consistent and not contradictory.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"77cb0e506441fe93add318cf7cf7c4e799fe4863": {
+"correct": 1,
+"reason": "The candidate specifies the exact date \"1 October 1998,\" which includes the year 1998 matching the reference answer, with additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"2848c037140b8e024814831ec803f1d825d92f40": {
+"correct": 1,
+"reason": "The candidate answer \"Dancer\" matches the reference answer \"dancer\" exactly (case difference is irrelevant).\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"2a0827c0ad94fc19e303d88c5ee2243b8595b7e6": {
+"correct": 0,
+"reason": "The candidate provides no answer, effectively saying they don't know, while the correct answer is George Albert Smith.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"1e9873131601e161431ddea8827f48d0740e5b64": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"91460b6562b1ddb3b689d6e2d7ab113f2680b173": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"15400aacacecdb69e18634ab1ba8a8d9c2bbaccd": {
+"correct": 1,
+"reason": "The candidate mentions \"legal certainty and good faith,\" which matches the reference answer \"the principles of legal certainty and good faith\" \u2014 the omission of \"the principles of\" is minor since the core concepts are the same.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"28d8a4e2027acded2dadf7864c9bca47a7e998f6": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"4f9c0b4ed1925336d81d546ebe01df3fb3efa23f": {
+"correct": 0,
+"reason": "The candidate mentions national laws from Italy and Belgium, but the reference answer is \"international law and public law.\" These are different entities entirely.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"23f3c23fd127d822387efe6b6b0ff59c007881d5": {
+"correct": 1,
+"reason": "The candidate answers \"0,\" which is equivalent to the reference answer \"None\" \u2014 both indicate that no original treaties protected fundamental rights.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"f616dd295ae42e521f6274860dc78efbc10ec7bd": {
+"correct": 0,
+"reason": "The reference answer states that none of the original treaties establishing the EU protected fundamental rights, while the candidate answers \"3,\" which is a different value.\n\nVERDICT: INCORRECT",
+"parsed": true
+}
+}

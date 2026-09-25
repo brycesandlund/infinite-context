@@ -86,27 +86,14 @@ def _read_hotpotqa_hf():
     return qas, total_docs
 
 
-# Questions whose EVERY gold is a number followed by more words ("35 people", "500-room", "3.5 million",
-# "1 October 1998"). RULER's string_match_part needs the whole gold inside the prediction, so a correct bare number
-# ("35" for "…killed how many people?") scores 0 — and the prompt itself says "Only give me the answer". Dropped from
-# the question pool (2026-09-24): 146 / 5,928 SQuAD (2.5%), 262 / 7,405 HotpotQA (3.5%). Their paragraphs stay in
-# `docs`, so they can still appear as distractors. NOTE: this is a deliberate deviation from RULER's question pool.
-_NUM_PLUS_WORDS = re.compile(r"\$?[\d,.]+\s*(%|[-\s][A-Za-z].*)")
-
-
-def _unit_bearing_numeric(q) -> bool:
-    outs = q.get("outputs") or []
-    return bool(outs) and all(_NUM_PLUS_WORDS.fullmatch(g.strip()) for g in outs)
-
-
 @lru_cache(maxsize=2)
 def load_qa(dataset: str):
-    """Return (qas, docs) for 'squad' or 'hotpotqa'. Cached in-process + on disk. Unit-bearing numeric questions
-    (see _NUM_PLUS_WORDS) are removed from `qas`."""
+    """Return (qas, docs) for 'squad' or 'hotpotqa'. Cached in-process + on disk. The FULL RULER question pool: surface-
+    form mismatches with the gold (units, number words, aliases) are handled at grading time by reporting an LLM
+    equivalence grade alongside RULER's string match (scripts/judge_open_qa.py), not by dropping questions
+    (a 2026-09-24 filter of unit-bearing numeric golds was reverted the same day)."""
     if dataset == "squad":
-        qas, docs = _read_squad(_ensure_squad())
-    elif dataset == "hotpotqa":
-        qas, docs = _read_hotpotqa_hf()
-    else:
-        raise ValueError(f"Unknown QA dataset {dataset!r}. Known: ['squad', 'hotpotqa']")
-    return [q for q in qas if not _unit_bearing_numeric(q)], docs
+        return _read_squad(_ensure_squad())
+    if dataset == "hotpotqa":
+        return _read_hotpotqa_hf()
+    raise ValueError(f"Unknown QA dataset {dataset!r}. Known: ['squad', 'hotpotqa']")

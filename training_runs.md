@@ -1518,3 +1518,55 @@ knowledge + negation; formality is subjective annotator style. These label seman
 source datasets teaches and what our no-eval-data policy leaves to the base model's judgment.
 Overflows (29%): mostly the over-carried joint tallies the v11 minimal-state corpus targets (user A vs B, user-most-with-L,
 months L1>L2, first-month); the rest are inherently large states (months-L-single-most, dates-exactly-n).
+
+## sft_general17w (run 17, warm start from 14w) — 2026-09-24 — 4K SCORE-9 0.828; OOLONG @10K 0.619; RULER-13 @10K 0.923 / @40K 0.887
+
+(ckpt `tinker://eb4c3882-959b-5ee6-81a0-35f0715fe8fd:train:0/weights/sft_general17w`; 1,149 traces / 48,849 datums / 81M tokens,
+3,054 batches, SFT 15:20→20:40. Script `scripts/run_sft17_warm.sh`: run-16 recipe + v11 minimal states + v12 vt contrast +
+niah_bridge 80 + sequential synth x2 + v13 leaf-tools fix. Raw `eval_results/raw/sft_general17w*`.)
+
+**4K scoreboard (16w -> 17w):** SCORE-9 0.810 -> **0.828**; vt 0.88 -> **1.00**, oolong_temporal 0.26 -> 0.35, oolong_user
+0.68 -> 0.71, counting 0.51 flat, multiquery 0.95 -> 0.90, cwe 1.00 -> 0.98. (qa_1/qa_2 now on the filtered pool — not
+comparable with 16w's 4K numbers.)
+
+**OOLONG on the June chart's problems** (`scripts/eval_oolong_chart.sh`: OOLONG_BASE=2000000, 10/family, 8K budget; standard
+limits — no depth cap, MAX_NODES = 4 x nominal tree):
+| | 10K | 40K |
+|---|---|---|
+| 17w | **0.619** (counting 0.46, user 0.78, temporal 0.62) | 0.354 (counting 0.26, user 0.45, temporal 0.35) |
+| June OOLONG-only fine-tune (`sft_oolong`) | 0.532 | **0.562** |
+| gpt-5.4 single-shot | 0.561 | 0.338 |
+17w beats both at 10K. At 40K it falls far below the OOLONG-only fine-tune (same overflow count, 2 each; one 17w tree hit
+the 1,020 cap). The gap is mostly oolong_user (0.45 vs 0.82): roots with the right minimal state (per-user tally of one
+label; per-label tally over one user) answering wrong, plus one root that never decomposed ("User: N/A") and one
+garbled goal. Leaf label accuracy on the same 40K problems where both are auditable: formality 96% (June) vs 75% (17w),
+spam 94% vs 82%, negation 87% (June) vs 46% (16w); imdb ~97% both. The OOLONG-trained leaves judge the hard label
+semantics far better — the audit's leaf-label ceiling, now measured against a model trained on these label sets.
+
+**RULER-13 @ 8K budget, fresh seeds:** 10K **0.923** (all NIAH 1.00 except multiquery / multivalue 0.90; qa_1 0.80, qa_2 0.40,
+vt 1.00); 40K **0.887** (multiquery 0.65, cwe 0.80, fwe 0.93, qa_1 0.80, qa_2 0.40, vt 1.00; max tree 561 < cap).
+
+## Open-ended QA: RULER string match + an LLM equivalence grade — 2026-09-24
+
+The RULER QA question-pool filter (unit-bearing numeric golds) is REVERTED — `tasks/ruler/qa_data.py` serves RULER's full
+pool again (SQuAD 5,928, HotpotQA 7,405). Surface-form mismatches are handled at grading time instead: RULER's
+string_match_part stays the benchmark-comparable number and an LLM equivalence grade is reported alongside it
+(`eval/qa_judge.py`, `scripts/judge_open_qa.py <rollouts.jsonl …>`; judge `anthropic/claude-opus-4-6`, temp 0, binary
+"same entity/value/fact as any reference", cache `eval_results/qa_judge_cache.json`). The judge credits number words (`4` /
+"four"), aliases (`Caligula` / "Gaius Julius Caesar Augustus Germanicus"; `Mary O'Connell` / "Sister Anthony, S.C."),
+implied units (`35` / "35 people") and paraphrases (`Bigg Boss 10` / "the tenth season"); it REJECTS hedges ("KPMG and Ernst &
+Young", which string match credits), bridge-stops ("Derek and the Dominos" for "how many") and wrong entities.
+Calibration (`scripts/calibrate_qa_judge.py`, real answers from our rollouts, hand-labelled): 20/20.
+
+| rollouts | qa_1 string / judged | qa_2 string / judged |
+|---|---|---|
+| 14w 4K (RULER-7 run) | 1.00 / 1.00 | 0.40 / 0.80 |
+| 16w 4K | 1.00 / 1.00 | 0.40 / 0.80 |
+| 16w 8K / 16K / 32K (5K budget) | 0.60 / 1.00 · 0.80 / 1.00 · 0.60 / 1.00 | 0.40 / 0.60 · 0.60 / 0.80 · 0.60 / 0.60 |
+| 16w 16K filtered pool, n=10 | 0.70 / 0.90 | 0.30 / 0.60 |
+| 17w 4K | 0.80 / 0.80 | 0.80 / 0.80 |
+| **17w 10K / 40K (8K budget)** | 0.80 / 1.00 · 0.80 / 0.80 | 0.40 / **1.00** · 0.40 / **1.00** |
+17w's qa_2 is judged 5/5 at both lengths (string 2/5): every miss is `4`/"four", `Caligula`, `Bigg Boss 10`; its bridge
+chaining now reaches RULER ("Chaining them: «Derek and the Dominos were … formed by Clapton, Whitlock, Radle and
+Gordon» — so the answer is 4"). Note: the 17w 10K/40K and 16w filtered-pool runs drew qa questions from the (then)
+filtered pool.

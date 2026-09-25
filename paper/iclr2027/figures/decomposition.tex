@@ -1,77 +1,115 @@
 % !TEX root = ../paper.tex
-% Decomposition strategies: (a) binary tree-reduce, (b) left fold.
+% Decomposition strategies: (a) binary tree-reduce, (b) left fold. Each row: the rollout tree (left) and
+% excerpts of the same scripted-oracle training trace (right), shaded like the node that wrote them.
+% Traces: synth_sum / synth_runreset, seed 11, 1996-token document, 3000-token budget (make_problem +
+% make_oracle + run_agent; leaves 500 tokens for binary, 400 for fold).
 % Requires \usepackage{tikz} and \usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing,calc}.
 \begin{figure}[t]
 \centering
 \tikzset{
   agent/.style={draw=black!70, rounded corners=3pt, line width=0.6pt, minimum height=6.2mm,
-                minimum width=13mm, align=center, font=\footnotesize},
+                minimum width=11mm, align=center, font=\footnotesize, inner sep=2pt},
   root/.style={agent, fill=green!22},
   mid/.style={agent, fill=yellow!35},
-  leaf/.style={agent, fill=blue!12, minimum width=12mm},
+  leaf/.style={agent, fill=blue!12},
   spawn/.style={-{Stealth[length=2.2mm]}, line width=0.55pt, black!65},
-  ret/.style={-{Stealth[length=2.2mm]}, line width=0.55pt, teal!75!black, densely dashed},
+  ret/.style={-{Stealth[length=2.2mm]}, line width=0.55pt, black!65, densely dashed},
   state/.style={font=\scriptsize\itshape, text=teal!60!black, inner sep=1pt},
   note/.style={font=\scriptsize, text=black!70},
-  brace/.style={decorate, decoration={brace, amplitude=5pt}, line width=0.6pt, red!65!black},
+  brace/.style={decorate, decoration={brace, amplitude=4pt}, line width=0.6pt, black!65},
+  txt/.style={draw=black!45, rounded corners=2pt, line width=0.4pt, font=\scriptsize, align=left,
+              inner sep=1.2mm, text width=\dimexpr\linewidth-2.4mm-1pt\relax},
+  qtxt/.style={txt, fill=black!5},
 }
-%-------------------------------------------------------------------- (a) tree-reduce
-\begin{tikzpicture}[node distance=9mm and 3mm]
-  \node[root] (r) {Root\\[-1pt]\scriptsize$[0,16\text{K})$};
-  \node[mid, below left=8mm and 17mm of r]  (m1) {$[0,8\text{K})$};
-  \node[mid, below right=8mm and 17mm of r] (m2) {$[8\text{K},16\text{K})$};
-  \node[mid, below left=8mm and 1.5mm of m1]  (m11) {$[0,4\text{K})$};
-  \node[mid, below right=8mm and 1.5mm of m1] (m12) {$[4\text{K},8\text{K})$};
-  \node[mid, below left=8mm and 1.5mm of m2]  (m21) {$[8\text{K},12\text{K})$};
-  \node[mid, below right=8mm and 1.5mm of m2] (m22) {$[12\text{K},16\text{K})$};
-  % leaves row
-  \node[leaf, below=10mm of m11, xshift=-3mm] (l1) {read\\[-1pt]\scriptsize$[0,500)$};
-  \node[leaf, right=2mm of l1] (l2) {read\\[-1pt]\scriptsize$[500,1\text{K})$};
-  \node[leaf, below=10mm of m22, xshift=3mm] (lk) {read\\[-1pt]\scriptsize$[15.5\text{K},16\text{K})$};
-  \node[font=\large] at ($(l2.east)!0.5!(lk.west)$) {$\cdots$};
-  % spawn edges
-  \foreach \p/\c in {r/m1, r/m2, m1/m11, m1/m12, m2/m21, m2/m22} \draw[spawn] (\p) -- (\c);
-  \draw[spawn, densely dotted] (m11) -- (l1);
-  \draw[spawn, densely dotted] (m11) -- (l2);
-  \draw[spawn, densely dotted] (m22) -- (lk);
-  % returned partial states (counts of label `entity')
-  \node[state, above left=-1pt and 0pt of m11.north] {9};
-  \node[state, above left=-1pt and 0pt of m12.north] {8};
-  \node[state, above right=-1pt and 0pt of m21.north] {16};
-  \node[state, above right=-1pt and 0pt of m22.north] {9};
-  \node[state, above left=0pt and 2pt of m1.north west] {$9+8=17$};
-  \node[state, above right=0pt and 2pt of m2.north east] {$16+9=25$};
-  \node[state, right=2pt of r] {$17+25=42$ \;$\Rightarrow$ \boxed{42}};
-  % braces
-  \draw[brace] ([xshift=-4mm]l1.south west |- l1.north) -- ([xshift=-4mm]r.north -| l1.west)
-     node[midway, left=6pt, note, align=right] {$\log_2 k$\\levels};
-  \draw[brace] ([yshift=-2mm]lk.south east) -- ([yshift=-2mm]l1.south west)
-     node[midway, below=6pt, note] {$k$ leaves, each reading $\le$ one budget of text};
+\newcommand{\rng}[1]{\ensuremath{[#1)}}
+\newcommand{\who}[1]{\textbf{#1}\enspace}
+\newcommand{\tool}[1]{\texttt{#1}}
+%==================================================================== (a) tree-reduce
+\begin{minipage}[c]{0.46\linewidth}\centering
+\begin{tikzpicture}
+  % leaves in a row; mids centred over their pair; root centred over the mids
+  \node[leaf] (l1) at (0,0) {\scriptsize read\\[-2pt]\scriptsize\rng{0,499}};
+  \node[leaf, right=1mm of l1] (l2) {\scriptsize read\\[-2pt]\scriptsize\rng{499,998}};
+  \node[leaf, right=1mm of l2] (l3) {\scriptsize read\\[-2pt]\scriptsize\rng{998,1497}};
+  \node[leaf, right=1mm of l3] (l4) {\scriptsize read\\[-2pt]\scriptsize\rng{1497,1996}};
+  \node[mid] (m1) at ($($(l1)!0.5!(l2)$)+(0,15mm)$) {\scriptsize\rng{0,998}};
+  \node[mid] (m2) at ($($(l3)!0.5!(l4)$)+(0,15mm)$) {\scriptsize\rng{998,1996}};
+  \node[root] (r) at ($($(m1)!0.5!(m2)$)+(0,14mm)$) {Root\\[-1pt]\scriptsize\rng{0,1996}};
+  % spawn edges, labelled with the partial each child returns up that edge
+  \draw[spawn] (r) -- node[state, above left=0pt and -1pt]  {117}   (m1);
+  \draw[spawn] (r) -- node[state, above right=0pt and -1pt] {$-37$} (m2);
+  \draw[spawn] (m1) -- node[state, left=1pt]  {65}    (l1);
+  \draw[spawn] (m1) -- node[state, right=1pt] {52}    (l2);
+  \draw[spawn] (m2) -- node[state, left=1pt]  {$-12$} (l3);
+  \draw[spawn] (m2) -- node[state, right=1pt] {$-25$} (l4);
+  \node[state, right=2pt of r] {$117-37=80$};
+  \draw[brace] ([yshift=-1.5mm]l4.south east) -- ([yshift=-1.5mm]l1.south west)
+     node[midway, below=4pt, note, align=center] {$k$ leaves, $\log_2 k$ levels,\\each leaf reading $\le 500$ tokens};
 \end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.52\linewidth}
+\begin{tikzpicture}[node distance=1mm]
+  \node[qtxt] (q) {\who{Question}Each record has a signed integer `amt' field. What is the SUM of `amt' over ALL
+    records in the document? Give the single integer in \textbackslash boxed\{\}.};
+  \node[txt, fill=green!22, below=of q] (t1) {\who{Root}This document is 1996 tokens --- too long to read in one
+    context. The result over a range does not depend on the order of the records, so I split the range in half
+    recursively, having a subagent compute the SUM of `amt' over each half and combining the two partials. [\dots]\\
+    \tool{spawn\_subagent}(``Over the records STARTING in tokens 0..998, compute the SUM of `amt'. Recursively split
+    the range at its midpoint [\dots]'') \quad[+ one for 998..1996]\\
+    Sum my children [117, $-37$] $\to$ 80. \quad $\boxed{80}$};
+  \node[txt, fill=yellow!35, below=of t1] (t2) {\who{Mid \rng{0,998}}Range 0..998 is not below 500; splitting at
+    midpoint 499. [2 $\times$ \tool{spawn\_subagent}]\\
+    Sum my children [65, 52] $\to$ 117. \quad $\boxed{117}$};
+  \node[txt, fill=blue!12, below=of t2] (t3) {\who{Leaf \rng{0,499}}Range 0..499 fits; reading it [\dots]
+    \tool{read\_chunk(0, 499)}\\
+    {[0000]} amt=+12 $\to$ sum=12 \quad {[0001]} amt=+20 $\to$ sum=32 \quad $\cdots$ \quad {[0021]} amt=+18 $\to$ sum=65\\
+    Partial = 65. \quad $\boxed{65}$};
+\end{tikzpicture}
+\end{minipage}
 
 \vspace{1mm}
 {\small (a) \textbf{Tree reduce}, for order-independent tasks (aggregation, retrieval). Non-leaf nodes delegate half their range to subagents. Leaves read one chunk and compute a leaf op which is aggregated up the tree.}
 
 \vspace{4mm}
-%-------------------------------------------------------------------- (b) fold
-\begin{tikzpicture}[node distance=4mm and 13mm]
-  \node[root] (a1) {Root};
-  \node[mid, right=of a1] (a2) {Agent 2};
-  \node[mid, right=of a2] (a3) {Agent 3};
-  \node[right=13mm of a3, font=\large] (dots) {$\cdots$};
-  \node[leaf, right=13mm of dots, minimum width=15mm] (ak) {Agent $k$};
-  % slices read at each step
-  \foreach \a/\s in {a1/{[0,500)}, a2/{[500,1\text{K})}, a3/{[1\text{K},1.5\text{K})}, ak/{[15.5\text{K},16\text{K})}}
-    \node[note, above=1.5mm of \a, draw=black!35, fill=black!4, inner sep=2pt, rounded corners=1pt]
-      {read $\s$};
+%==================================================================== (b) fold
+\begin{minipage}[c]{0.46\linewidth}\centering
+\begin{tikzpicture}[node distance=6mm]
+  \node[root, minimum width=24mm] (a1) {Root\enspace\scriptsize read \rng{0,400}};
+  \node[mid,  minimum width=24mm, below=of a1] (a2) {Agent 2\enspace\scriptsize read \rng{400,800}};
+  \node[mid,  minimum width=24mm, below=of a2] (a3) {Agent 3\enspace\scriptsize read \rng{800,1200}};
+  \node[mid,  minimum width=24mm, below=of a3] (a4) {Agent 4\enspace\scriptsize read \rng{1200,1600}};
+  \node[leaf, minimum width=24mm, below=of a4] (a5) {Agent 5\enspace\scriptsize read \rng{1600,1996}};
   % hand-off arrows carrying the accumulator
-  \draw[spawn] (a1) -- node[state, above] {acc$_1$} node[note, below] {rest + acc} (a2);
-  \draw[spawn] (a2) -- node[state, above] {acc$_2$} (a3);
-  \draw[spawn] (a3) -- node[state, above] {acc$_3$} (dots);
-  \draw[spawn] (dots) -- node[state, above] {acc$_{k-1}$} (ak);
+  \draw[spawn] (a1) -- node[state, right=2pt] {acc $=-19$} (a2);
+  \draw[spawn] (a2) -- node[state, right=2pt] {acc $=0$} (a3);
+  \draw[spawn] (a3) -- node[state, right=2pt] {acc $=-20$} (a4);
+  \draw[spawn] (a4) -- node[state, right=2pt] {acc $=-11$} (a5);
   % answer returned back up the chain
-  \draw[ret] (ak.south) -- ++(0,-6mm) -| node[state, pos=0.25, below] {final answer, returned up the chain} (a1.south);
+  \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, pos=0.25, left=1pt, align=right] {final\\answer\\$=10$} (a1.west);
 \end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.52\linewidth}
+\begin{tikzpicture}[node distance=1mm]
+  \node[qtxt] (q) {\who{Question}Process the records in order, keeping a running total of `amt'. Whenever a record
+    has grp=RST, reset the running total to 0 (that record's amt is NOT added). What is the final running total
+    after the last record? [\dots]};
+  \node[txt, fill=green!22, below=of q] (t1) {\who{Root}This document is 1996 tokens --- too long to read in one
+    context. This task is order-dependent: a grp=RST record resets the total, and what a record contributes
+    depends on the resets before it --- so I process the document from the start with a running accumulator
+    [\dots] \tool{read\_chunk(0, 400)}\\
+    {[0000]} amt=+12 $\to$ total=12 \quad $\cdots$ \quad {[0005]} grp=RST $\to$ RESET, total=0 \quad $\cdots$ \quad
+    {[0017]} amt=$-7$ $\to$ total=$-19$\\
+    $\to$ accumulator = $-19$. Delegating the rest 400..1996 with the updated accumulator.};
+  \node[txt, fill=yellow!35, below=of t1] (t2) {\who{Agent 2}Continue the running accumulator [\dots] over the
+    records STARTING in tokens 400..1996. accumulator so far = $-19$ [\dots]\\
+    {[0018]} amt=$-7$ $\to$ total=$-26$ \quad $\cdots$ \quad {[0034]} grp=RST $\to$ RESET, total=0\\
+    $\to$ accumulator = 0. Delegating the rest 800..1996 with the updated accumulator.};
+  \node[txt, fill=blue!12, below=of t2] (t3) {\who{Agent 5}[\dots] accumulator so far = $-11$ [\dots] Range
+    1600..1996 fits and reaches the document end; reading it.\\
+    {[0070]} amt=$-9$ $\to$ total=$-20$ \quad $\cdots$ \quad {[0086]} amt=+20 $\to$ total=10\\
+    $\to$ accumulator = 10 (final). \quad $\boxed{10}$};
+\end{tikzpicture}
+\end{minipage}
 
 \vspace{1mm}
 {\small (b) \textbf{Sequential fold}, for order-dependent tasks (variable tracking, running state). Each agent reads the next
@@ -79,6 +117,9 @@ slice, updates the accumulator, and delegates the rest of the document to the ne
 
 \caption{The two decomposition strategies our root chooses between. Each box is a fresh agent with the same fixed
 context budget; solid arrows are \texttt{spawn\_subagent} calls, dashed arrows are returned results. The root states
-which strategy the task needs, and why, before delegating (\S\ref{methods}).}
+which strategy the task needs, and why, before delegating (\S\ref{methods}). Right: excerpts of the actual training
+traces for the two examples on the left, \texttt{synth\_sum} (a) and \texttt{synth\_runreset} (b), on the same
+1,996-token document with a 3,000-token budget; each excerpt is shaded like the node that wrote it, and [\dots]
+marks elided text.}
 \label{fig:decomposition}
 \end{figure}
