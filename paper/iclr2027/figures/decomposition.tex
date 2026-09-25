@@ -22,22 +22,23 @@
 \newcommand{\rng}[1]{\ensuremath{[#1)}}
 \newcommand{\who}[1]{\textbf{#1}\enspace}
 \newcommand{\tool}[1]{\texttt{#1}}
+\newcommand{\nsz}{\fontsize{8}{8.5}\selectfont}
 % record lines as a table: \recs{ idx & key & value & [prefix] & sum=/total= & number & [\dots] \\ ... }
 % (key= aligned, values right-aligned, arrows aligned, total= aligned, numbers right-aligned)
 \newcommand{\recs}[1]{\begin{tabular}{@{}l@{\enspace}l@{=}r@{\enspace$\to$\enspace}r@{}l@{}r@{}l@{}}#1\end{tabular}}
 %==================================================================== tree reduce
 \begin{figure}[t]
 \centering
-\begin{minipage}[c]{0.47\linewidth}
+\begin{minipage}[c]{0.525\linewidth}
 \begin{tikzpicture}[transform shape]
   % leaves in a row; mids centred over their pair; root centred over the mids
-  \node[leaf, inner sep=1.3pt] (l1) at (0,0) {\scriptsize read\\[-2pt]\scriptsize\rng{0,500}};
-  \node[leaf, inner sep=1.3pt, right=0.5mm of l1] (l2) {\scriptsize read\\[-2pt]\scriptsize\rng{500,1000}};
-  \node[leaf, inner sep=1.3pt, right=0.5mm of l2] (l3) {\scriptsize read\\[-2pt]\scriptsize\rng{1000,1500}};
-  \node[leaf, inner sep=1.3pt, right=0.5mm of l3] (l4) {\scriptsize read\\[-2pt]\scriptsize\rng{1500,2000}};
-  \node[mid] (m1) at ($($(l1)!0.5!(l2)$)+(0,16.5mm)$) {\scriptsize\rng{0,1000}};
-  \node[mid] (m2) at ($($(l3)!0.5!(l4)$)+(0,16.5mm)$) {\scriptsize\rng{1000,2000}};
-  \node[root] (r) at ($($(m1)!0.5!(m2)$)+(0,15.5mm)$) {Root\\[-1pt]\scriptsize\rng{0,2000}};
+  \node[leaf, inner sep=1.3pt, inner xsep=2.2pt] (l1) at (0,0) {\nsz\textbf{Leaf}\hspace{2pt}\tool{read}\\[-2pt]\nsz\rng{0,500}};
+  \node[leaf, inner sep=1.3pt, inner xsep=2.2pt, right=0.5mm of l1] (l2) {\nsz\textbf{Leaf}\hspace{2pt}\tool{read}\\[-2pt]\nsz\rng{500,1000}};
+  \node[leaf, inner sep=1.3pt, inner xsep=2.2pt, right=0.5mm of l2] (l3) {\nsz\textbf{Leaf}\hspace{2pt}\tool{read}\\[-2pt]\nsz\rng{1000,1500}};
+  \node[leaf, inner sep=1.3pt, inner xsep=2.2pt, right=0.5mm of l3] (l4) {\nsz\textbf{Leaf}\hspace{2pt}\tool{read}\\[-2pt]\nsz\rng{1500,2000}};
+  \node[mid] (m1) at ($($(l1)!0.5!(l2)$)+(0,16.5mm)$) {\nsz\textbf{Mid}\\[-1pt]\nsz\rng{0,1000}};
+  \node[mid] (m2) at ($($(l3)!0.5!(l4)$)+(0,16.5mm)$) {\nsz\textbf{Mid}\\[-1pt]\nsz\rng{1000,2000}};
+  \node[root] (r) at ($($(m1)!0.5!(m2)$)+(0,15.5mm)$) {\nsz\textbf{Root}\\[-1pt]\nsz\rng{0,2000}};
   % spawn edges, labelled with the partial each child returns up that edge
   \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above left=2pt and 2pt]  {$-47$} (m1);
   \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above right=2pt and 2pt] {108}   (m2);
@@ -45,7 +46,7 @@
   \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {$-61$} (l2);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=5pt]  {101}   (l3);
   \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {7}     (l4);
-  \node[state, right=2pt of r] {$-47+108=\fbox{\ensuremath{61}}$};
+  \node[state, text=black, right=2pt of r] {$-47+108=\fbox{\ensuremath{61}}$};
   % braces
   \draw[brace] ([xshift=-1.2mm]l1.south west) -- ([xshift=-1.2mm]l1.west |- r.north)
      node[midway, left=4pt, note, rotate=90, anchor=south] {$\log_2 k$ levels};
@@ -53,7 +54,7 @@
      node[midway, below=4pt, note] {$k$ leaves, each reading $\leq500$ tokens};
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.525\linewidth}
+\begin{minipage}[c]{0.47\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}Each record has a signed integer `amt' field. What is the SUM of `amt' over ALL
     records in the document?};
@@ -80,13 +81,13 @@
 %==================================================================== sequential fold
 \begin{figure}[t]
 \centering
-\begin{minipage}[c]{0.36\linewidth}\centering
+\begin{minipage}[c]{0.37\linewidth}\centering
 \begin{tikzpicture}[node distance=6mm]
-  \node[root, minimum width=24mm] (a1) {Root\enspace\scriptsize read \rng{0,400}};
-  \node[mid,  minimum width=24mm, below=of a1] (a2) {Agent 2\enspace\scriptsize read \rng{400,800}};
-  \node[mid,  minimum width=24mm, below=of a2] (a3) {Agent 3\enspace\scriptsize read \rng{800,1200}};
-  \node[mid,  minimum width=24mm, below=of a3] (a4) {Agent 4\enspace\scriptsize read \rng{1200,1600}};
-  \node[leaf, minimum width=24mm, below=of a4] (a5) {Agent 5\enspace\scriptsize read \rng{1600,2000}};
+  \node[root, minimum width=27mm, inner xsep=4pt] (a1) {\nsz\textbf{Root}\enspace\nsz\tool{read} \rng{0,400}};
+  \node[mid,  minimum width=27mm, inner xsep=4pt, below=of a1] (a2) {\nsz\textbf{Agent 2}\enspace\nsz\tool{read} \rng{400,800}};
+  \node[mid,  minimum width=27mm, inner xsep=4pt, below=of a2] (a3) {\nsz\textbf{Agent 3}\enspace\nsz\tool{read} \rng{800,1200}};
+  \node[mid,  minimum width=27mm, inner xsep=4pt, below=of a3] (a4) {\nsz\textbf{Agent 4}\enspace\nsz\tool{read} \rng{1200,1600}};
+  \node[leaf, minimum width=27mm, inner xsep=4pt, below=of a4] (a5) {\nsz\textbf{Agent 5}\enspace\nsz\tool{read} \rng{1600,2000}};
   % hand-off arrows carrying the accumulator
   \draw[spawn] (a1) -- node[state, right=2pt] {acc $=-2$} (a2);
   \draw[spawn] (a2) -- node[state, right=2pt] {acc $=7$} (a3);
@@ -96,7 +97,7 @@
   \draw[ret] (a5.west) -- ++(-5mm,0) |- node[note, pos=0.25, left=1pt, align=right] {final\\answer\\$=23$} (a1.west);
 \end{tikzpicture}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.625\linewidth}
+\begin{minipage}[c]{0.615\linewidth}
 \begin{tikzpicture}[node distance=1mm]
   \node[qtxt] (q) {\who{Question}Process the records in order, keeping a running total of `amt'. Whenever a record
     has grp=RST, reset the running total to 0 (that record's amt is NOT added). What is the final running total
