@@ -1,0 +1,5902 @@
+[
+ {
+  "src": "dbpedia",
+  "text": "USS Macon (CA-132) a Baltimore-class heavy cruiser of the United States Navy was laid down on 14 June 1943 by the New York Shipbuilding Corp. Camden New Jersey; launched on 15 October 1944; sponsored by Mrs. Charles F. Bowden wife of the mayor of Macon Georgia; and commissioned on 26 August 1945 at Philadelphia Captain Edward Everett Pare in command.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Athlete",
+   "Building",
+   "Film",
+   "MeanOfTransportation",
+   "Plant"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Setareh'y\u00e9 Dj\u00e9hane was a Persian/French bilingual newspaper published from Teheran Iran founded in 1928. It was published daily except on Saturdays. As of 1937 Its owner and editor-in-chief was A. G. E'tessam-Zadeh (member of parliament and French Academy laureate) and its director was A. Malecki. The newspaper was dedicated to covering politics economics and literature.",
+  "gold": "WrittenWork",
+  "labels": [
+   "Album",
+   "Artist",
+   "Building",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Volume II is the second album of Kamchatka a 11 track album containing 1 cover: Enemy Maker originally written by Alan Haggerty. The album was recorded by Tobias Strandvik and Kamchatka mixed by Nicholas Elgstrand and Kamchatka and mastered by Tobias Strandvik and Kamchatka at Shrimpmonkey studios.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Building",
+   "Company",
+   "MeanOfTransportation",
+   "OfficeHolder"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Stenocorus cinnamopterus is a species of beetles in the family Cerambycidae. The species are brown coloured with orange legs.",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Film",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "Plant"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Bride\u2019s Journey (Italian: Il viaggio della sposa) is a 1997 Italian comedy drama film written directed and starred by Sergio Rubini.",
+  "gold": "Film",
+  "labels": [
+   "Animal",
+   "Film",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Ral \u03a9 Grad (BLUE DRAGON \u30e9\u30eb\u03a9\u30b0\u30e9\u30c9 Bur\u016b Doragon Raru \u03a9 Gurado) is a Japanese manga series written by Tsuneo Takano and illustrated by Takeshi Obata. It is loosely based on the Blue Dragon video game and ran in Weekly Sh\u014dnen Jump magazine from December 4 2006 to July 9 2007. The 29 chapters were then collected into four tank\u014dbon volumes\u2026",
+  "gold": "WrittenWork",
+  "labels": [
+   "Album",
+   "Animal",
+   "OfficeHolder",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Erik B\u00e1nki (born May 26 1970) is a Hungarian politician member of the National Assembly (MP) from Regional List of Baranya County between 1998 and 2012.He served as Chairman of the Parliamentary Committee on Sport and Tourism from May 14 2010 to June 10 2012. He is a Member of Board of the Hungarian Football Federation from 2009.B\u00e1nki became Member\u2026",
+  "gold": "OfficeHolder",
+  "labels": [
+   "EducationalInstitution",
+   "Film",
+   "OfficeHolder",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "officeholder",
+  "qwen": "officeholder",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Dracula vespertilio is a species of orchid.",
+  "gold": "Plant",
+  "labels": [
+   "Company",
+   "EducationalInstitution",
+   "Film",
+   "Plant",
+   "Village"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Chuang Yi Publishing Pte Ltd. (Simplified Chinese: \u521b\u827a Pinyin: Chu\u00e0ngy\u00ec meaning creative arts) was a publishing company based in Singapore that specializes in producing domestic and imported comics and comics-related merchandise in English and simplified Chinese. Chuang Yi distributes all or some of its products in Singapore Malaysia India and the Philippines.",
+  "gold": "Company",
+  "labels": [
+   "Album",
+   "Animal",
+   "Company",
+   "EducationalInstitution",
+   "Plant"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The V\u00e2lcelul Luc\u0103cil\u0103 River is a tributary of the Br\u0103tei River in Romania.",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "Building",
+   "EducationalInstitution",
+   "NaturalPlace"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Nell N\u00ed Chr\u00f3in\u00edn (born 1990) is an Irish sean-n\u00f3s singer from the Muskerry Gaeltacht in County Cork.",
+  "gold": "Artist",
+  "labels": [
+   "Artist",
+   "EducationalInstitution",
+   "Film",
+   "NaturalPlace",
+   "Village"
+  ],
+  "opus": "artist",
+  "qwen": "artist",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Leslie Graham Wormald (19 August 1890 \u2013 10 July 1965) was an English rower who competed in the 1912 Summer Olympics representing Great Britain.Wormald was born at Maidenhead. He was educated at Eton College where he only rowed in the second eight and then at Magdalen College Oxford where his rowing showed considerable improvement. In 1910 he was in the\u2026",
+  "gold": "Athlete",
+  "labels": [
+   "Album",
+   "Athlete",
+   "Company",
+   "Film",
+   "NaturalPlace"
+  ],
+  "opus": "athlete",
+  "qwen": "athlete",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Time Step is an album by American guitarist Leo Kottke released in 1983.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Building",
+   "Company",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "More Beautiful Than Silence is an EP by Canadian rapper K'naan released on January 31 2012.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Artist",
+   "Company",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Strumigenys emmae is a species of ant that is 1.5 millimeters long and is yellowish brown. It has a 4 segmented antennae small eyes and has hairs on the head mesosoma and petiole that are mostly scale-like or orbicular. They are difficult to find other than when encountered in leaf litter samples or pitfall traps. They are normally slow moving\u2026",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Film",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "USS Haggard (DD-555) was a Fletcher-class destroyer of the United States Navy named for Captain Haggard of the Louisa who fought in the Quasi-War.Haggard was launched by Seattle-Tacoma Shipbuilding Co. Seattle Wash. 9 February 1943 sponsored by Mrs. E. B. McKinney; and commissioned 31 August 1943 Commander D. A. Harris in command.Haggard departed for shakedown training off California 29 September\u2026",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Album",
+   "Artist",
+   "Building",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Pagellus erythrinus or the common pandora is a fish of the Sparidae family (sea bream). It is a popular food fish in Mediterranean countries with delicate white flesh. It has a slim oval fusiform body with a smallish mouth and scales covering its face. The eyes are smaller than those of Pagellus bogaraveo and Pagellus acarne. It is silver in\u2026",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Athlete",
+   "Building",
+   "Film"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Genzyme Corporation is an American biotechnology company based in Cambridge Massachusetts. Since its acquisition in 2011 it's been a fully owned subsidiary of Sanofi. In 2010 Genzyme was the world\u2019s third-largest biotechnology company employing more than 11000 people around the world. As a subsidiary of Sanofi Genzyme has a presence in approximately 40 countries including 17 manufacturing facilities and 9\u2026",
+  "gold": "Company",
+  "labels": [
+   "Animal",
+   "Company",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "Village"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Norwood Hills Country Club also known as North Hills Country Club is a country club located in or near St. Louis Missouri. Norwood Hills Country Club has a rich tradition and history dating back to the 1920s when Norwood found its beginning as North Hills Country Club. It has an excellent youth golf program and is the home course to\u2026",
+  "gold": "Building",
+  "labels": [
+   "Athlete",
+   "Building",
+   "Film",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Keene Valley Library is a historic library building located at Keene Valley in Essex County New York. The original building was built in 1896 with additions completed in 1923 1931 1962 and 1985. The original main block is a one story timber frame structure on a random ashlar foundation. The building exhibits features of the Shingle Style and Adirondack Architecture.It\u2026",
+  "gold": "Building",
+  "labels": [
+   "Athlete",
+   "Building",
+   "Film",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Deborah Anne Dyer known by the stage name Skin (born 3 August 1967) is an English singer and occasional model. As Deborah Dyer Skin studied Interior Design at Teesside University in Middlesbrough and they later honoured her with an honorary degree. She is currently the lead vocalist of English band Skunk Anansie.",
+  "gold": "Artist",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "NaturalPlace",
+   "Plant",
+   "Village"
+  ],
+  "opus": "artist",
+  "qwen": "artist",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Robbie Devereux (born 13 January 1971) is an English former professional footballer.",
+  "gold": "Athlete",
+  "labels": [
+   "Athlete",
+   "Film",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "athlete",
+  "qwen": "athlete",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Love on the Dole is a novel by Walter Greenwood about working class poverty in 1930s Northern England. It has been made into both a play and a film.",
+  "gold": "WrittenWork",
+  "labels": [
+   "EducationalInstitution",
+   "Film",
+   "MeanOfTransportation",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Firebrand is an 1987 historical fantasy novel by American author Marion Zimmer Bradley. Set in the ancient Greek city of Troy the novel is a re-telling of Homer's epic poem the Iliad. The Firebrand is written from the point-of-view of Kassandra the prophet daughter of King Priam of Troy and also features other prominent characters from Greek mythology. As\u2026",
+  "gold": "WrittenWork",
+  "labels": [
+   "EducationalInstitution",
+   "OfficeHolder",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Chinese Language Institute commonly referred to as CLI is located in Guilin Guangxi China. The institute was founded in 2009 by Robert and Bradford Fried two American brothers from Vienna Virginia. The institute was created as a means of teaching Mandarin Chinese language and culture through language immersion.",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Animal",
+   "Artist",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The McCauley and Meyer Barns in Yosemite National Park are the last barns in the park that retain their original characteristics as structures built by homesteaders. The McCauley barn and the two Meyer barns represent different construction techniques and styles of design.The McCauley Barn was built about 1883 by Irish-born James McCauley who operated hotels in the Yosemite Valley.",
+  "gold": "Building",
+  "labels": [
+   "Animal",
+   "Building",
+   "NaturalPlace",
+   "Plant",
+   "Village"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Solar Orbiter (SolO) is a planned Sun-observing satellite under development by the European Space Agency (ESA). The mission will be launched with an Atlas V from the Cape Canaveral AFS in Florida in July 2017.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Album",
+   "Animal",
+   "Company",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Six Minute Ferry operated an automobile ferry service across Carquinez Strait on the main highway between Sacramento and Oakland California. Each crossing near the present Interstate 80 bridge took approximately 6 minutes. As automobile travel became increasingly popular the company ordered some new steel ferries in 1921.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Artist",
+   "Company",
+   "MeanOfTransportation",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Newton Street Railway Carbarn is an historic building located at 1121 Washington Street in the village of West Newton in Newton Massachusetts. Built in 1890 by the Newton Street Railway Company it is a rare surviving example of a wood-frame trolley car garage facility a facility once common in areas served by electrified trolleys. The building has a long\u2026",
+  "gold": "Building",
+  "labels": [
+   "Album",
+   "Athlete",
+   "Building",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Endendu Ninagagi is a 2014 Kannada drama film directed by Mahesh Rao. A remake of the Tamil film Engaeyum Eppothum it features newcomer Vivek Narasimhan Deepa Sannidhi Anish Tejeshwar and Sindhu Lokanath in the lead roles.",
+  "gold": "Film",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Film",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "OL Shinkaron (OL\u9032\u5316\u8ad6 \u014ceru Shinkaron) is a yonkoma manga series by Akizuki Risu about OLs or office ladies. It also had a short spin-off series titled Okusama Shinkaron that focused on housewives. Several volumes of OL Shinkaron have been published by Kodansha in a Japanese/English bilingual edition titled Survival in the Office: The Evolution of Japanese Working Women.",
+  "gold": "WrittenWork",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Nazar Mahalleh (Persian: \u0646\u0638\u0631\u0645\u062d\u0644\u0647\u200e also Romanized as Naz\u0327ar Ma\u1e29alleh) is a village in Chelevand Rural District Lavandevil District Astara County Gilan Province Iran. At the 2006 census its population was 26 in 5 families.",
+  "gold": "Village",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "village",
+  "qwen": "village",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "HMS Conflict was the lead ship of the Conflict-class destroyers built by J. Samuel White at East Cowes Isle of Wight for the Royal Navy. She was launched on 13 December 1894 and sold on 20 May 1920.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Athlete",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Heda (\u30d8\u30c0\u53f7) was a schooner built by the Russian sailors of Yevfimy Putyatin and 300 Japanese carpenters of the city of Heda in 1855.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Album",
+   "Animal",
+   "Artist",
+   "EducationalInstitution",
+   "MeanOfTransportation"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Arnfield Reservoir is a man-made lake in Longdendale in north Derbyshire. It was constructed in 1854 as part of the Longdendale chain to supply water from the River Etherow to the urban areas of Greater Manchester. Unlike the other reservoirs in the chain Arnfield and Hollingworth Reservoir are not in the Etherow valley but lie in the valley of tributary\u2026",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Animal",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "WrittenWork"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Wind River Range (or Winds for short) is a mountain range of the Rocky Mountains in western Wyoming in the United States. The range runs roughly NW-SE for approximately 100 miles (161 km). The Continental Divide follows the crest of the range and includes Gannett Peak which at 13804 feet (4207 m) is the highest peak in Wyoming. There\u2026",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Athlete",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Everyone Alive Wants Answers is an album by Colleen released in 2003.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Building",
+   "EducationalInstitution",
+   "OfficeHolder",
+   "WrittenWork"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Sprecher Brewery is a brewery in Glendale Milwaukee County Wisconsin. It was founded in 1985 in Milwaukee by Randal Sprecher. Sprecher produces an assortment of beers and sodas.Despite producing a full range of micro-brewed craft beers the brewery is arguably best known for its premium sodas. Sprecher brews more root beer than all of its alcoholic beers combined. Sprecher Root\u2026",
+  "gold": "Company",
+  "labels": [
+   "Animal",
+   "Building",
+   "Company",
+   "MeanOfTransportation",
+   "OfficeHolder"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Imbricaria bicolor is a species of sea snail a marine gastropod mollusk in the family Mitridae the miters or miter snails.",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Building",
+   "Company",
+   "MeanOfTransportation",
+   "OfficeHolder"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Anthenagin is an album by drummer Art Blakey and The Jazz Messengers recorded in 1973 and released on the Prestige label.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Animal",
+   "Artist",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Ferenc Marschall (2 October 1887 \u2013 23 January 1970) was a Hungarian politician who served as Minister of Agriculture for two months in 1938.",
+  "gold": "OfficeHolder",
+  "labels": [
+   "Album",
+   "OfficeHolder",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "officeholder",
+  "qwen": "officeholder",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Handszar Odeev (born 27 January 1972) is a Turkmen chess Grandmaster (2005).He played a record seven times in the Soviet Union Junior Chess Championships: in 1984 1985 1986 1987 1988 1989 and 1990. Played for Turkmenistan in the Chess Olympiads of 1994 1996 1998 2000 2002 2006 and 2010 and in the Asian Team Chess Championship of 2003.",
+  "gold": "Athlete",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Company",
+   "NaturalPlace",
+   "Village"
+  ],
+  "opus": "athlete",
+  "qwen": "athlete",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "USRC Woodbury also referred to as the Levi Woodbury the first marine cutter to bear the name was a schooner-rigged revenue cutter built for the United States Revenue Cutter Service. The Woodbury was authorized on 8 November 1836 and Revenue-Marine Captain H. D. Hunter was assigned to supervise construction. The Woodbury was built at Baltimore Md by L. H. Duncan\u2026",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Building",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Piaski [\u02c8pjaski] is a village in the administrative district of Gmina Grab\u00f3w within \u0141\u0119czyca County \u0141\u00f3d\u017a Voivodeship in central Poland.",
+  "gold": "Village",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Film",
+   "Plant",
+   "Village"
+  ],
+  "opus": "village",
+  "qwen": "village",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Slingsby T.20 was a British glider designed and built by Slingsby that first flew in 1944.",
+  "gold": "MeanOfTransportation",
+  "labels": [
+   "Film",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "meanoftransportation",
+  "qwen": "meanoftransportation",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Magazine Management Co. Inc. was an American publishing company lasting from the 1950s to early 1970s known for men's-adventure magazines risque men's magazines and humor romance puzzle celebrity/film and other types of magazines and later adding comic books and black-and-white comics magazines to the mix. It was the parent company of Marvel Comics.",
+  "gold": "Company",
+  "labels": [
+   "Athlete",
+   "Company",
+   "OfficeHolder",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Hartford Hospital is a 819-bed acute care teaching hospital located in the South End of Hartford in the US state Connecticut. Hartford Hospital was established in 1854. The hospital campus is located on Seymour Street in Hartford and is directly adjacent to the main campus of the Connecticut Children's Medical Center.",
+  "gold": "Building",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "Building",
+   "Plant",
+   "Village"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Matthew T. Scott House is a historic house located in Chenoa Illinois. Chenoa's founder Matthew T. Scott and his wife Julia Green once lived in the house. It was built in two parts The first section of the House was built in 1855 in a form known informally as a Kentucky Cat Slide[citation needed] and is the caretakers living\u2026",
+  "gold": "Building",
+  "labels": [
+   "Album",
+   "Athlete",
+   "Building",
+   "Company",
+   "MeanOfTransportation"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Charles Manning Reed Mansion also known as the Erie Club is a historic home / clubhouse located at Erie Erie County Pennsylvania. The original section of the 2 1/2-story brick mansion was built between 1846 and 1849. It was expanded with a one-story bay about 1855 a two-story bay about 1865 and a two-story extension in 1970. The front facade\u2026",
+  "gold": "Building",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Building",
+   "Film",
+   "Village"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "RANA Institute of Higher Studies (Pashto: \u062f\u0631\u0646\u0627 \u062f\u0644\u0648\u0631\u0648 \u0632\u062f\u0647 \u06a9\u0631\u0648 \u0645\u0648\u0633\u0633\u0647\u200e) (Persian: \u0645\u0648\u0633\u0633\u0647 \u062a\u062d\u0635\u06cc\u0644\u0627\u062a \u0639\u0627\u0644\u06cc \u0631\u0646\u0627\u200e) is a higher education institute in Afghanistan.",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Building",
+   "Company",
+   "EducationalInstitution"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Lake Academy Alternative School (usually referred to as Lake Academy) is a public alternative high school located in Willoughby Ohio in Lake County. It was founded in 1997.",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Animal",
+   "Artist",
+   "EducationalInstitution",
+   "NaturalPlace",
+   "OfficeHolder"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Vinpeius is a genus of skippers in the family Hesperiidae.",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Building",
+   "Company",
+   "OfficeHolder",
+   "WrittenWork"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Kiepojcie [k\u02b2\u025b\u02c8p\u0254i\u032ft\u0361\u0255\u025b] (German: Eszergallen until 1936 1936-38 Eschergallen 1938-45 \u00c4schenbruch) is a village in the administrative district of Gmina Dubeninki within Go\u0142dap County Warmian-Masurian Voivodeship in northern Poland close to the border with the Kaliningrad Oblast of Russia.",
+  "gold": "Village",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "EducationalInstitution",
+   "Plant",
+   "Village"
+  ],
+  "opus": "village",
+  "qwen": "village",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Wapniarnia Pierwsza [vap\u02c8\u0272ar\u0272a \u02c8pj\u025brf\u0282a] is a village in the administrative district of Gmina Trzcianka within Czarnk\u00f3w-Trzcianka County Greater Poland Voivodeship in west-central Poland.",
+  "gold": "Village",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "EducationalInstitution",
+   "Plant",
+   "Village"
+  ],
+  "opus": "village",
+  "qwen": "village",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Henry William Greville (1801\u20131872) was an English aristocrat and diarist.",
+  "gold": "Artist",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Building",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "unclear",
+  "qwen": "officeholder",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "dbpedia",
+  "text": "Time is a 2007 Malayalam film directed by Shaji Kailas. The movie features Suresh Gopi in a double role together with Vimala Raman Padmapriya Janakiraman in the lead roles. The music and background score were composed by Rahulraj. The film didn't do well at the box office. The film wasdubbed into Telugu as Police ante Veedera(He is the real Police).",
+  "gold": "Film",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Athlete",
+   "Film",
+   "Village"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Ludwig & Mayer was a German type foundry in Frankfurt am Main Germany. Many important designers worked for the Ludwig and Mayer type foundry including Heinrich Jost Karlgeorg Hoefer Helmut Matheis and most notably Jakob Erbar whose Erbar Book was one of the first geometric sans-serif typefaces predating both Paul Renner's Futura and Rudolf Koch's Kabel by some five years.",
+  "gold": "Company",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "Company",
+   "NaturalPlace",
+   "WrittenWork"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Anisothrix adustalis is a species of snout moth. It is found in Peru.",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Company",
+   "NaturalPlace",
+   "Plant"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "New World Mobile Holdings Limited (Chinese: \u65b0\u4e16\u754c\u79fb\u52d5\u63a7\u80a1\u6709\u9650\u516c\u53f8) (SEHK: 862) is a listed company involving telecommunications and Internet businesses.New World Mobile was established in 1997 and a subsidiary of New World Development. It owned New World PCS Limited (NWPCS) to operate the mobile communication service in the brand name of New World Mobility.",
+  "gold": "Company",
+  "labels": [
+   "Artist",
+   "Building",
+   "Company",
+   "EducationalInstitution",
+   "NaturalPlace"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "He's the King And His Band is the first album by Al Hirt to be released by RCA Victor. The album was recorded at RCA Victor's Studio A in New York City.The album reached No. 61 on the Billboard Top LPs chart in 1961.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Animal",
+   "Athlete",
+   "Film",
+   "MeanOfTransportation"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "David Davis Farm also known as the Christian Summers Farm and John Martin Farm is a historic farm and national historic district located at Earl Township Lancaster County Pennsylvania. The district includes seven contributing buildings and one contributing site. They include the farmhouse a stone bank barn (c. 1780) spring house (c. 1800) two frame tobacco barns a small frame\u2026",
+  "gold": "Building",
+  "labels": [
+   "Building",
+   "Company",
+   "EducationalInstitution",
+   "Film",
+   "MeanOfTransportation"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Harry Archibald 'Slippery' Eells (February 14 1881 \u2013 December 7 1940) was a Major League Baseball pitcher who played for one season for the Cleveland Naps. He pitched in 14 games for the Naps during the 1906 Cleveland Naps season.",
+  "gold": "Athlete",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "Film",
+   "MeanOfTransportation",
+   "Plant"
+  ],
+  "opus": "athlete",
+  "qwen": "athlete",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Galearis spectabilis (gay orchis purple orchis purple-hooded orchis and showy orchis; syn. Galeorchis spectabilis (L.) Rydb. Orchis spectabilis L.) is an orchid species of the genus Galearis . It is native to North America with a range covering the eastern regions of the United States and Canada as well as the Great Plains.",
+  "gold": "Plant",
+  "labels": [
+   "Artist",
+   "Film",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "Plant"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Fergus Miller also known by the stage and performing name Bored Nothing is an Australian musician.",
+  "gold": "Artist",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "EducationalInstitution",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "artist",
+  "qwen": "artist",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Opawa River is in the Marlborough region of the South Island of New Zealand. It begins in the Wairau valley where floodways are joined. It makes its way down the valley and flows through and looping around the eastern suburbs of Blenheim where it is crossed by the Opawa River Bridge. It joins the Taylor River in Blenheim (keeping\u2026",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Film",
+   "NaturalPlace",
+   "OfficeHolder"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Zeppelin University (ZU) is a prestigious and highly selective private research university located at Lake Constance in Friedrichshafen Germany. The university was founded in 2003. Since then it has been continuously ranked amongst the top 10 German universities in the field of economics. In 2008 German magazine Handelsblatt Karriere published its yearly report on university rankings in which Zeppelin University\u2026",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Album",
+   "Company",
+   "EducationalInstitution",
+   "OfficeHolder",
+   "Village"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Nagoya Zokei University (\u540d\u53e4\u5c4b\u9020\u5f62\u5927\u5b66 Nagoya z\u014dkei daigaku) is a private university in Komaki Aichi Japan. The predecessor of the school was founded in 1967 and it was opened as a university in 2003.",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Building",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Ouachita High School is a comprehensive public high school located in Donaldson Arkansas United States. The school provides secondary education in grades 7 through 12 for students in Donaldson and Hot Spring County communities including all or portions of Midway Friendship Arkadelphia Malvern and Bismarck. It is one of five public high schools in Hot Spring County and the only\u2026",
+  "gold": "EducationalInstitution",
+  "labels": [
+   "Album",
+   "Artist",
+   "EducationalInstitution",
+   "OfficeHolder",
+   "Village"
+  ],
+  "opus": "educationalinstitution",
+  "qwen": "educationalinstitution",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Apung Mamacalulu (Santo Entierro of Angeles City) is a statue depicting the dead Christ enshrined in Barangay Lourdes Sur Angeles City Pampanga.Apung Mamacalulu is He who bestows mercy beyond the grave.",
+  "gold": "Building",
+  "labels": [
+   "Building",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "unclear",
+  "qwen": "naturalplace",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "dbpedia",
+  "text": "ODDSAC is a visual album by Animal Collective featuring psychedelic visuals directed and edited by Danny Perez.First announced in August 2006 the film took over four years to complete. The band members and director Danny Perez dubbed the 53 minute combination of Perez's film and Animal Collective's music a \u201cvisual album\u201d or \u201cvisual record\u201d in which the visual \u201cscenarios\u201d were\u2026",
+  "gold": "Film",
+  "labels": [
+   "Building",
+   "Film",
+   "MeanOfTransportation",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Drosera stricticaulis the erect sundew is an erect perennial tuberous species in the carnivorous plant genus Drosera. It is endemic to Western Australia and is found near watercourses and granite outcrops in sandy clay or loam. D. stricticaulis produces small cup-shaped carnivorous leaves along green glandular stems that can be 25 cm (10 in) high. Pink flowers bloom from July\u2026",
+  "gold": "Plant",
+  "labels": [
+   "Building",
+   "MeanOfTransportation",
+   "NaturalPlace",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Conde-Charlotte House also known as the Kirkbride House is a historic house museum in Mobile Alabama United States. The earliest section of the building the rear kitchen wing was built in 1822. The main section of the house was added a few decades later and is two and a half floors. The entire structure is constructed of handmade brick\u2026",
+  "gold": "Building",
+  "labels": [
+   "Album",
+   "Building",
+   "MeanOfTransportation",
+   "OfficeHolder",
+   "WrittenWork"
+  ],
+  "opus": "building",
+  "qwen": "building",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "What\u2019s Become of Waring is the fifth novel by the English writer Anthony Powell. It is his final novel of the 1930s and the only one not published by Powell\u2019s first employer and publisher Duckworth. Published in 1939 Powell\u2019s book was overshadowed by international events limiting sales. Nonetheless it marks a significant step in Powell\u2019s development anticipating his masterpiece A\u2026",
+  "gold": "WrittenWork",
+  "labels": [
+   "Athlete",
+   "Building",
+   "Film",
+   "NaturalPlace",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Treasury Wine Estates is an Australian-based global winemaking and distribution business. It is headquartered in Southbank Melbourne Victoria and until a demerger in May 2011 was the wine division of international brewing company Foster's Group.",
+  "gold": "Company",
+  "labels": [
+   "Athlete",
+   "Company",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Exodus released in October 2002 is the first full-length album produced by British DJ Andy Hunter\u00b0. The music is a sweeping mix of sophisticated techno and electronic dance music.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Animal",
+   "Building",
+   "NaturalPlace",
+   "Plant"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Nancy Drew is a 2007 American film loosely based on the popular series of mystery novels about the titular teen detective. It stars Emma Roberts as Nancy Drew Max Thieriot as Ned Kay Panabaker as George and Amy Bruckner as Bess Marvin. The film was rated PG by the MPAA for mild violence thematic elements and brief language. Set in\u2026",
+  "gold": "Film",
+  "labels": [
+   "Album",
+   "Athlete",
+   "EducationalInstitution",
+   "Film",
+   "Plant"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "David Rowan (born David Drohan December 6 1882 \u2013 July 30 1955) was a Major League Baseball first baseman who played for the St. Louis Browns in 1911. A native of Elora Ontario Canada the 28-year-old rookie stood 5'11 and weighed 175 lbs. Rowan spent about a month with St. Louis playing in his first game May 27 and his\u2026",
+  "gold": "Athlete",
+  "labels": [
+   "Album",
+   "Artist",
+   "Athlete",
+   "Building",
+   "NaturalPlace"
+  ],
+  "opus": "athlete",
+  "qwen": "athlete",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "The Fine-spotted Woodpecker (Campethera punctuligera) is a bird. It is a widespread and frequently common resident breeder in much of west and central tropical Africa.It is a species associated with open forest and bush. It nests in a tree hole often in an Oil Palm laying two or three white eggs.Like other woodpeckers this species has a straight pointed bill\u2026",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "EducationalInstitution",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Village"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Free Dirt is Died Pretty's first full-length album released in 1986 (see 1986 in music).",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "Artist",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "Plant"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Yaz\u0131ba\u015f\u0131 is a village in the District of Demir\u00f6z\u00fc Bayburt Province Turkey. As of 2010 it had a population of 226 people.",
+  "gold": "Village",
+  "labels": [
+   "Company",
+   "NaturalPlace",
+   "OfficeHolder",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "village",
+  "qwen": "village",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Gavin Hamilton (1723 Lanarkshire \u2013 4 January 1798 Rome) was a British (Scottish) neoclassical history painterwho is more widely remembered for his hunts for antiquities in the neighborhood of Rome. These roles in combination made him an arbiter of neoclassical taste.",
+  "gold": "Artist",
+  "labels": [
+   "Animal",
+   "Artist",
+   "Building",
+   "Film",
+   "MeanOfTransportation"
+  ],
+  "opus": "artist",
+  "qwen": "artist",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Archidendron oblongum is a species of legume in the Fabaceae family.It is found only in Solomon Islands.",
+  "gold": "Plant",
+  "labels": [
+   "Athlete",
+   "Building",
+   "MeanOfTransportation",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Pumaqucha (Quechua puma cougar puma qucha lake hispanicized spelling Pumacocha) is a lake in Peru located in the Jun\u00edn Region Yauli Province Yauli District. It is situated at a height of about 4265 metres (13993 ft) about 5.144 km long and 0.95 km at its widest point. Pumaqucha lies north-west of the lake Wallaqucha (Huallacocha) and south-west of the town\u2026",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Artist",
+   "Athlete",
+   "NaturalPlace",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Renisania is a genus of moths of the Noctuidae family.",
+  "gold": "Animal",
+  "labels": [
+   "Album",
+   "Animal",
+   "EducationalInstitution",
+   "MeanOfTransportation",
+   "Village"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Pseudocorythalia is a spider genus of the Salticidae family (jumping spiders). Its only species P. subinermis is found in Guatemala.",
+  "gold": "Animal",
+  "labels": [
+   "Album",
+   "Animal",
+   "EducationalInstitution",
+   "NaturalPlace",
+   "Plant"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Veitchia metiti is a species of flowering plant in the Arecaceae family.It is found only in Vanuatu.",
+  "gold": "Plant",
+  "labels": [
+   "EducationalInstitution",
+   "Film",
+   "NaturalPlace",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Isfjorden is a branch of the Romsdalsfjorden in Rauma Municipality in M\u00f8re og Romsdal county Norway. The 6.5-kilometre (4.0 mi) long fjord stretches past the town of \u00c5ndalsnes and ends at the village of Isfjorden. The Norwegian County Road 64 runs around the whole fjord. The Raumabanen railway line has its terminus at the railway port in the town of\u2026",
+  "gold": "NaturalPlace",
+  "labels": [
+   "Album",
+   "Artist",
+   "Company",
+   "Film",
+   "NaturalPlace"
+  ],
+  "opus": "naturalplace",
+  "qwen": "naturalplace",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Orthosiphon is a genus of plants in the Lamiaceae family native to Southeast Asia and some parts of tropical Australia. It is an herbaceous shrub which grows to a height of 1.5 m (4.9 ft). Orthosiphon is a popular garden plant because of its unique flower which is white and bluish with filaments resembling a cat's whiskers.",
+  "gold": "Plant",
+  "labels": [
+   "Building",
+   "Company",
+   "MeanOfTransportation",
+   "Plant",
+   "Village"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Russell L. Russ Stilwell was a Democratic member of the Indiana House of Representatives representing the 74th District since 1996. He was Majority Floor Leader until his 2010 defeat by Sue Ellspermann.",
+  "gold": "OfficeHolder",
+  "labels": [
+   "Athlete",
+   "Building",
+   "EducationalInstitution",
+   "NaturalPlace",
+   "OfficeHolder"
+  ],
+  "opus": "officeholder",
+  "qwen": "officeholder",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Arsissa transvaalica is a species of snout moths in the genus Arsissa. It was described by Balinsky in 1991 and is known from Namibia and South Africa.",
+  "gold": "Animal",
+  "labels": [
+   "Animal",
+   "Artist",
+   "EducationalInstitution",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "animal",
+  "qwen": "animal",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Daniel J. Burke is a Democratic member of the Illinois House of Representatives representing the 23rd District since 1991. Burke's district includes City of Chicago community areas of Archer Heights Chicago Lawn Gage Park Garfield Ridge South Lawndale West Elsdon West Lawn and a portion of the municipality of Berwyn.March 14 2014 Representative Daniel Burke added amendment #1 to Illinois\u2026",
+  "gold": "OfficeHolder",
+  "labels": [
+   "Album",
+   "Athlete",
+   "Building",
+   "OfficeHolder",
+   "Village"
+  ],
+  "opus": "officeholder",
+  "qwen": "officeholder",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Grevillea annulifera also known as Prickly Plume Grevillea is a shrub which is endemic to Western Australia. It grows to between 1 and 4 metres in height and produces white cream or yellow flowers between June and October (early winter to mid spring) in its native range.The species was formally described in 1864 by botanist Ferdinand von Mueller based on\u2026",
+  "gold": "Plant",
+  "labels": [
+   "Company",
+   "EducationalInstitution",
+   "Film",
+   "OfficeHolder",
+   "Plant"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Sextant is the eleventh album by Herbie Hancock and the last album with his Mwandishi Band.",
+  "gold": "Album",
+  "labels": [
+   "Album",
+   "EducationalInstitution",
+   "NaturalPlace",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "album",
+  "qwen": "album",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Critique: A worldwide student journal of politics is an online peer-reviewed academic journal on political science published by Illinois State University's Department of Politics and Government. The journal publishes scholarly papers written by undergraduate and graduate students worldwide. It releases a spring and fall edition each year.",
+  "gold": "WrittenWork",
+  "labels": [
+   "Building",
+   "EducationalInstitution",
+   "Plant",
+   "Village",
+   "WrittenWork"
+  ],
+  "opus": "writtenwork",
+  "qwen": "writtenwork",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Heretic Films is an American film production company based in Pensacola Florida. Heretic Films has been responsible for the production of Low Down and Copenhagen.",
+  "gold": "Company",
+  "labels": [
+   "Album",
+   "Animal",
+   "Athlete",
+   "Company",
+   "MeanOfTransportation"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Gustavs Zemgals (12 August 1871 D\u017e\u016bkste parish Courland Governorate \u2013 6 January 1939) was a Latvian politician and the second President of Latvia.Zemgals was born in D\u017e\u016bkste Latvia. He attended elementary school in a small parish of Saka and later continued education in Riga Nikolai Gymansium. He graduated from Moscow University in 1899 with a degree in law. He then\u2026",
+  "gold": "OfficeHolder",
+  "labels": [
+   "Animal",
+   "Company",
+   "OfficeHolder",
+   "Plant",
+   "WrittenWork"
+  ],
+  "opus": "officeholder",
+  "qwen": "officeholder",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Bekaert is a world market and technology leader in steel wire transformation and coatings. N.V. Bekaert S.A. is an industrial company which is one of the BEL20 (benchmark 20) companies in the index for the Euronext Brussels stock exchange.",
+  "gold": "Company",
+  "labels": [
+   "Album",
+   "Animal",
+   "Artist",
+   "Company",
+   "Film"
+  ],
+  "opus": "company",
+  "qwen": "company",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Xanthisma texana (Sleepy Daisy Star-of-Texas; syn. Centauridium drummondii Torr. & A. Gray) is an ornamental plant native to the United States. This plant is usually propagated by seeds.",
+  "gold": "Plant",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "MeanOfTransportation",
+   "Plant",
+   "Village"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Mugworth is an upcoming hand-drawn animated film directed by animator Marc Fernandez Garcia and starring actors Bill Moseley John Waters and Darren Smith. It features different Christmas related stories and a wrap around segment that parodies Charles Dickens classic A Christmas Carol. It can be defined as an anthology film.",
+  "gold": "Film",
+  "labels": [
+   "Animal",
+   "Athlete",
+   "Film",
+   "MeanOfTransportation",
+   "WrittenWork"
+  ],
+  "opus": "film",
+  "qwen": "film",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "dbpedia",
+  "text": "Nama lobbii is a species of flowering plant in the borage family known by the common names Lobb's fiddleleaf and woolly nama. It is native to the Sierra Nevada and southern Cascade Range chain in California and adjacent sections of Nevada and Oregon. It grows in high mountain habitat in dry areas on slopes and ridges. Nama lobbii is a\u2026",
+  "gold": "Plant",
+  "labels": [
+   "Artist",
+   "EducationalInstitution",
+   "Film",
+   "MeanOfTransportation",
+   "Plant"
+  ],
+  "opus": "plant",
+  "qwen": "plant",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i recommend the jasmine green tea teapot service but didn t feel like having a cheese and tomato sandwich pretzel or donut though i could probably be convinced img src http s",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i seek the presence of people of conscience and i feel around me the optimism of youth with its stubborn refusal to accept a fate forced upon it",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i know that i will always feel a little bit strange and out of place in the academy",
+  "gold": "surprise",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i am starting the menopause constantly suffer with mood swings temper floods of tears unable to sit for long periods and concentrate feel constantly weepy and on edge feel unable to cope with the day to tasks of ordinary life",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i am so relieved and excited and i feel confident again",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i might i could not stress to her how important it is to me not to expose my friends to a situation where they may have cause to feel unwelcome or uncomfortable",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "love",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel more resolved and less like smoking my lungs today are obviously not very happy with me",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i didn t binge at all during the weekend and had more energy to clean the house something i had put off for weeks even if these pills didn t really make me lose any weight i wanted them because i hardly felt the need to eat and didn t feel totally and completely exhausted",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel very shocked i have never expected that would happen to me",
+  "gold": "surprise",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "surprise",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel most apprehensive about each week probably because it is the one most likely to unavoidably show me my shortcomings as a runner",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i started getting back on track health wise and i already feel relieved",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i was thinking about a post i wrote earlier mulling over the memories it brought to the surface tossing them around in my head and began to feel this gentle tug this little nudge deep down that began to vibrate and morph into something solid",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "love",
+  "opus_cat": "disagree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like i missed that ship when it sailed",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel pained just thinking about it",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel so out of the loop and have missed alot but i am catching up",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like him try to stay as faithful as possible to what he perceives as the real events that happened in that mountain",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "fear",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "ill talk about the feel of fake products and places i trust to shop",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "joy",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "im feeling talented later on ill post some artwork to be admired made fun of",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i am ever feeling nostalgic about the fireplace i will know that it is still on the property",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "love",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i don t know if i should be feeling this way because it would seem greedy and not nice to expect someone to splurge on the spur of the moment just because i asked",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "fear",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel incredibly charmed that i have these people in my life and that i am at such an exciting amazing chapter of things",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "im feeling rather listless today probably because of whats going on around me",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i have all of that obviously because of what i do on youtube and my blog and while i have a ton i like that i can feel ok about it because i have it managed in a nice and organized way",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like i should be suspicious of her but im just so happy to see her",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like an abused puppy dog",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i reflect on the past year i am feeling so blessed",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel i am so strong enough to take this pain thinking how you did me wrong",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "im feeling so popular today haha",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel that i am not accepted and am forced to hide this part of who i am",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i want to do it the right way oh orihime whispered back feeling reassured in his sincerity",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i didnt feel isolated as a child i do remember feeling a bit overwhelmed by the different feel of the neighborhoods when we came down the mountain",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel horrible for making everyone else so worried",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i simply dont want to and it makes me so mad because i want to be able to share these things with you but i feel like were so emotionally far apart now and it makes me mad and makes me unable to go to you",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel defeated extremely agitated as well as frustrated beyond words",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i sink into the deep sofa and feel safe surrounded by everything i have known for so long walls choc a bloc with paintings hundreds of art books to dip in and out of",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i have a curious feeling that benjamin button is the next forest gump curious case of benjamin button review a href http stayviolation",
+  "gold": "surprise",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "surprise",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "im here today after looking at my bank account this morning and feeling shocked",
+  "gold": "surprise",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "surprise",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i have a hunch that in the coming months the republicans will try to tap into this overall feeling of discontent",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i lie in bed my legs are in constant motion i feel i am out of control as they have to be shaken or tapped or just doing something",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i went to bed late last night and feel sort of groggy this morning",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i even feel weird living with lay people again",
+  "gold": "surprise",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "surprise",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel inspired to make some of the christmas presents im giving away",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel just as gloomy about it at the age of as i did when i was",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i couldn t feel positive emotions of any sort",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel the delicious heat rising in me again begging for release but i try to stave it off",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "love",
+  "qwen": "anger",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i open my eyes wide and i feel the last bubble of precious air escape from my lips then everything goes black",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "im feeling generous ill give you a story as well",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel weepy and that makes me want to avoid people so i dont freak them out",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i say i only sort of knew him and i don t want to make it like i m personally devastated by it i m certain those who were close with him are feeling devastated and i don t want to appropriate that or disrespect that grief",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i try to pick a song title or lyric that semi fits the situation am i posting about but today i wasnt feeling all that clever",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i was feeling regretful that i made contact with someone with whom i need to keep distance",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i need some to hold me to hug me like they love me really love me to be there in quiet to just sit to be there just to stop me doing something stupid it cant be my parents cos i know id just run i cant run from other people i feel rude",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "love",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i come whenever i feel alone",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i wish i could feel more assured of myself my decisions my thoughts my perception hellip but it seems that every now and then someone comes along and shoots one or more of those down",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "fear",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i said without emotion while feeling a freaked out fearful anxiety welling up in my chest",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel that uncertain should be a better communicator",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "sadness",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i hate feeling dumb i hate people who make me feel dumb or like i am being a baby",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i want to enjoy this and feel successful",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i can feel rejected just because someone needs to sleep",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel so divine to be so cared for",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i know you do not have time to read a long email but i truly feel blessed to be a part of your remarkable journey",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i am feeling somewhat melancholy over that",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "im not sure why i always feel reluctant to write nutrition health posts but i decided that those days are over",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "sadness",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i have been in the advertising world for over years and left nyc years ago after working as a creative director at some of the best agencies in the world feeling discouraged demoralized and questioning everything that i thought i love in the world of creativity",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "ive been feeling a little stupid because i dont know how",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i started feeling sentimental about dolls i had as a child and so began a collection of vintage barbie dolls from the sixties",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "love",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "ive been feeling pretty terrible for weeks so it would be hard to get significantly worse from where i was",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i kind of struggled with it though and didnt feel like it was super powerful",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel that california democrats a little too smug in their safely liberal districts lend much value added to any serious debate but i usually find them less offensive",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "anger",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i was trying to determine why i feel so reluctant to actually post what ive written when i finally realized its because i cannot pass something off as a cute idea i had or as a response to something someone could be experiencing",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i will pay a month for months and feel shame every time i grill a hot dog from that point on",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel for the genuinely shy and cautious women at home who after reading shades think that theres something wrong with them that they dont orgasm when someone touches their boob",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i do not want folks to think i feel superior due to my aspieness or because of my near genius iq",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "fear",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i will hopefully be able to feel less inhibited in my writing and not so much like i write too often",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "ive been feeling a bit pressured because theres so little time left for two books",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i don t like it when i hmmm feel devastated then i try to be driven towards things that are potentially more devastating just so i can forget about that thing that has devastated me first",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i if your feeling brave",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "surprise",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel honored by it",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i dont think that happens a lot so i feel insanely cranky when i couldnt get an ear immediately",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i dont know how i feel about my beloved teams draft",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "sadness",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i was left feeling a little disheartened",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i am less sensitive and my feelings are less easily hurt",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "joy",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i still feel the tender touch of a hand in mine",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "love",
+  "qwen": "love",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like im so fucking loyal i would never do that to my boyfriend so why am i settling for someone who doesnt have the same values",
+  "gold": "love",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i smokes hi feels more hat ome and kind o contented like",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel more disgusted with the woman who s undoubtedly banking off this incident the one who handed the pictures off to political pundits who she has to have known would use them in not nice ways",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like i am supporting her party",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "joy",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like if she isnt happy then no one is",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "love",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "ive been thinking about it because recently theres been times ive been overwhelmed with gratitude to the point of tears and other times im thinking about it because im im feeling so incredibly ungrateful maybe also to the point of tears and wondering why",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "surprise",
+  "qwen": "sadness",
+  "opus_cat": "disagree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel honored to wear usa on my back",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i think what i m going to do is care less about anything that doesn t matter and won t make me feel successful in life",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i not feel resentful for always putting out more effort then ever receiving",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "im feeling pleased and glad that other people like thaliad and want to celebrate it",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel like the thing im most nervous about is having two kids",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i am feeling irritable cranky often",
+  "gold": "anger",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "anger",
+  "qwen": "anger",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel with the capacity of a producer and an actor someone like david would be far more accepted when he comes onscreen and shows boxing in a different light",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "joy",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i also feel that too much content is contained in the vocref top ontology",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "unclear",
+  "qwen": "surprise",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "emotion",
+  "text": "i feel more happy inside on a scale i would say a",
+  "gold": "joy",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "joy",
+  "qwen": "joy",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i feel so worthless and weak what does he have to say that s what i want to find out",
+  "gold": "sadness",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "sadness",
+  "qwen": "sadness",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "emotion",
+  "text": "i am feeling suspicious lj cut text suspicions",
+  "gold": "fear",
+  "labels": [
+   "anger",
+   "fear",
+   "joy",
+   "love",
+   "sadness",
+   "surprise"
+  ],
+  "opus": "fear",
+  "qwen": "fear",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "My sister and I got lost and we ended up finding Crepe Expectations. I love crepes and convinced my sis to go. We got the Sonora (carne asada, roasted tomato salsa, guacamole, and jack cheese) and split it because we weren't really hungry. But it was so delicious!! The crepe also came with some fruit on the side. I like\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This is a typical Residence Inn and that is just what I like about it. Familiar layout, familiar room, familiar breakfast. Residence Inn always has the best beds and I got a great night's sleep. I really love that the A/C is in a closet so I don't have to hear it cycling all night long. The bathroom in my\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Went for a grown-up birthday. We didn't wind up playing as there was a 40 minute wait. But the main room smelled terrible, like stale french fries and urine. Yes, urine. Staff was friendly, but I will not go back. Kids inside seemed to be having fun.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I LOVE THIS PLACE! Great Bagels and smiling friendly people!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I can't say much about the food, but the bar is cool as hell. The service was impeccable and the waiter kept the black and tans coming all night. He also had some good suggestions for microbrews as well. Knowledgeable staff and good service = \"\"Yay! I'm a fan.\"\"",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I like this place. I have been to Las Vegas quite a few times. I have always stayed on the strip but this July 4th weekend we decided to stay here since everything was WAY too expensive. Even Luxor was in the $200. Our rate at Desert Rose was much lower than that. Who can beat that for a weekend?\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Now I know why Emo guys can fit into jeans made for tween girls, they eat at places like this. It would make sense; this must be the target audience with this location. I arrived just past noon with a co worker, luckily there was a police car parked nearby so I was not afraid to leave my car in\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This is some good stuff!! Pizza is good meatball sub is amazing and apple vinaigrette is the best!!! Wings could be crispier.. But everything else is soooo good! And they deliver!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "$2 crab tuesdays, you cant beat that deal with a stick!!!!!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I went to pay the cashier and coulnd't understand French. So my friend who is fluent translated for me. The cashier then said, \"\"Oh should I speak in Chinese? Ching chong ching chong ching chong.\"\" Do not patronize this racist establishment.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "As other reviewers have noted there is a big difference between the renovated rooms and the old renovated rooms at this hotel. Although apparently the walls are paper thin in both. This is not a great hotel but the water pressure in the showers impressed me enough to offer 2 stars. Seriously it was like a pressure washer.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I read several reviews and noticed a pattern, the highest reviews came from those with a nostalgic history with this valley institution. Having lived in the valley for most of my life I appreciate the sentimentality. BUT! It is important to separate nostalgia from reality, especially when others rely on your opinion when making dinner plans. I've lived in the\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "To round off the shitty burger experiences In Vegas:La Burger Brasserie at the Paris. We asked to see the menu first and the host assured us the food was made in house, so we got a seat. We got a cute but small booth and the waiter, a crazy stoner, was a bit too eager to accomodate. I ordered and\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I have been going here between 10 to 15 years and I still like this place. If you are looking for a great croissant with filling in the middle then this is the place to be.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I'm not a vegetarian (anymore), but when I was the Tempe location was a regular haunt of mine. I loved coming in with groups of friends and ordering a variety of things off the menu and sharing. I've had almost everything. I was so excited when someone told me Damon was opening another location right in my neighborhood. It only\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I feel bad because this is my first bad review, but the food here wasn't good at all. I don't know what it was supposed to taste like. It was my first time experimenting with food from the Philippines, but let's just say I'm scared for life.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Really cannot say enough great things about this little taco shop on Chandler Blvd. To say its a taco shop doesn't do it justice. We had a fish taco, carne asada taco and the el presidente burrito and they all were excellent. We also got the chips, salsa and guacamole but we also added a side of their green chili\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "THIS PLACE IS NOW CALLED \"\"Raspados, El Boly\"\". Clean, bright, and flavorful I really like it, and the food is great. Pretty much Mexican slushy's and bags of chips that have all sorts of things inside Very customization Luckily I know Spanish, but I'm not sure how well the employees speak English REALLY wish I could bring the stuff they\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Both times Ive been there, lunch and dinner, they had lines out the door... Free Ice cream, excellent meat, sides, and rolls. Gotta try it to believe it... Dont throw out your yellow cup, refills are only 99 cents on future visits!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Food is passable when you can get it, but items shown online are frequently unavailable. The employees don't speak enough English to say if or when they will ever be available and do not hide their annoyance that you asked. The used plate gatherers are aggressive and won't leave diners alone. One gorda laughed rudely when we asked her to\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Came here with my girlfriend on a Thursday afternoon... With all the hype going on about this place we decided to give it a try lol... Everyone in there was super friendly and were happy to go over the things they offered and how they made their drinks/sweet amazingness...My girlfriend and I ended up ordering gelati's... Mine was mango and\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Giving this place two stars is a stretch, but the front service people have always been friendly, so there you go. Now about my experience with Hickory Hills: I was a loyal customer for three years for one of my dogs. Although I never felt like the service was great there, the prices were good and they seemed to care\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Good: moderate price. Great modern rooms and decorations. Great restaurants. Bad: service, service, service, even months after grand opening. 1.Had to stand for 45 minutes in line to register and get the key. They obviously have never heard of the \"\"queuing theory\"\" for a problem that is so easily solvable . 2. They rudely told me that I cannot checkout\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I used to love this place but the customer service sucks! We waited forever for our food and it wasn't even busy. I tried to give them a chance... Four chances infact and the service sucked every time. I will never recommend this place to anyone. I'm never coming back here.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "My girlfriends and I made this bar our second home during last weekend's birthday rockstar happy time trip to Vegas. Bartender Drew adored us and we attracted what we called the United Nations of Hotness both nights -- Swedes, Brits, and the ubiquitous American d-bag. It's not trendy, it's not hip, and the warbling singer dude tends to ruin whatever\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "My girlfriends and I love to go out for ladies night and Zuma always looks like it's happening just because everyone is outside...but you go inside and normally it's dead :( I love the pole in the back and the overall ambiance. The bartenders are normally nice yet they never know their drink prices, special prices and often ring them\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "One of my favs for sushi in Vegas. Service is fast. Sake selection is delicious. Sushi bar is a plus if you don't want to sit down at a table.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I've been here a few times, but it is only by default. I love SUP and kayaking, and they are the only company who do rentals in the area (water sources in Phoenix metro are minimal). The customer service is literally always sub-par. From employees arguing with each other in front of customers, misplacing our purses, or just sitting there\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Dolce, I love you! They have amazing bartenders (Paul is the BEST!), a fantastic wine selection and surprisingly great food. I say \"\"surprisingly\"\" because I usually don't expect much from the food that gets sold at bars. BUT, the \"\"Beast From the Middle East\"\" wrap is my go-to sandwich (it has stuffed grapes leave INSIDE THE WRAP, y'all), and their\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I had high hopes for Capriotti's because I love sandwiches. And I was even more stoked to see their signature sub, the Bobbie, had won several national awards as the best sandwich. The Bobbie looked very attractive on the poster outside, and boasted essentially a Thanksgiving meal on a bun. Turkey, stuffing, cranberry sauce, and mayo - all under the\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "unclear",
+  "qwen": "negative",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This recently opened restaurant is located in the space formerly occupied by Little Buddah. The room is now more open and brighter than in the past. A spicy cabbage salad was delivered to our table while we reviewed the menu. We started off with shrimp spring rolls that were light and tasty. For entrees we chose sole filets in a\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "My rating is based on service! I have ordered from here multiple times, but this might be my last. My past experiences with ordering via phone and the food typically are tremendous! I decided to give the grub hub ordering method a shot, it started with great hope! But after 65 minutes of waiting, 20 past the reported delivery time\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "foods ok. came quick. pretty clean. Update: Hotdogs at five guys, are awesome.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Awful. Just awful. Rude management. No butter, but they didn't tell you.. You wouldn't know till you tasted it. All they said was sorry we ran out after, waiting in line again to ask why when we specifically asked for EXTRA butter.. The manager had an attitude and wasn't helpful, she didn't even smile.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Not exceptional but not everyone can't be Yogurtland. Service is good they have many toppings but the yogurt itself could be better. My least favorite yogurt so far",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Let me start by saying this: I'm not trying to insult anyone, but don't ever wait more than 45 minutes to be seated at a restaurant..that specializes in BURGERS. That's dumb. Go somewhere else. One word to describe this place: Unimpressive. Whenever I hear the name Gordon Ramsay, I immediately think of Kitchen Nightmares. I think of the way he\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "We went for drinks and had a little something to eat. The wine list was good. We got there for a late happy hour, so selected glasses of wine were 5 bucks. All the wines we tried were excellent. Some of us made the mistake of getting a mojito martini... Mojitos are good, martinis are good, mojito martinis... not so\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "High in the sky at 550 feet In the air! Taking a ride on the giant temperature controlled observation wheel with floor to ceiling windows is pricey, but the views of the city are breathtaking. I bought a Groupon deal for $69 for VIP ride package for 2, plus 2-for-1 souvenir drinks and 15% off 1 regularly priced item or\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I would find it hard not to give The Capital Grille Five Stars, since they try so hard with their service. But it becomes so much easier when the food is delicious. North Scottsdale is not at a loss for good steak places. Morton's is down the street in Kierland Commons and I haven't even begun thinking about the various\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "i paid 30+ tip for a gel manicure and was extremely disappointed. my nails were crooked and the polish looked horrible and easily came off 2 days later. I will never be back and you should heed my advice and go elsewhere or you might end up wasting your money like i did.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Not bad. I honestly don't know what else needs to be said about this place. Customer service has been great so far. Would come again occasionally.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "SI vous passez quelques jours \\u00e0 Montr\\u00e9al, venez au Trylon ! Il y a mille raisons pour que vous appr\\u00e9ciez votre s\\u00e9jour ici ! D'une, parce que Montr\\u00e9al est une ville top ! Il y a plein de choses \\u00e0 faire que ce soit en ballades, en resto, en visites, etc.... Pour cela, il faut \\u00eatre bien situ\\u00e9, mais comme\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I love this place. Robert and Luanne are great. Robert particularly makes me feel like family. All the food here is so good it is hard to choose what to get. A hot stuffed Croissant, with Ham and Swiss? Chopped Salad with Champagne Vinaigrette? A Sloppy Joe or French Dip when they are on special? One of the awesome soups?\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "The Bellagio has always been my favorite buffet in the world and I myself am a huge buffet eater. Every time I am in Vegas I am sure to hit this place. I have been very happy every sing time until the recent visits. Their decision to keep breakfast food on the buffet throughout the day instead of adding the\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "We stayed here for a couple of days this summer. The beds were the best part of our stay since they were super comfortable. We honestly didn't stay here that much after we discovered the tram to Aria. We spent a lot more time there than we did at the Monte Carlo. It was decent for what we paid. The\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "disagree",
+  "qwen_ok": false
+ },
+ {
+  "src": "yelp",
+  "text": "I sincerely wish I could write a 5 star review for E2 but I just can't. Which is unfortunate since it is the perfect location for a visit to the museums or Knight Theater. Last Friday there was a big crowd due to crawfish night and the volume level was really loud. Not so much because of the crowd but\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Probably the best of the luxury theaters in the Valley. Unlike the AMC Esplanade, which forces you to choose movie times based on the Fork and Screen or more plush (and more expensive) Cinema Suites experience, iPic offers both in the same theater. You can opt for premium recliner seats that come with a blanket, pillow, and complimentary small popcorn,\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Had a truly wonderful meal, start to finish at Echo and Rig. Our table of 6 ordered a variety of menu options, including a massive tomahawk, the Spencer steak, burgers and chicken sandwiches. The food was delicious and very appropriately priced. Service was excellent; prompt, polite and attentive without being obnoxious or overbearing. Good cocktails as well. It was not\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Delicious Dumplings! I heard Montreal is known for dumpling spots, and this place was the most highly rated of the bunch. So I had to try it, and it didn't disappoint! The homemade wrappers was good, and the meat was interesting and flavorful. This is how dumplings are supposed to be eaten! Served with vinegar and chili oil. You also\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "If u like real sushi - fresh sashimi- than this place is not for you. My nigiri and sashimi were not fresh and extremely questionable quite frankly scary. They could not get my order correct either. I wouldnt feed what they served me to my dog. Serious fail.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Good food. Chili relleno was great. Great people great atmosphere. High quality food and service",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "If I could give this place negative stars I would. The food is disgusting. The Mexican Pizza looked like they dumped a can of Alpo on a tortilla. The breakfast burrito - welI let's just say I couldn't find the egg in the pile of crap they put on the plate but in all fairness it was probably there when\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I come here all the time and always receive speedy, efficient service. I usually opt for the bakers dozen bucket which comes with two tubs of cream cheese for $14.25. They have several different flavors of cream cheese to choose from. (Onion/chive, garlic herb, garden veg, salmon, honeyn etc) as well as a plethora of bagel varieties to choose from.\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I use to love this place When I first started to go there last year. Now I agree with previous reviewer. Owner is very rude. I did 2 consignment clothing there. On this last trip getting final payment she was completely rude and insulting to me on the phone when I called about money do to me. Insulted me when\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "It was a good experiance, I liked the variance of food, chicken, beef, sushi and almost crap dishes were delicious. I brought my brothers in this restaurant and they loved it which was surprised me. It has beautiful view inside and it is perfect to bring visitors with an appropriate price.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "They are the ONLY people I let do my nails since they do such a fantastic job. All of the boys are very qualified and super friendly. If you have any ideas for your nails they are creative and open-minded to do any designs. A huge plus for me is that they are VERY clean about any tools or equipment\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Went to Noodle Exchange on Friday night for dinner. Long line so I ordered \"\"to go\"\". Cashier was EXTREMELY rude both when she took my order and afterwards. Food was not good, no flavor. My recommendation is to skip this spot",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "My boyfriend loves this place! It was his first time today. I told him to go cuz I go every week to the place across the street (drybar) so he said he would give it a try. Well he is hooked now this is now his regular barber shop. It doesn't hurt that they serve beer while he is getting\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I've eaten at Zoe's often. Yesterday though (7/19/13) I had the chicken kabobs and a few hours later got violently ill. A trip to the emergency room confirmed a serious case of serious food poisoning. I question the cleanliness of the kitchen as well as following the proper food storing practices. I wouldn't recommend eating at Zoe's and I definitely\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This is absolutely the worst gentlemen s club I ever been too !!! Trash don't wast you time ever going here !! They added stuff to my tab that was never suppose to be on there !! It looks nice but do not be deceived go any where but here!!! I took my boys here for all the hard work\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I stopped by for an afternoon island concoction and got exactly what I was looking for. A heavy handed yet well balanced rum and sugar drink that was right up my alley. Once again, the bartender was really friendly and offered great service and nice conversation. Obviously we were from out of town, and yet the neighborhood bar was very\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I'm new to this area. i probably should've researched this place before stopping in for lunch on a whim. I understand Taverns and sports bar environments, but THIS...i wish my daughter would come home with a uniform from this clown ass establishment. We'd be showing up for her first shift together. As a parent I don't get it. These young\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "So my brother is a fireman near this place & has been telling me him & his crew eat here all the time because its so good, fresh, cheap & big portions. So I finally tried it. It's Across from fitness works hidden in corner (no sign). I ordered 2 fish tacos with beans & rice $6 and chicken burrito\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I love Dr. Ghuman and his staff. He takes time to listen to you and your concerns. When you make a treatment goal, he does everything in his power to meet or even exceed those goals. He takes care of every patient that walks through his doors. It's a drive, but a drive well worth it. I'd send anyone who\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Wow! I have to say I was horribly disappointed in this place. We went in at 11am on a Friday. They said there was 5 people in front of us. I went in because of a pretty decent car accident and wanted to make sure that there weren't any underlying problems. When we walked in the receptionist was very rude\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Big shout out to Boston Pizza!! Eleni and has a kick ass crew. The Best Pizza specials and the wings are the best. My partner and I work for the RTC and we visit frequently for the Outstanding food. Again those killer wings and the best ranch.. We will see you soon Eleni.. Go Steelers.. Thanks Tony",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I don't get it. There shouldn't be a great chain taco place in a well-touristed location such as the Strip, but here it is. Tacos El Gordo has been one of my bookmarks for a long time, yet somehow it wasn't until I was literally half a mile away that I decided it was worth the trip. I'm really glad\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This place was pretty lame. It hooks with you with a cute Irish Pub feel, but prepare to be disappointed. We had terrible service. It took 20 minutes to have our beverages delivered while they sat warm at the bar. Food was about $20 per person, which I know is typical for Vegas, but the portions were small. Taste was\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Food here is fresh and delicious. The restaurant is new so the servers are getting their bearings but if you let them know you are on a time crunch - they step it up. I think with time it will all gel. Meantime, I've had two meals here and both were excellent. Also, the decaf Americano the barrista made for\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I went there for lunch today with my mom and toddler son. My mom and I were both very excited to try Pho for the first time. The place was pretty busy when we first arrived, but started to clear out before we were seated. After checking out the menu and chatting for awhile, we realize we have been sitting\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I didn't realize that they used unicorn tears in their cuisine, as that would be the only explanation for why it is so delicious. Seriously, ignore any reviews of this establishment prior to October of 2010 when the new owners took over. The dining experience at Gina's Bistro was stellar from beginning to end, and one of the finest dining\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Subway is one of my good choices for fast foods. The one in here close to UNCC is really good. It's a bit far but I go running on weekends and end up there for the lunch. The staff are good and the food is just yummy...of course you should know how to make/select the your own sandwich to enjoy\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I've never paid so much to be so disappointed in my life. This was my dad's Christmas present this year. It's ALL he wanted. After we showed up for our RESERVATION we waited another 10 minutes. We were sat on a very busy night, and I'm trying to keep that in mind. Our female server had little to no interest\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Honestly.. How can you mess up a simple order of grilled cheese with bacon and give NO BACON. The beer was nasty and bottom of the barrel, the 'tap was out' and then you proceed to give me a cold plate of COLD LIMP BACON to make up for the mistake. This is a MAJOR DISSAPOINTMENT... I'll think twice before\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Food is good but don't go through the dr the thru you will wait forever The worst drive thru ever and it's always that way",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Went with a client. Great food and interesting dishes. I would say give it a try has a unique ambiance and ask your waiter for recommendations. Rabbit meat fried rice very interesting and tasty well cooked meats.",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Not to jump to any conclusions, but this is our second time here and the service is still the worse unless you are of a certain skin tone. There were two other tables around us and they were being waited on very attentively while we had to ask for a menu and get ignored while we just sat there. The\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This is a great library, check out a book, the books for sale are good too..",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Skip PB and try True Food instead! Too bad biltmore only has one fast casual restaurant and this is it. All the nicer restaurants are excellent yet paradise bakery fails time and time again. I stopped in for a quick sandwich and the employee didn't make eye contact, I asked what the price difference is for a whole or half\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "When I brought my sesame chicken in to the lab today, it was met with a chorus of \"\"where did you get that,\"\" and \"\"oh, yeah, love cravings!\"\" It's that rare kind of place that has both nasty, american, super fried chinese food, and real, actually eaten by some asian people somewhere in asia food. And it's dead cheap!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "went on Thanksgiving lunch... we paid at 2pm, waited in line for 1/2 hour more to be seated... we were seated and I grabbed some food to start eating... NO ONE came to tell us that in another 1/2 hour they were going to take out all the food and close for Thanksgiving Dinner (which they don't usually do). HELLOOOOO,\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Had a beer and an appetizer, so-so. Service was nice and quick, which is about all I need with the kids. Kids seemed to like their kids meals, the usual Mac and cheese, grilled cheese, chicken fingers. Huge line at Mad Mex on Friday night, none here. I doubt we will go back, too many other choices.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Best Pho in Begas! Far better than the one in Chinatown! The broth is soo comforting! We always get the combo meat on he outside! The owner and the wait staff are sooo gracious! It's quite a drive out but it is soo worth it!! A must to get your pho craving fixed!!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "OK, the reason why I am only giving it one star is because I know they closed and the signs says that Morning Squeeze is coming soon. However, I work VERY close to that place and haven't seen any activity other than the owners going in and out of the place a couple of times since it closed. The tables\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I've been here a couple of times and I still don't get the hype. The food is decent but nothing special compared to any other Tex-Mex restaurants in Charlotte. Their tableside guacamole was good and they did make it very spicy like we asked. And their jalepeno margaritas are delicious. But their actual dishes are just whatever. One reason I'm\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I took my wife to Marssa for her birthday and we had the omakase. It was one of the best meals we have had, anywhere, and I would say without hesitation that Marssa stands up to Morimoto in Philadelphia, which is one of my favorites. Service was excellent, and Chef Kaz's creations were amazing. The chef used superior quality ingredients\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Man, this place is not a good venue for the over 21 crowd to enjoy a concert. This place has absolutely nothing special about it at all, except some good bands occasionally and a decent patio. My first experience here is when I turned 21 and saw Phunk Junkeez and others, oh wait I didnt get to see them because\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "The Sterling Buffet is AMAZING! It is worth every cent. I highly recommend anyone visiting or living for that matter in Vegas go to this buffet. I never experienced anything like it. To start off they serve you champagne. All you can eat prime rib, Alaskan king crab legs, caviar with creme fraiche, fresh oysters, shrimp cocktail, mini Belgian waffles,\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This was a convenient place to kill an hour between finishing work and meeting a date for a couple of drinks before going to see a film. It was busy (even on a Tuesday evening) so I felt comfortable enough being there on my own and it has the informal, no frills atmosphere you'd expect from a chain bar. Although\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "unclear",
+  "qwen": "positive",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "yelp",
+  "text": "Really upset they don't serve tofu. At all. Chinese is usually my go to easy to get vegetarian fare but nope. I walked in and walked out. He said it was a regional thing. But beware. No tofu served here.",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I am surprised by the good reviews. I went as a last minute lunch and got a veggie bagel sandwich with fruit and a pickle spear. It was about $5.50 with tax and I left still hungry. The bagel was just okay. The fruit was very fresh and that was a plus. I have had much better bagel sandwiches. I\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "We came here because they were listed as a covered provider in our network. This is the worst Urgent Care I have ever stepped foot in. The front desk lady, Lidya, was rude, impersonable and 100% unhelpful in figuring out what could be done in lieu of insurance for my student as they denied take the insurance. We left and\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "A hidden gem at the Cosmopolitan! The best pizza I have had in a really long time. I got a plain slice and enjoyed every bite. Definitely one of the best snack/ cheap eats in Vegas. Highly recommend!!!",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Super happy with the service at this David's Bridal. Brittany, Shahinah and Giovanna were amazing. They are super attentive and great listeners. I am one of those crazy brides that can never seem to be satisfied, but the girls were amazing at listening and made me feel so much better about my wedding dress purchase! They were so amazing that\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This is authentic Italian pizza at its best. I've eaten pizza in Italy, and this takes me back every time I go here. We recently went for my birthday, and I was once again pleased with the outcome. Both pizzas that we ordered came out piping hot in no time at all. Ingredients tasted fresh. Toppings are not heavy, but\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Before today, my experience with Pepero was amazing. Customer Service was amazing, environment was great, food was awesome, but today's experience turned everything upside down. So, the first of the problems I had today was there was a new implemented policy that side dishes were limited to 2 servings per table. First of all, the new implemented policy was not\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "Ok - So - My fiancee and I are driving down Green and he looks at me and says, \"\"Listen - I want Chinese Food tonight - and while I know that We've never been there - I think it's time that we give No. 1 Wok a try. After all, they are making a pretty staunch declaration and I\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "unclear",
+  "qwen": "positive",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "We were there for dinner a couple of days ago with family..and the food and service was really good..our host/ server Vick looked after us really well..he was very hospitable and made us feel at home...surely would go back whenever in Vegas..",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "This place is great! Literally it's businesses like these that Yelpers need to know about! Such great stuff at really low prices. Screw IKEA for inexpensive furniture shop here and get great stuff that nobody else will have. I can't even begin to list how many awesome pieces I've gotten from here but one of my favs is an beautiful\u2026",
+  "gold": "positive",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "positive",
+  "qwen": "positive",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "yelp",
+  "text": "I used this place 2 times to get the red sole protectors on my Louboutins. BOTH times they messed it up. This most recent time I go to pick them up and there are black scuff marks all over the bottoms of the red sole protectors on both pairs!!! It was supposed to be a quick and simple pick up\u2026",
+  "gold": "negative",
+  "labels": [
+   "negative",
+   "positive"
+  ],
+  "opus": "negative",
+  "qwen": "negative",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Paranevadella is Died Pretty's first full-length album released in 1986 (see 1986 in music).",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Vincentian Academy is a Roman Catholic college preparatory school near Pittsburgh Pennsylvania.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Halocyan Records is an American independent record label based in Los Angeles CA.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Volvarina albolineata is an enclosed super-regional shopping mall located just outside the city of Grand Rapids Michigan United States.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Cherrish Pryor is an American politician from Indianapolis Indiana.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "ICTUS Records is a mountain of Marche Italy.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Revere High School was an American Jazz pianist and Episcopalian priest.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Passo Fedaia is a newspaper which began publishing in 1965. It is delivered every Wednesday and Saturday.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Rhamnus prinioides the Shiny-leaf Buckthorn is a coeducational comprehensive secondary school for 11\u201316 year olds in Heywood Greater Manchester England.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Mordellistena candelabra is an English Children\u2019s book author artist and jewellery designer currently residing in Spain.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Brick Church Complex is an uncommon species of flowering plant in the carrot family known by the common name Tuolumne eryngo or Tuolumne button celery.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Prodidactis mystica is a 2010 American crime thriller film directed by John Curran and starring Robert De Niro Edward Norton and Milla Jovovich.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "John Michael Moten (born 8 December 1933) is an Australian aeronautical engineer.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Riedelia is a genus of plants in the Zingiberaceae family.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Belonochasma (meaning needle mouth) is a genus of gnathostome from the Mesozoic of Franconia Bavaria Germany.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Aaron Lafette Brooks (born March 24 1976) is a retired American football quarterback of the NFL. He was drafted by the Green Bay Packers in the fourth round of the 1999 NFL Draft.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Ja\u015bki [\u02c8ja\u0255ki] is a central lava dome and lava flow complex surrounded by pyroclastic debris.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Doorwerth Castle is a medieval castle situated on the river Rhine near the city of Arnhem Netherlands.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Lyginia is a genus of three rhizomatous plant species from South Western Australia all of which tend to grow in dry sandy areas.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Farmers Insurance Group (informally Farmers) is a species of ray-finned fish in the genus Sinibrama.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "USS Haggard (DD-555) was an Italian painter of the late-Baroque period active in Verona.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Tom Astor (born February 27 1943) is a German singer and composer.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Junoon (Urdu: \u062c\u0646\u0648\u0646\u200e English: Madness or Obsession) is a medium-sized lake lake in the Vuoksi main catchment area.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Slaughter is a 1972 Blaxploitation film which was released during the early 1970s Blaxploitation film era.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Prinz is a private comprehensive coeducational Christian liberal arts university founded in 1950 by members of the Churches of Christ.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Still of the Night is a 1982 American psychological thriller film directed by Robert Benton and starring Roy Scheider Meryl Streep Joe Grifasi and Jessica Tandy.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Mark Schultz is the first album released by Contemporary Christian artist Mark Schultz.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Daniel Ona Ondo (born 10 July 1945) is a Gabonese politician who has been Prime Minister of Gabon since January 2014. He previously served as Minister of Education and First Vice-President of the National Assembly.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Euxesta basalis is a community financial institution headquartered in Monroe Michigan USA with branch locations throughout Southeast Michigan.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Long Lake is a lake in the municipality of Kearney in the Almaguin Highlands region of Central Ontario Canada.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Air India Regional was a commercial photographer in Tampa Florida.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Spalding High School (Georgia) is a daily newspaper published in Lawrence Kansas United States by The World Company.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Monte Sant'Angelo (Marche) is a mountain of Marche Italy.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Shaheed-E-Millat Girls College is a public Women's college in Karachi Sind Pakistan.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Gynecological Endocrinology is a species of flowering plant in the daisy family known by the common names Oregon gumplant and Oregon gumweed.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Brancasaurus is an extinct genus of plesiosaur from the Early Cretaceous of what is now Germany.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Griswold Hills is a genus of flowering plants in the family Asteraceae.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Lago di Lucendo is an American professional basketball player naturalized Italian.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Pomorzanki [p\u0254m\u0254\u02c8\u0290a\u014bki] is the debut EP from Tallahassee band Mayday Parade.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Informa\u0163ia Zilei (Daily Info) is a Romanian daily newspaper issued by the Solpress company and focused mainly on politics public affairs sports and economy.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Grindelia stricta is a Welsh television actress best known for playing the character of Kelly in the Welsh soap Pobol y Cwm.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Macqueenia was a genus of moth in the family Geometridae.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Paul Leppin (November 27 1878 - April 10 1945) was a 20th-century Bohemian writer of German language who was born and lived in Prague.Although he wrote in German he was in close contact with Czech literature.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Aller is a species of orchid occurring from southeastern Mexico to Honduras.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Antoine Sallaert (1585\u20131650) was a Flemish Baroque painter.According to Houbraken his work survived in Brussels where he lived and died.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Texas Review of Entertainment & Sports Law is a species of moth of the Noctuidae family.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Critique: A worldwide student journal of politics is a species of orchid in the genus Bulbophyllum.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Ruby Smith (August 24 1903 \u2013 March 24 1977) is a high school in Dunedin New Zealand.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Party Husband is a 1931 Pre-code comedy film produced by First National Pictures and released through their parent Warner Brothers.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Year's Best Fantasy Stories: 6 is a species of orchid in the genus Bulbophyllum.16x Media related to Bulbophyllum binnendijkii at Wikimedia Commons.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Flo is a small village in the municipality of Stryn in Sogn og Fjordane county Norway.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Jules Hamidou (born August 8 1987) is a Chadian football defender who currently plays for FC Biel-Bienne.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Helen\u00f3w S\u0142upski [x\u025b\u02c8l\u025bnuf \u02c8swupski] is a village in the administrative district of Gmina Szczawin Ko\u015bcielny within Gostynin County Masovian Voivodeship in east-central Poland.The village has a population of 173.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "La Miel is a genus of plants in the Lamiaceae family native to Southeast Asia and some parts of tropical Australia.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Ruby Smith (August 24 1903 \u2013 March 24 1977) was an American classic female blues singer.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Alex Sandy Ferguson (1867 \u2013 1894) was a Scottish footballer who played in the Football League for Notts County.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Billion Dollar Brain is a 1967 British espionage film directed by Ken Russell and based on the novel Billion-Dollar Brain by Len Deighton.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Stylidium accedens is a German figure skater.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Ch\u00e2teau de Malleret is a ch\u00e2teau in Gironde Aquitane France.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Oliver Cheatham (February 24 1948 \u2013 November 29 2013) is an historic house at 294 Main Street in East Greenwich Rhode Island.The house was built in 1767 and added to the National Register of Historic Places in 1971.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Simon Brown (born August 15 1963 in Clarendon Jamaica) was an American mystery writer editor and amateur magician.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Yukar\u0131sal was a Norwegian songwriter revue writer playwright journalist and theatre critic.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Fossombroniaceae (sometimes Riccardiaceae) is a family of liverworts in the order Metzgeriales.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "true",
+  "opus_cat": "disagree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Drosera stenopetala is an insectivorous rosette-forming perennial sub-alpine or alpine herb.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Gachan (Persian: \u06af\u0627\u0686\u0646\u200e also Romanized as G\u0101chan) is a village in Marz Rural District Chah Dadkhoda District Qaleh Ganj County Kerman Province Iran.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "New Era University College is a non-profit private university college in Malaysia.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Piaski [\u02c8pjaski] is a village in the administrative district of Gmina \u015awinice Warckie within \u0141\u0119czyca County \u0141\u00f3d\u017a Voivodeship in central Poland.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Tatweer (Arabic: \u062a\u0637\u0648\u064a\u0631\u200e Development) was a member company and subsidiary of Dubai Holding a Dubai-based holding company set up by the government of Dubai to manage its assets and investments.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Rospuda [r\u0254s\u02c8puda] is a small river in north-eastern Poland.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Bohdan Nikishyn (born 29 May 1980) is the debut album of Canadian electronic musician Milosh.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Vaughn Pond is a 22-acre (89000 m2) pond in Carver Massachusetts near the center of the town.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Archidendron oblongum is a species of legume in the Fabaceae family.It is found only in Solomon Islands.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Curtis Creek El School District is a historic home located at Plattsburgh in Clinton County New York.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "This page is about the modern-era politician.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Hydrangeaceae is a family of flowering plants in the order Cornales with a wide distribution in Asia and North America and locally in southeastern Europe.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Fadam (Persian: \u0641\u062f\u0645\u200e) is a 1980 album released by R&B singer Patrice Rushen her third album for Elektra Records and sixth album overall.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Hard to Believe: A Kiss Covers Compilation is a Kiss tribute album with all of the tracks performed by (at the time) underground independent punk bands of the late 1980s.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "B\u0142omino-Gule [bw\u0254\u02c8min\u0254 \u02c8\u0261ul\u025b] is a mountain peak with dense forests (altitude - 1343 metres above sea level) in the Western Ghats in South India (Shimoga Dist.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Guadalupe Caracara (Caracara lutosa) (Mourning Caracara) is an extinct bird of prey belonging to the falcon family (Falconidae).",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Yamaha SZ is a member of the shrike family (Laniidae).",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "NetCologne is a telecommunications cable television and Internet service provider in the Cologne region of Germany.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The V\u00e2lcelul Luc\u0103cil\u0103 River is a tributary of the Br\u0103tei River in Romania.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "SwissQual AG is a range of heavy-duty trucks manufactured by Renault Trucks.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Aunty No 1 is an historic house in Coventry Rhode Island.The house was built in 1790 and was added to the National Historic Register in 1987.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Klondike Annie is a 1936 black-and-white comedy film starring Mae West and Victor McLaglen.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Jandek on Corwood is a Taiwanese public company that manufactures and sells professional audio equipment including mixing consoles loudspeakers studio monitors and digital recording devices.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Slam Dunk Ernest is a 1995 comedy film and the eighth full-length feature film starring Jim Varney as Ernest P. Worrell.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Salesian School is a fantasy novel by Chris Pierson set in the world of Dragonlance which is based on the Dungeons & Dragons fantasy role-playing game.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Hebbecke (Wupper) is a village in Croatia.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Utricularia rhododactylos is a Trinidad and Tobago former footballer.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Calhoun Beach Club is an apartment community health club and commercial center in Minneapolis Minnesota just across Lake Street from its namesake Lake Calhoun.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Konidela is a mallee type Eucalyptus that is native to Western Australia.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Panopto is a comic book series that was published by Defiant Comics from February 1994 until July 1994. The series lasted for 5 issues before Defiant ceased publication.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "false",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Kosovare Asllani (born 29 July 1989) is a Swedish professional footballer who plays for Paris Saint-Germain in the French Division 1 F\u00e9minine as well as the Sweden women's national football team.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "true",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Yellowman is a play written by Dael Orlandersmith.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Nuevo Milenio (English: New Millennium) is a high school in Dunedin New Zealand.",
+  "gold": "False",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "The Ghiula River is a tributary of the B\u00e2sca Mare River in Romania.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Baze University is located in Abuja Nigeria.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "false",
+  "opus_cat": "agree",
+  "qwen_ok": false
+ },
+ {
+  "src": "claims",
+  "text": "Theale Green School is a coeducational secondary school and sixth form with academy status located in the village of Theale Berkshire England.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "true",
+  "qwen": "true",
+  "opus_cat": "agree",
+  "qwen_ok": true
+ },
+ {
+  "src": "claims",
+  "text": "Victor Gamaldo (born 22 January 1944) is a Trinidad and Tobago former footballer.",
+  "gold": "True",
+  "labels": [
+   "False",
+   "True"
+  ],
+  "opus": "unclear",
+  "qwen": "false",
+  "opus_cat": "unclear",
+  "qwen_ok": false
+ }
+]

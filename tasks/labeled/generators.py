@@ -85,11 +85,26 @@ def _author_cond(aus) -> str:
     return f"author {' or '.join(aus)} (the `[by …]` tag)"
 
 
+# LABEL-QUALITY FILTER (v15): keep only rows whose gold label a strong text-only judge (Opus 4.6, allowed to answer
+# `unclear`) reproduces — scripts/label_judge.py -> scripts/write_label_keep.py writes `{name}.opus_keep.json` (sha1 of
+# each kept row's text). Unfiltered, 42% of emotion rows and 16% of claims rows taught a label the text does not
+# support (mislabeled, ambiguous, or needing outside knowledge) — training the leaf to emit a label regardless of
+# content. Set LABELED_UNFILTERED=1 to use the raw pools.
 def _rows(name: str) -> list[dict]:
     if name not in _ROWS:
         with open(f"{_CACHE}/{name}.jsonl") as f:
-            _ROWS[name] = [json.loads(l) for l in f]
+            rows = [json.loads(l) for l in f]
+        keep = f"{_CACHE}/{name}.opus_keep.json"
+        if os.path.exists(keep) and os.environ.get("LABELED_UNFILTERED") != "1":
+            ok = set(json.load(open(keep)))
+            rows = [r for r in rows if _row_id(r) in ok]
+        _ROWS[name] = rows
     return _ROWS[name]
+
+
+def _row_id(r: dict) -> str:
+    import hashlib
+    return hashlib.sha1(r["text"].encode()).hexdigest()
 
 
 # How much of the document's SCHEMA the system prompt gives away. OOLONG — the eval this task is the

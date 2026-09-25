@@ -1,0 +1,14 @@
+194 leaf batches, 1600 items (labeled, plain, base_labeled)
+
+== base_labeled: per-item accuracy in leaf-sized batches
+  emotion       62.0%  (n=400, unparsed/other 6)
+  claims        88.8%  (n=400, unparsed/other 0)
+        gold 'true'                   -> 'false': 33
+        gold 'false'                  -> 'true': 12
+  yelp          92.2%  (n=400, unparsed/other 0)
+        gold 'negative'               -> 'positive': 19
+        gold 'positive'               -> 'negative': 12
+  dbpedia       98.8%  (n=400, unparsed/other 0)
+  OVERALL       85.4%
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
