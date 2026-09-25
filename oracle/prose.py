@@ -119,7 +119,12 @@ class NiahMultiOracle(ScaffoldOracle):
     # tokens a..b, compute {goal}." — noun-phrases, no dangling clauses.
     def _op_phrase(self) -> str:
         if self._filtered():
-            return f"keeping each stated magic {self.vword} for the asked key(s) (key=value) and skipping every other key"
+            # Name the kept keys, as every other filtered leaf names its filter values ("author Ivanov's items only",
+            # "`Building` and `Village` only"). With "the asked key(s)" the leaf had to recall the list from its
+            # subtask, and 17w on RULER multiquery skipped asked keys 3-4 as "(other key, skip)" 10/30 times.
+            ks = self.target_keys
+            names = ks[0] if len(ks) == 1 else f"{', '.join(ks[:-1])} and {ks[-1]}"
+            return f"keeping each stated magic {self.vword} for {names} only (key=value) and skipping every other key"
         return f"collecting each stated magic {self.vword} (key=value) and any lookup instruction"
 
     def _unit(self) -> str:

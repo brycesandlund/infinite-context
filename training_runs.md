@@ -1570,3 +1570,54 @@ Calibration (`scripts/calibrate_qa_judge.py`, real answers from our rollouts, ha
 chaining now reaches RULER ("Chaining them: «Derek and the Dominos were … formed by Clapton, Whitlock, Radle and
 Gordon» — so the answer is 4"). Note: the 17w 10K/40K and 16w filtered-pool runs drew qa questions from the (then)
 filtered pool.
+
+## RULER multiquery regression in 17w + fix (cache v14) — 2026-09-24
+
+17w: multiquery 1.00 (16w, all lengths) -> 0.90 @4K / 0.90 @10K / 0.65 @40K. Never a wrong value — asked keys come back
+`none`. The owning leaf READ the sentence and wrote "- magic number for soggy-roast (other key, skip)" although soggy-roast
+was an asked key. By position in the asked list (all 17w multiquery rollouts): key 1 missed 0/15, key 2 1/15, **key 3 5/15,
+key 4 5/15**. No 14w/15w/16w multiquery tree ever wrote an "(other key, skip)" line (RULER's multiquery haystack holds only
+the asked keys' needles) — the false skip is new in 17w, whose v11 corpus made skip verdicts far more common.
+Cause in the leaf format: niah_multi was the ONLY filtered leaf whose op phrase did not name its filter values ("keeping
+each stated magic number for the asked key(s)…") — every other filtered leaf names them ("…of author Ivanov's items only",
+"…for `Building` and `Village` only", "…for label=Sports and label=Sci/Tech only"), so this leaf had to recall the list from
+its subtask. Fix, no new format: (1) `oracle/prose.py` `_op_phrase` names the kept keys ("keeping each stated magic number
+for escarpment-ember, brindle-quarry, marble-tempest, vellum-kiln and cobalt-thicket only (key=value) and skipping every
+other key"); hidden mode unchanged. (2) multiquery asks 3-5 keys (3-4 with uuids; was 2-4 / 2-3) so kept keys in positions
+3-5 are common. Verified niah_multi 300/300 gold at doc 6K/14K; worst node 2.3K -> 2.74K (5 uuid-ish keys; < 3K).
+
+## STATE BEFORE RUN 18 — 2026-09-24 (handoff summary)
+
+**Best checkpoint: 17w** `tinker://eb4c3882-959b-5ee6-81a0-35f0715fe8fd:train:0/weights/sft_general17w` (warm from 14w;
+recipe `scripts/run_sft17_warm.sh`, cache v13). 4K SCORE-9 0.828; OOLONG @10K 0.619 (June OOLONG-only fine-tune 0.532,
+gpt-5.4 0.561); OOLONG @40K 0.354 (June fine-tune 0.562, gpt-5.4 0.338); RULER-13 @10K/8K 0.923, @40K/8K 0.887; vt 1.00 at
+4K/10K/40K; qa_2 LLM-judged 1.00 at 10K and 40K (string 0.40). Probes (fold / split-decision) NOT yet run on 17w.
+
+**Corpus changes since run 17 launched (all go into run 18):**
+1. v14 — niah_multi filtered leaves name the kept keys in the op phrase; multiquery asks 3-5 keys (fixes 17w's multiquery
+   false skips of asked keys 3-4: 0.65 @40K). Verified niah_multi 300/300, worst node 2.74K.
+2. (Everything else in the run-17 corpus stays: v11 minimal states, v12 vt niah-surface, niah_bridge 80, sequential synth
+   x2, v13 leaf-tools fix + bare-question q_core, budget x length jitter.)
+Run-18 script: copy `scripts/run_sft17_warm.sh` (cache v14 regenerates niah_multi; everything else hits cache). Starting
+checkpoint to decide (14w for the clean one-pass comparison vs 17w for continuity).
+
+**Eval-side changes (no training effect):**
+- RULER QA pool: the unit-bearing-numeric filter was added then REVERTED — full pool again. Surface-form mismatches are
+  handled by reporting an LLM equivalence grade next to RULER's string match: `eval/qa_judge.py`,
+  `scripts/judge_open_qa.py <rollouts.jsonl…>` (Claude Opus 4.6, cached), calibration `scripts/calibrate_qa_judge.py` (20/20).
+- `eval/backends.py`: `complete()` never offers tools (v13 bug fix; competitor evals use `sample()` directly — unaffected).
+- `scripts/eval_long.sh` (RULER-13 + OOLONG, fresh seeds 3,000,000+) and `scripts/eval_oolong_chart.sh` (OOLONG on the June
+  chart's problems, OOLONG_BASE=2000000, 10/family, 8K budget): both no depth cap, non-binding chunk limit, and
+  MAX_NODES = 4 x the nominal binary tree (2 x next-pow2(doc/500) - 1) — healthy trees stay <= 2x nominal, every tree past
+  ~3.5x failed, so the cap only trims runaways. 4K scoreboard keeps MAX_NODES=150 for comparability.
+- OOLONG-real built (eval-only; mapping in task_context), grader validated vs the paper; no fine-tuned checkpoint run on it.
+- `scripts/audit_oolong_leaves.py`: regenerates OOLONG problems from seeds and checks every leaf's tally against the truth.
+
+**Open threads:**
+- LEAF CLASSIFICATION (next focus): 67% of OOLONG points lost are leaf label errors. Leaf accuracy by dataset (16w):
+  app_reviews 94%, agnews 91%, imdb 91%, trec 90%, yahoo 84%, spam 80%, metaphors 65%, multinli 61%, formality 51%, negation
+  46% (below chance: odd definitional claims judged true/false). On the same 40K problems the June OOLONG-only fine-tune's
+  leaves score formality 96% vs 17w 75%, spam 94% vs 82%, negation 87% — label semantics learned from OOLONG's own label
+  sets, which our no-benchmark-data policy excludes. 29% of lost points are root overflows (partly addressed by v11).
+- qa_2 multi-hop: solved semantically; string-grader artifacts remain by design (reported with the LLM grade).
+- vt fold decision: 17w folds 5/5 at every length; fold probe pending.

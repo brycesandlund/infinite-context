@@ -390,7 +390,9 @@ def _make_niah_multi(corpus_tokens, tokenizer, doc_size_tokens, seed) -> Problem
         target_keys = keys
     else:
         if mode == "multiquery":
-            n_keys = rng.randint(2, 3) if heavy else rng.randint(2, 4)
+            # 3-5 asked keys (was 2-4): a KEPT key in list positions 3-4 was rare, and that is exactly where 17w's
+            # leaves false-skipped on RULER multiquery (which asks 4)
+            n_keys = rng.randint(3, 4) if heavy else rng.randint(3, 5)
         else:
             n_keys = rng.randint(1, 3) if heavy else rng.randint(1, 6)
         keys = []
