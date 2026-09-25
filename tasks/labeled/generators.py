@@ -183,6 +183,39 @@ def _jitter_item_words(q: str, seed) -> str:
     return re.sub(r"\bitem\b", sg, q)
 
 
+# RECORD LAYOUT (v15). Every labeled_records line used to be `[tag] [by author] text`; the only KEY/VALUE-field
+# records in training were synth's (`[12] flag=Y grp=K3`), whose leaves copy a field and never quote text — and
+# 17w wrote exactly that (`line at token N: label=X`, no content) on OOLONG's `Date: … || User: … || Instance: …`
+# lines. Field layouts here teach: metadata fields + a text field -> quote the TEXT and judge it. The leaf's own
+# per-item notation (`- [S2] [by Kim] "…" → label: …`) stays canonical; only the document line and every phrase that
+# points at a field (context, questions, the root's format contract) follow the layout.
+def _layout(seed) -> dict:
+    r = random.Random(f"layout-{seed}")
+    kind = r.choices(["bracket", "pipe", "kv"], weights=[4, 3, 3])[0]
+    if kind == "bracket":
+        return {"kind": kind, "line": lambda k, v, au, t: f"[{v}] [by {au}] {t}",
+                "au_ref": "`[by …]` tag", "au_one": lambda a: f"`[by {a}]` tag",
+                "outer_ref": "`S<n>` tag", "date_ref": "date tag"}
+    af = r.choice(["Author", "User", "Posted by"])
+    tf = r.choice(["Text", "Item", "Content"])
+    if kind == "pipe":
+        return {"kind": kind, "af": af, "tf": tf,
+                "line": lambda k, v, au, t: f"{k}: {v} || {af}: {au} || {tf}: {t}",
+                "au_ref": f"`{af}:` field", "au_one": lambda a: f"`{af}: {a}` field",
+                "outer_ref": "`Section:` field", "date_ref": "`Date:` field"}
+    af, tf = af.lower().replace(" ", "_"), tf.lower()
+    return {"kind": kind, "af": af, "tf": tf,
+            "line": lambda k, v, au, t: f"{k.lower()}={v}; {af}={au}; {tf}={t}",
+            "au_ref": f"`{af}=` field", "au_one": lambda a: f"`{af}={a}` field",
+            "outer_ref": "`section=` field", "date_ref": "`date=` field"}
+
+
+def _layout_refs(q: str, lay: dict) -> str:
+    """Point the question's field references at this problem's layout."""
+    q = q.replace("the `[by …]` tag", f"the {lay['au_ref']}").replace("`[by …]` tag", lay["au_ref"])
+    return re.sub(r"the `\[by ([^`\]]+)\]` tag", lambda m: f"the {lay['au_one'](m.group(1))}", q)
+
+
 def _pair_snip(a: str, b: str, marker: str) -> str:
     """Pair items: the judged content is the RELATION between the two sentences, and PAWS pairs differ only in word
     order / a swapped entity anywhere in the sentence — a truncated quote hides it, so both are quoted in full (as
@@ -195,21 +228,30 @@ def _jitter(seed, what: str, pool: list[str]) -> str:
     return random.Random(f"{what}-{seed}").choice(pool)
 
 
-def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False, seed=None, marker=" -> ") -> str:
+def _context(name: str, labels: list[str], key_mode: str, schema_lite: bool = False, seed=None, marker=" -> ",
+             lay=None) -> str:
     desc = _DESC[name].replace("{m}", marker.strip())
     prop = _PROP[name]
     lab = _jitter(seed, "labsent", _LABEL_SENTENCES).format(L=", ".join(labels), n=len(labels), prop=prop)
     if schema_lite:
         return f"The document is a list of text items, ONE per line. {desc} {lab}"
-    if key_mode == "section":
-        tag, note = "a section tag `[S<n>]` (sections are numbered from 1 and appear in order)", ""
+    lay = lay or _layout(seed)
+    sec = key_mode == "section"
+    note = "" if sec else (" Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in "
+                           "month `Jul 2022`).")
+    what = "a section (`S<n>`, numbered from 1 and appearing in order)" if sec else "the item's date (`Mon DD, YYYY`)"
+    if lay["kind"] == "bracket":
+        first = ("a section tag `[S<n>]` (sections are numbered from 1 and appear in order)" if sec
+                 else "the item's date `[Mon DD, YYYY]`")
+        shape = f"Each line starts with {first} and an author tag `[by <author>]`, followed by the item's text."
+    elif lay["kind"] == "pipe":
+        k = "Section" if sec else "Date"
+        shape = (f"Each line has three fields separated by `||`: `{k}:` ({what}), `{lay['af']}:` (the author) and "
+                 f"`{lay['tf']}:` (the item's text).")
     else:
-        tag = "the item's date `[Mon DD, YYYY]`"
-        note = " Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`)."
-    return (
-        f"The document is a list of text items, ONE per line. Each line starts with {tag} and an author tag "
-        f"`[by <author>]`, followed by the item's text.{note} {desc} {lab}"
-    )
+        k = "section" if sec else "date"
+        shape = (f"Each line is `{k}=…; {lay['af']}=…; {lay['tf']}=…`: {what}, the author, then the item's text.")
+    return f"The document is a list of text items, ONE per line. {shape}{note} {desc} {lab}"
 
 
 def _date_key(date: str):
@@ -228,6 +270,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
     rng = random.Random(seed)
     name = rng.choice(["dbpedia", "emotion", "yelp", "yelp", "claims", "claims", "snli", "snli", "paws", "politeness"])
     marker = _jitter(seed, "pairmark", _PAIR_MARKERS)
+    lay = _layout(seed)
     # Long-item regime: 20% of problems use full-length yelp reviews (up to ~700 tokens), so a leaf
     # owns at most one item, must extend its read 2-3 times to finish it, and neighbouring leaves see
     # only a fragment they do not own — the OOLONG-imdb shape that broke ownership in run 8w.
@@ -276,7 +319,7 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
             date = rng.choice(date_pool[outer])
             tag = f"[{date}]"
         body = f"{r['a']}{marker}{r['b']}" if name in _PAIR_SOURCES else r[text_key]
-        line = f"{tag} [by {au}] {body}\n"
+        line = lay["line"]("Section" if key_mode == "section" else "Date", tag[1:-1], au, body) + "\n"
         toks = tokenizer.encode(line, add_special_tokens=False)
         if doc_tokens and len(doc_tokens) + len(toks) > doc_size_tokens:
             break
@@ -443,13 +486,14 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         what = {"Label": "the label", "Author": "the author exactly as written in the `[by …]` tag (just the name or id)"}.get(word, "the answer")
         q += f" Give your final answer in the form '{word}: [X]', where [X] is {what}; put it inside \\boxed{{}}."
         gold = f"{word}: {gold}"
-    q = _jitter_item_words(q, seed)
+    q = _layout_refs(_jitter_item_words(q, seed), lay)
     return Problem(
         document_tokens=doc_tokens, question=q, gold_answers=[str(gold)], task=task,
         task_context=_context(name, labels, key_mode, schema_lite=rng.random() < _SCHEMA_LITE_FRAC, seed=seed,
-                              marker=marker),
+                              marker=marker, lay=lay),
         grading_mode=grading,
-        metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype, "q_head": head.strip(),
+        metadata={"family": "bounded", "strategy_default": "binary", "task": task, "qtype": qtype, "q_head": head.strip(), "layout": lay["kind"],
+                  "au_ref": lay["au_ref"], "outer_ref": lay["outer_ref"], "date_ref": lay["date_ref"],
                   "dataset": name, "labels": labels, "sections": sections, "authors": authors,
                   "key_mode": key_mode, "answer_form": answer_form, "long_items": long_items,
                   "n_records": len(recs), "record_spans": spans, "gold_int": gold, **params},

@@ -188,7 +188,7 @@ class LabeledOracle(ScaffoldOracle):
             n1, n2 = c.get(self.qa1, 0), c.get(self.qa2, 0)
             ans = self.qa1 if n1 > n2 else self.qa2 if n2 > n1 else min(self.qa1, self.qa2)
             return ans, (f"\n`{self.qlabel}` items: author {self.qa1} has {n1}, author {self.qa2} has {n2} → "
-                         f"{'tie, alphabetical first' if n1 == n2 else 'more for'} {ans}. The answer is the tag content "
+                         f"{'tie, alphabetical first' if n1 == n2 else 'more for'} {ans}. The answer is the author "
                          f"itself, {ans} — not the word 'author'.")
         if q == "author_count":
             c = state or Counter()
@@ -281,6 +281,10 @@ class LabeledOracle(ScaffoldOracle):
 
     # -- phrasing ---------------------------------------------------------------------------
 
+    def _ref(self, k):
+        """The problem's layout reference for a field (tag vs `Author:` / `user=` field); bracket-tag default."""
+        return self.meta.get(k) or {"au_ref": "`[by …]` tag", "outer_ref": "`S<n>` tag", "date_ref": "date tag"}[k]
+
     def _labelling(self):
         # the label set is stated in the task context and enumerated in the format contract; not repeated
         # here (the goal phrase appears twice per subtask and once in the preamble)
@@ -320,8 +324,8 @@ class LabeledOracle(ScaffoldOracle):
             "author_label_count": f"how many of ONLY {self._whose()} are `{self.qlabel}` ({self._labelling()})",
             "author_top": (f"the per-author tally of `{self.qlabel}` items over ONLY {self._whose()} ({self._labelling()})"
                            if self.qauthors else f"the per-author tally of `{self.qlabel}` items ({self._labelling()})"),
-            "author_count": (f"the per-author tally of items over ONLY {self._whose()} (no label judgement needed)"
-                             if self.qauthors else "the per-author tally of items (no label judgement needed)"),
+            "author_count": (f"the per-author tally of items over ONLY {self._whose()} (counting items per author; labels do not matter)"
+                             if self.qauthors else "the per-author tally of items (counting items per author; labels do not matter)"),
             "author_cmp": f"the count of `{self.qlabel}` items by author {self.qa1} and by author {self.qa2} ({self._labelling()})",
             "author_least": f"the per-label tally over ONLY {self._whose()} ({self._labelling()})",
             "section_mode_count": f"the per-({self.unit_word}, label) tally ({self._labelling()}{self._outer_note()})",
@@ -355,7 +359,7 @@ class LabeledOracle(ScaffoldOracle):
                     f"authors — the labels play no part, and every other author is skipped.")
         if q == "author_count":
             return ("The question asks which author has the most items, so the state is a per-author count — the labels "
-                    "play no part, and the authors are whatever names or ids the `[by …]` tags carry.")
+                    f"play no part, and the authors are whatever names or ids the items' {self._ref('au_ref')}s carry.")
         if q == "author_least":
             return f"The question is restricted to {self._whose()}, so the state is a per-label tally over those items only."
         if q == "before_after":
@@ -390,19 +394,19 @@ class LabeledOracle(ScaffoldOracle):
                     f"`{self.qb}` only (items with any other label are skipped)")
         if q == "author_cmp":
             return (f"the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors {self.qa1} and "
-                    f"{self.qa2}, each written exactly as in the item's `[by …]` tag")
+                    f"{self.qa2}, each written exactly as in the item's {self._ref('au_ref')}")
         if q in ("author_top", "author_count") and self.qauthors:
             return (f"the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors "
-                    f"{', '.join(sorted(self.qauthors))}, each written exactly as in the item's `[by …]` tag")
+                    f"{', '.join(sorted(self.qauthors))}, each written exactly as in the item's {self._ref('au_ref')}")
         if q in ("author_top", "author_count"):
             # OPEN key space: authors are read off the text, never enumerated by the root (run 9w on OOLONG-user:
             # the root invented `User A`..`User E` and every leaf returned `none:38`)
             return (f"the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author "
-                    f"exactly as written in the item's `[by …]` tag")
+                    f"exactly as written in the item's {self._ref('au_ref')}")
         if q == "dates_rep_k":
             if self.qmon:
-                return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in {self.qmon} written exactly as in the item's tag"
-            return "the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is the item's date exactly as written in its tag (`Mon DD, YYYY`)"
+                return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is a date in {self.qmon} written exactly as in the item's {self._ref('date_ref')}"
+            return f"the partial tally as `<date>=<count>` entries joined by `|`, where `<date>` is the item's date exactly as written in its {self._ref('date_ref')} (`Mon DD, YYYY`)"
         if q == "before_after":
             return (f"the partial as `<period>/<which>=<count>` entries joined by `|`, where `<period>` is `before` or "
                     f"`on_or_after` (relative to {self.qdate}) and `<which>` is `{self.qlabel}` or `other`")
@@ -410,7 +414,7 @@ class LabeledOracle(ScaffoldOracle):
         # contract states the FORM of the key, never a list. (Enumerating the months trained the root to
         # improvise a list at eval — 11w OOLONG-temporal roots wrote "the month name as written" / "a number
         # 1..12" and collapsed 38 month-years into 12 buckets.)
-        outer = (f"the line's `S<n>` tag" if self.key_mode == "section"
+        outer = (f"the line's {self._ref('outer_ref')}" if self.key_mode == "section"
                  else "the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`)")
         if q == "section_most":
             return (f"the partial tally as `<{self.unit_word}>=<count>` entries joined by `|`, counting only `{self.qlabel}` "

@@ -20,9 +20,9 @@
   \node[qtxt] (q) {\who{Question}How many entries have genre=report?};
   \node[txt, fill=blue!12, below=of q] (t1) {\who{Leaf \rng{0,500}}Range 0..500 fits; reading it, then the next 200
     tokens to finish the last entry's body (it may run well past 500).\\
-    \tool{read\_chunk(0, 500)}\enspace\tool{read\_chunk(500, 700)}\\
-    {\color{black!55}\itshape === entry 1 \textbar{} author=Han \textbar{} genre=essay ===\dots\
-    === entry 3 \textbar{} author=Park \textbar{} genre=essay ===\dots\ CHAPTER X \_Letter}};
+    \tool{read\_chunk(0, 500)},\enspace\tool{read\_chunk(500, 700)}\\
+    {\color{black!55}\itshape === entry 1 \textbar{} author=Han \textbar{} genre=essay ===$\cdots$\
+    === entry 3 \textbar{} author=Park \textbar{} genre=essay ===$\cdots$\ CHAPTER X \_Letter}};
   \node[txt, fill=orange!25, below=of t1] (t2) {The last entry's body is still cut off at 700 (no blank line / next
     header yet), so I read the next 200 tokens (700..900) to finish it.\enspace\tool{read\_chunk(700, 900)}\\
     {\color{black!55}\itshape , Dr.\enspace === entry 4 \textbar{} author=Lee \textbar{} genre=report ===\dots}};

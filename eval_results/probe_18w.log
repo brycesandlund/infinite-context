@@ -1,0 +1,28 @@
+421 leaf batches, 3360 items (oolong, plain, 18w)
+
+== 18w: per-item accuracy in leaf-sized batches
+  formality     54.0%  (n=396, unparsed/other 164)
+        gold 'formal'                 -> '<unparsed>': 100
+        gold 'informal'               -> '<unparsed>': 64
+  yahoo         71.5%  (n=270, unparsed/other 47)
+  metaphors     72.2%  (n=396, unparsed/other 102)
+        gold 'incorrect'              -> '<other>': 67
+        gold 'correct'                -> '<other>': 33
+  multinli      76.7%  (n=288, unparsed/other 38)
+        gold 'entailment'             -> '<other>': 15
+  negation      80.4%  (n=450, unparsed/other 0)
+        gold 'false'                  -> 'true': 58
+        gold 'true'                   -> 'false': 30
+  trec_coarse   90.1%  (n=516, unparsed/other 0)
+  agnews        94.1%  (n=222, unparsed/other 0)
+  imdb          94.4%  (n=54, unparsed/other 2)
+        gold 'negative'               -> 'positive': 1
+        gold 'negative'               -> '<unparsed>': 1
+  app_reviews   96.9%  (n=414, unparsed/other 0)
+        gold 'positive'               -> 'negative': 13
+  spam          97.7%  (n=354, unparsed/other 0)
+        gold 'ham'                    -> 'spam': 4
+        gold 'spam'                   -> 'ham': 4
+  OVERALL       81.8%
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>

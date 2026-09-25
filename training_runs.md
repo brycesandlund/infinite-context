@@ -1621,3 +1621,66 @@ checkpoint to decide (14w for the clean one-pass comparison vs 17w for continuit
   sets, which our no-benchmark-data policy excludes. 29% of lost points are root overflows (partly addressed by v11).
 - qa_2 multi-hop: solved semantically; string-grader artifacts remain by design (reported with the LLM grade).
 - vt fold decision: 17w folds 5/5 at every length; fold probe pending.
+
+## LEAF CLASSIFICATION INVESTIGATION + cache v15 — 2026-09-25
+
+**Finding: 17w's OOLONG leaves label ~74% of items correctly in-tree; the same model labels 87.5% with a plain prompt,
+base Qwen 91.3%, the June OOLONG-only fine-tune 93.1% plain / 94.0% in-tree.** Measured item-by-item
+(`scripts/leaf_classify_probe.py`: OOLONG items from fresh seeds 7,000,000+, leaf-sized batches of <=500 tokens, temp 0;
+in-tree = the leaves' own per-line verdicts in `sft_C17w_{10k,40k}` / `sft_oolong_40k`):
+
+| dataset | base plain | June plain | June in-tree @40K | 17w plain | 17w in-tree @40K |
+|---|---|---|---|---|---|
+| negation | 86.2 | 91.6 | 88.7 | 73.6 | 57.6 |
+| formality | 87.6 | 89.1 | 95.1 | 73.5 | 73.0 |
+| multinli | 87.5 | 88.9 | 91.3 | 87.2 | 50.2 |
+| metaphors | 97.5 | 96.5 | 98.4 | 93.2 | 64.6 |
+| overall | 91.3 | 93.1 | 94.0 | 87.5 | 73.5 |
+
+17w's in-tree errors run one way (false->true 455 vs 16, incorrect->correct 563 vs 44, contradiction->neutral). In-tree
+per-item scoring matches verdicts to items by POSITION — shifted leaves (partial first line counted, items dropped) blur it;
+rewrite it to match by quoted text before the run-18 comparison. Leaf accuracy is ~equal at 10K (75.8%) and 40K; 10K
+scores higher only because fewer items compound fewer errors. Verbatim leaves: `trace_snippets/oolong_17w_leaf_rollouts_40k.txt`.
+
+**Causes found (and refuted):**
+1. ROOT wrote lookup contracts. 25/29 17w OOLONG roots @40K named no judgment in the subtask: "(exact count)",
+   "(inclusive)", "(no tag means the label is True)", "(no label judgement needed)". Every labeled_records question began
+   "Judge each item's label …" and every context said "you must judge each item yourself", so the root's "(judging each
+   item's label)" was always copyable; OOLONG never says "judge".
+2. Training GOLD often not judgeable from the text. Opus 4.6 (text-only, may answer `unclear`) vs our gold: emotion 59%
+   agree (34% disagree outright: "i couldn t feel positive emotions of any sort" = joy), claims 86% (12% need outside
+   knowledge: obscure people/places), yelp 91%, dbpedia 99%. Base Qwen scores 91-99% on the Opus-kept rows — the sources
+   are easy or noisy, with little hard-but-judgeable material.
+3. Leaf headers stated the item count BEFORE listing: 17w @40K 96% headers right but 9% of leaves listed a different number
+   than their header (e.g. "Labelling the 7 sentences", 5 listed, the dropped one the only False).
+4. 17w leaves mostly write no content before the verdict (`- line at token N: label=entity`, 83% of lines @40K; June quotes
+   the sentence 90%) — synth's `field=value` leaf habit on OOLONG's field-record lines.
+- REFUTED: quoting metadata as THE cause (17w accuracy by quote kind: content 72.5%, none 73.4%, metadata 77.3%); the
+  question naming a label biasing verdicts (75.3% vs 74.1%); a per-item reason before the label (base 91.3 -> 90.1,
+  17w 87.5 -> 86.1).
+
+**cache v15 corpus changes (all labeled_records unless noted):**
+1. Judgment-wording jitter: question opener (9-way pool, 3 empty, 1 "Judge"), count wording (6-way, incl. "should be
+   classified as"), context label sentence (10-way, incl. "The overall sentiment of each review can be classified into
+   one of 2 categories"), item noun (items/instances/data points/entries/lines) and "`L` items" / "items with the label
+   `L`" / "items labelled `L`". 79% of problems never say "judge"; every root subtask still says "(judging each item's
+   label)". author_count's goal now reads "(counting items per author; labels do not matter)" instead of the
+   copyable "(no label judgement needed)".
+2. ALL oracles: leaf partial/fold headers state no item count ("Judging the items whose line STARTS in a..b …").
+3. Label-quality filter: rows kept only where Opus = gold (`scripts/label_judge.py`, `scripts/write_label_keep.py`,
+   `~/.cache/infinite-context/labeled/{name}.opus_keep.json`; `LABELED_UNFILTERED=1` bypasses). Kept: dbpedia 3956/4000,
+   yelp 3624/3977, claims 4670/5450, emotion 2292/3911. (~$25 of Opus for all seven sources.)
+4. New judgment types, sources disjoint from OOLONG's: SNLI (3534 kept, entailment/neutral/contradiction), PAWS (3465,
+   paraphrase / not paraphrase), Stanford politeness (Cleanlab copy, 1391 of 2366, polite/neutral/impolite). Pairs share a
+   line joined by a per-problem marker (` -> `, ` <--> `, ` | `, ` => `, ` // `) and are quoted IN FULL by the leaf (PAWS
+   pairs differ late in the sentence). Source mix: dbpedia 1, emotion 1 (was 2), yelp 2, claims 2, snli 2, paws 1,
+   politeness 1.
+5. Record layouts: bracket `[S2] [by Kim] text` 40% / pipe `Section: S1 || Posted by: 96016 || Item: …` 30% / key=value
+   `section=S1; posted_by=Sato; item=…` 30%; field names jittered; context, questions and the root's contract name the
+   layout's fields; the leaf's per-item notation is unchanged.
+Verified: 400/400 labeled_records problems solve across layouts and sources, 25,200/25,200 nodes answered, largest node
+2,020 tokens, 0 bracket-reference leaks in non-bracket layouts. Snippets: `trace_snippets/labeled_v15_{judgment_wording,
+new_sources,record_layouts}.txt`.
+
+**For run 18:** v14 + v15. Measure with the plain probe (does 17w's lost plain-prompt judgment come back toward base
+91.3%?) and the in-tree scorer (fixed to match by quote). Warm start (14w vs 17w) still to decide.

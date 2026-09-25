@@ -1,0 +1,103 @@
+LABELED_RECORDS v15 — record layouts (bracket / pipe fields / key=value); leaf notation unchanged.
+
+##############################################################################################################
+# labeled_records / sections_cmp  layout bracket  seed 2900002  gold ['3']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each item is a short personal message; its label is the EMOTION the writer expresses. The possible labels are: anger, fear, joy, love, sadness, surprise.
+
+QUESTION:
+Consider each line's label (anger, fear, joy, love, sadness, surprise). In how many months are there STRICTLY more `joy` lines than `surprise` lines? Give the single integer in \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4985, compute the per-(month, label) tally of ONLY `joy` and `surprise` items (judging each item's label; an item's month is the month and year of its date). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(month, label) tally of ONLY `joy` and `surprise` items (judging each item's label; an item's month is the month and year of its date) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<month>/<label>=<count>` entries joined by `|`, where `<month>` is the month AND year of the item's date, written `Mon YYYY` exactly as in the date (e.g. `Jul 2022`); and `<label>` is `joy` or `surprise` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+[Nov 13, 2022] [by 99588] i started to feel homesick for the first time in my life even though i had lived abroad before for years
+[Aug 14, 2022] [by 99588] i don t want to go all very special episode of blossom on you but i am feeling a little melancholy about the final episode of rock
+[Jul 01, 2025] [by 99588] i write now it feels like furious abandonment to embrace a cliche
+[Nov 26, 2022] [by 35284] i feel strangely carefree and free from all burden and it feels absolutely wonderful
+[Aug 09, 2022] [by 99588] i feel the presence of god something fearful happens i became aware of my own unworthiness my own short comings and yes my own sin
+[Jul 05, 2025] [by 16793] i want to be able to decla
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..311 one at a time and tallying them (judging each item's label and tallying each (month, label) pair for `joy` and `surprise` only (an item's month is the month and year of its date); the trailing reads only finish the last line, and any item starting at/after 311 belongs to the next range):
+- [Nov 13, 2022 → Nov 2022] "i started to feel homesick for t…" → label: sadness (other label, skip)
+- [Aug 14, 2022 → Aug 2022] "i don t want to go all very spec…" → label: sadness (other label, skip)
+- [Jul 01, 2025 → Jul 2025] "i write now it feels like furiou…" → label: anger (other label, skip)
+- [Nov 26, 2022 → Nov 2022] "i feel strangely carefree and fr…" → label: joy → Nov 2022/joy=1
+- [Aug 09, 2022 → Aug 2022] "i feel the presence of god somet…" → label: fear (other label, skip)
+- [Jul 05, 2025 → Jul 2025] "i want to be able to declare how…" → label: fear (other label, skip)
+- [Aug 02, 2022 → Aug 2022] "i am not sure why i feel the nee…" → label: surprise → Aug 2022/surprise=1
+Partial = Aug 2022/surprise=1|Nov 2022/joy=1.
+\boxed{Aug 2022/surprise=1|Nov 2022/joy=1}
+
+##############################################################################################################
+# labeled_records / author_count  layout kv  seed 2900011  gold ['Author: Kim']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line is `section=…; posted_by=…; item=…`: a section (`S<n>`, numbered from 1 and appearing in order), the author, then the item's text. Each item is a short personal message; its label is the EMOTION the writer expresses. The possible labels are: anger, fear, joy, love, sadness, surprise.
+
+QUESTION:
+Which author has the MOST data points overall (regardless of label)? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the author exactly as written in the `posted_by=` field (just the name or id); put it inside \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4994, compute the per-author tally of items (counting items per author; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (counting items per author; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `posted_by=` field; `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+section=S1; posted_by=Sato; item=i feel weepy and that makes me want to avoid people so i dont freak them out
+section=S1; posted_by=Sato; item=im feeling angry i think i strop about ruffling the air and inflating my position and exaggerating the issue
+section=S1; posted_by=Park; item=i am blue i try to imagine his smile and even though the tears pour i feel so loved
+section=S1; posted_by=Diaz; item=i am right after my make up done i usually don t wear foundation so i feel like i look fake in the pictures
+section=S1; posted_by=Kim; item=i find myself still feeling curious when i log into sl
+section=S1; posted_by=Park; item=i feel so rich when i pass by you i see a penny
+section=S1; posted_by=
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..312 one at a time and tallying them (tallying how many items each author has (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [S1] [by Sato] "i feel weepy and that makes me w…" → label: sadness → Sato: 1
+- [S1] [by Sato] "im feeling angry i think i strop…" → label: anger → Sato: 2
+- [S1] [by Park] "i am blue i try to imagine his s…" → label: love → Park: 1
+- [S1] [by Diaz] "i am right after my make up done…" → label: sadness → Diaz: 1
+- [S1] [by Kim] "i find myself still feeling curi…" → label: surprise → Kim: 1
+- [S1] [by Park] "i feel so rich when i pass by yo…" → label: joy → Park: 2
+- [S1] [by Sato] "i feel that language is nothing …" → label: love → Sato: 3
+- [S1] [by Sato] "i feel surprised because i didnt…" → label: surprise → Sato: 4
+- [S1] [by Park] "i feel so disheartened now" → label: sadness → Park: 3
+- [S1] [by Diaz] "i feel reassured that the world …" → label: joy → Diaz: 2
+- [S1] [by Kim] "i remember feeling excited about…" → label: joy → Kim: 2
+Partial = Diaz:2|Kim:2|Park:3|Sato:4.
+\boxed{Diaz:2|Kim:2|Park:3|Sato:4}
+
+##############################################################################################################
+# labeled_records / sections_cmp  layout pipe  seed 2900013  gold ['1']
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. Items fall into exactly one of these labels: False, True.
+
+QUESTION:
+In how many sections are there STRICTLY more `True` items than `False` items? Give the single integer in \boxed{}.
+
+ROOT SUBTASK (to a child):
+Over the items STARTING in tokens 0..4995, compute the per-(section, label) tally of ONLY `True` and `False` items (judging each item's label). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-(section, label) tally of ONLY `True` and `False` items (judging each item's label) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<section>/<label>=<count>` entries joined by `|`, where `<section>` is the line's `Section:` field; and `<label>` is `True` or `False` only (items with any other label are skipped); `none` if no item starts in the range.
+
+LEAF READ (first chunk):
+Section: S1 || Posted by: 96016 || Item: Galore is the debut studio album by Canadian electronic music band Dragonette.
+Section: S1 || Posted by: 77282 || Item: Hoar Tavern is an American racquetball player.
+Section: S1 || Posted by: 96016 || Item: Stephen Robert Pate (born May 26 1961) is a town and Village Development Committee in Dang Deokhuri District in the Rapti Zone of south-western Nepal.
+Section: S1 || Posted by: 77282 || Item: Vincentian Academy is a mountain range in U.S. state of Colorado.
+Section: S1 || Posted by: 86587 || Item: Matthew Thomas Belisle (beh-LYLE; born June 6 1980) is an American professional baseball pitcher for the Colorado Rockies of Major League Baseball.
+Sect
+
+LEAF OUTPUT:
+Judging the items whose line STARTS in 0..312 one at a time and tallying them (judging each item's label and tallying each (section, label) pair for `True` and `False` only; the trailing reads only finish the last line, and any item starting at/after 312 belongs to the next range):
+- [S1] "Galore is the debut studio album by Canadian electronic music band Dragonette." → label: True → S1/True=1
+- [S1] "Hoar Tavern is an American racquetball player." → label: False → S1/False=1
+- [S1] "Stephen Robert Pate (born May 26 1961) is a town and Village Development Committee in Dang Deokhuri District in the Rapti Zone of south-western Nepal." → label: False → S1/False=2
+- [S1] "Vincentian Academy is a mountain range in U.S. state of Colorado." → label: False → S1/False=3
+- [S1] "Matthew Thomas Belisle (beh-LYLE; born June 6 1980) is an American professional baseball pitcher for the Colorado Rockies of Major League Baseball." → label: True → S1/True=2
+- [S1] "Hazardia is a historic commercial building located at Newport News Virginia." → label: False → S1/False=4
+- [S1] "Poštová banka (Post Bank) is a universal commercial bank operates in Slovakia." → label: True → S1/True=3
+- [S1] "Derobrachus inaequalis is a species of legume in the Fabaceae family.It is found in Somalia and Tanzania." → label: False → S1/False=5
+Partial = S1/False=5|S1/True=3.
+\boxed{S1/False=5|S1/True=3}
