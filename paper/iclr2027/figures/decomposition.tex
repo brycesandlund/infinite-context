@@ -39,12 +39,12 @@
   \node[mid] (m2) at ($($(l3)!0.5!(l4)$)+(0,16.5mm)$) {\scriptsize\rng{1000,2000}};
   \node[root] (r) at ($($(m1)!0.5!(m2)$)+(0,15.5mm)$) {Root\\[-1pt]\scriptsize\rng{0,2000}};
   % spawn edges, labelled with the partial each child returns up that edge
-  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above left=1pt and 1pt]  {$-47$} (m1);
-  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above right=1pt and 1pt] {108}   (m2);
-  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=3pt]  {14}    (l1);
-  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=3pt] {$-61$} (l2);
-  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=3pt]  {101}   (l3);
-  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=3pt] {7}     (l4);
+  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above left=2pt and 2pt]  {$-47$} (m1);
+  \draw[spawn] (r) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, above right=2pt and 2pt] {108}   (m2);
+  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=5pt]  {14}    (l1);
+  \draw[spawn] (m1) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {$-61$} (l2);
+  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, left=5pt]  {101}   (l3);
+  \draw[spawn] (m2) -- node[state, draw=black, text=black, font=\scriptsize, line width=0.4pt, inner sep=2.2pt, fill=white, right=5pt] {7}     (l4);
   \node[state, right=2pt of r] {$-47+108=\fbox{\ensuremath{61}}$};
   % braces
   \draw[brace] ([xshift=-1.2mm]l1.south west) -- ([xshift=-1.2mm]l1.west |- r.north)
