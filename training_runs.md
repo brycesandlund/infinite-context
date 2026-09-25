@@ -1684,3 +1684,68 @@ new_sources,record_layouts}.txt`.
 
 **For run 18:** v14 + v15. Measure with the plain probe (does 17w's lost plain-prompt judgment come back toward base
 91.3%?) and the in-tree scorer (fixed to match by quote). Warm start (14w vs 17w) still to decide.
+
+## sft_general18w (run 18, warm start from 14w, cache v14+v15) — 2026-09-25 — OOLONG @40K **0.535** (17w 0.354); RULER-13 @10K **0.949** / @40K **0.929**; 4K SCORE-9 0.800
+
+Checkpoint `tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w` (also pinned in
+`~/.cache/infinite-context/ckpt_sft_general18w.txt`). Recipe `scripts/run_sft18_warm.sh` = run-17 recipe and mix on the
+v15 corpus (leaf-classification changes above + v14 multiquery). 1,149 traces / 47,142 agents / 48,794 datums / 81.2M
+tokens, 3,050 batches, LR 5e-6, final running NLL ~0.006; trained 01:47-06:05. Post-run chain `scripts/after_run18.sh`
+(watcher): gate for the from-base run 18b was SCORE-9 > 0.828 -> NOT passed (0.800), 18b not launched.
+
+**Leaf classification (the target):**
+
+| | 17w | 18w | base Qwen | June OOLONG-only |
+|---|---|---|---|---|
+| plain-prompt item accuracy (probe, fresh seeds) | 89.9% | **91.6%** | 91.3% | 93.6% |
+| in-tree item accuracy @40K (C-chart leaves) | 73.5% | **86.8%** | — | 94.0% |
+| leaves listing != owned item count @40K | 338 | **23** | — | — |
+
+In-tree @40K by dataset, 17w -> 18w: multinli 50 -> 88, metaphors 65 -> 92, negation 58 -> 66, formality 73 -> 81,
+trec 75 -> 82, yahoo 81 -> 86, spam 84 -> 96, agnews 87 -> 94, app_reviews 89 -> 95, imdb 95 -> 97. Plain negation 74 ->
+80 (base 86) — the one judgment still below base. (CORRECTION: 17w plain was 89.9% / formality 94% with the robust parser
+that reads `i: label`, `1. label (…)` and label-first forms; the 87.5% / 73.5% reported earlier were parse misses.
+In-tree scoring still matches by position — rewrite to match by quote before relying on small differences.)
+
+**4K scoreboard (3K budget, standard seeds; n=5 RULER/OOLONG, n=2 others):** SCORE-9 0.800 (17w 0.828); OVERALL
+all tasks 1.00 except: oolong_counting 0.21 (17w 0.51), oolong_user 0.60 (0.71), oolong_temporal 0.53 (0.35), qa_2 0.60
+(0.80; LLM-judged 0.80 — `500` for "500-room"), niah_multiquery 0.90 (0.90), vt 0.96 (1.00), qa_1 1.00 (0.80),
+niah_multivalue 1.00 (0.90), cwe 1.00 (0.98). The SCORE-9 drop is entirely the 15 OOLONG rollouts (RULER part 0.977 vs
+0.980) — not yet inspected.
+
+**OOLONG-synth, June chart problems (OOLONG_BASE 2,000,000, 10 per family = 1 per dataset, 8K budget):**
+
+| | 17w @10K | 18w @10K | 17w @40K | 18w @40K |
+|---|---|---|---|---|
+| counting | 0.46 | 0.45 | 0.26 | **0.42** |
+| user | 0.78 | **0.86** | 0.45 | **0.80** |
+| temporal | 0.62 | 0.51 | 0.35 | 0.39 |
+| **mean** | **0.619** | 0.606 | 0.354 | **0.535** |
+
+References on these problems: June OOLONG-only fine-tune 0.532 @10K / **0.562** @40K; gpt-5.4 0.561 / 0.338.
+
+**RULER-13 + OOLONG, fresh seeds 3,000,000+ (8K budget; RULER n=5, OOLONG n=20/family):**
+
+| task | 17w @10K | 18w @10K | 17w @40K | 18w @40K |
+|---|---|---|---|---|
+| niah_single_1/2/3, multikey_1/2/3 | 1.00 | 1.00 | 1.00 | 1.00 |
+| niah_multiquery | 0.90 | **1.00** | 0.65 | **1.00** |
+| niah_multivalue | 0.90 | **1.00** | 0.95 | **1.00** |
+| vt | 1.00 | 1.00 | 1.00 | 1.00 |
+| cwe | 1.00 | 1.00 | 0.80 | 0.74 |
+| fwe | 1.00 | 0.93 | 0.93 | 0.93 |
+| qa_1 (string / LLM-judged) | 0.80 / 1.00 | 0.60 / 0.80 | 0.80 / 0.80 | 0.80 / 1.00 |
+| qa_2 (string / LLM-judged) | 0.40 / 1.00 | 0.80 / 0.80 | 0.40 / 1.00 | 0.60 / 0.60 |
+| **RULER-13 mean (string)** | 0.923 | **0.949** | 0.887 | **0.929** |
+| oolong counting / user / temporal | — | 0.63 / 0.90 / 0.62 | — | 0.57 / 0.75 / 0.50 |
+
+(17w's qa rows drew from the then unit-filtered question pool, 18w's from the restored full pool — the qa rows are not the
+same questions. 17w's R runs predate OOLONG in eval_long.) 18w qa judge disagreements: `High risk preparations and other
+compounding functions` (string 0, judged 1), `35` for "35 people" (0 -> 1), `KPMG and Ernst & Young` (string 1, judged 0 —
+a hedge).
+
+**Reading:** v15 did what it was built for — in-tree leaf accuracy 73.5% -> 86.8%, plain judgment back above base, and
+OOLONG @40K 0.354 -> 0.535 (user 0.45 -> 0.80), within 0.03 of the model trained on OOLONG itself. v14 fixed multiquery
+(0.65 -> 1.00 @40K). RULER-13 is the best at both lengths. Open: the 4K OOLONG dip (counting 0.51 -> 0.21 on 5 rollouts),
+temporal @10K 0.62 -> 0.51, negation still below base, cwe @40K 0.74. Raw: `eval_results/raw/sft_general18w*`,
+probe `eval_results/leaf_classify_18w.json`.

@@ -458,5 +458,45 @@
 "correct": 0,
 "reason": "The reference answer states that none of the original treaties establishing the EU protected fundamental rights, while the candidate answers \"3,\" which is a different value.\n\nVERDICT: INCORRECT",
 "parsed": true
+},
+"98860d7f46c266bda08d011b5e365a762d309606": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7403df0a8416a8193672f173f93f7248bc5de745": {
+"correct": 0,
+"reason": "The candidate provides a lengthy discussion about clinical pharmacists in hospitals and their training, roles, and specializations. However, the question asks about advantages of hospital pharmacies, and the reference answer specifies that they \"stock a larger range of medications, including more specialized medications.\" The candidate does not mention this advantage at all. While the candidate di",
+"parsed": true
+},
+"b188a47a09fc6a8ed1802486c4be627188b77a73": {
+"correct": 0,
+"reason": "The candidate provides no answer, which does not match the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"324efd4cbc97ca6c67fc85dfe65dbedeb39883be": {
+"correct": 1,
+"reason": "The candidate includes the reference answer (\"stock a larger range of medications, including more specialized medications\") along with additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d5cd1a4542c6bcf165e6203471e6125d16fc881a": {
+"correct": 1,
+"reason": "The candidate answer \"Quickly\" matches the reference answer \"quickly.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"7d4a37d5941997e699708cfcf0debab7b1f7e4f3": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"25b70e805ef0b002769b48e06b46800ec879859d": {
+"correct": 0,
+"reason": "The question asks about a portrait that hangs in the Smithsonian Institute alongside what is known as the founder of nursing. The reference answer is \"Sister Anthony, S.C.\" \u2014 meaning Sister Anthony's portrait hangs alongside Florence Nightingale's (the founder of nursing). The candidate answered \"Florence Nightingale's portrait,\" which is the founder of nursing herself, not the portrait that hangs",
+"parsed": true
+},
+"571d05cfdce555534c6b15c29a4b9542e9b3deb0": {
+"correct": 1,
+"reason": "The candidate's answer includes the reference answer (\"medication management system development, deployment and optimization\") along with additional details that are consistent with the context, so it matches the reference.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }
