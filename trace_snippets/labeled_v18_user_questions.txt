@@ -1,0 +1,195 @@
+LABELED_RECORDS v18 — label-free author/user questions (author_count x2 in the qtype list, rank most/second/third,
+noun author|user). Leaves write NO label on these questions. One example per (rank, noun); leaf output shown in full.
+
+##############################################################################################################
+# author_count rank 2 noun author  seed 2900003  budget 3000  gold ['Author: Diaz']  root answer 'Author: Diaz'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a request posted on a wiki or Q&A site; its label is how POLITE the request is. The politeness of each request can be classified as one of: impolite, neutral, polite.
+
+QUESTION:
+Ignore the lines that do not have author Diaz or Han (the `[by …]` tag). Among the remaining lines, which author has the SECOND most lines (regardless of label)? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the author exactly as written in the `[by …]` tag (just the name or id); put it inside \boxed{}.
+
+ROOT FIRST TURN:
+This document is 9942 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-author tally of items over ONLY the items of authors Diaz and Han (counting items per author; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..9942 is not below 500; splitting at midpoint 4971.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..4971, compute the per-author tally of items over ONLY the items of authors Diaz and Han (counting items per author; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items over ONLY the items of authors Diaz and Han (counting items per author; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors Diaz, Han, each written exactly as in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..310 per author (tallying how many items each author has, for the items of authors Diaz and Han only (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 310 belongs to the next range):
+- [Jul 21, 2023 → Jul 2023] [by Park] "I also found your audio uploads …" (other author, skip)
+- [Jul 20, 2023 → Jul 2023] [by Ivanov] "Yes, and there has been a user f…" (other author, skip)
+- [Jul 03, 2024 → Jul 2024] [by Han] "Your obfuscation of the real iss…" → Han: 1
+- [Dec 21, 2023 → Dec 2023] [by Han] "ok that was really confusing, I …" → Han: 2
+- [Jun 15, 2025 → Jun 2025] [by Han] "This is now ready for transfer. …" → Han: 3
+- [Jul 12, 2024 → Jul 2024] [by Park] "Hello, I'm with the project of t…" (other author, skip)
+Partial = \boxed{Han:3}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> Diaz:51|Han:53.
+Items per author among Diaz, Han: Diaz=51, Han=53; ranked (ties alphabetical): Han (53), Diaz (51); the second most is Diaz.
+The question asks for the form 'Author: [X]', so I box it that way.
+\boxed{Author: Diaz}
+
+##############################################################################################################
+# author_count rank 1 noun user  seed 2900008  budget 3000  gold ['User: 67990']  root answer 'User: 67990'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. The label is not written anywhere; it follows from the item's text. The label set is exactly: False, True.
+
+QUESTION:
+Restrict attention to the subset of lines where user 26558 or 67990 (the `[by …]` tag). Which user is represented the most often? Break ties by the user that comes first in alphabetical order. Give your final answer in the form 'User: [X]', where [X] is the user exactly as written in the `[by …]` tag (just the name or id); put it inside \boxed{}.
+
+ROOT FIRST TURN:
+This document is 8768 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-user tally of items over ONLY the items of users 26558 and 67990 (counting items per user; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..8768 is not below 500; splitting at midpoint 4384.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..4384, compute the per-user tally of items over ONLY the items of users 26558 and 67990 (counting items per user; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-user tally of items over ONLY the items of users 26558 and 67990 (counting items per user; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors 26558, 67990, each written exactly as in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..274 per user (tallying how many items each user has, for the items of users 26558 and 67990 only (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 274 belongs to the next range):
+- [Jul 06, 2022 → Jul 2022] [by 63831] "Coppin State University is a historically black college located in Baltimore Maryland United States." (other user, skip)
+- [Sep 06, 2022 → Sep 2022] [by 93571] "Bulbophyllum korthalsii is a large diversified Indian company headquartered in Gurgaon Haryana." (other user, skip)
+- [Jul 24, 2022 → Jul 2022] [by 35262] "Remembering Merle is a river of Tocantins state in central Brazil." (other user, skip)
+- [Apr 07, 2024 → Apr 2024] [by 63831] "Onychoteuthis meridiopacifica is a 1984 Malayalam language film." (other user, skip)
+- [Jul 13, 2023 → Jul 2023] [by 63831] "Motaniec [mɔˈtaɲet͡s] (German: Spaldingsfelde) is a village in the administrative district of Gmina Kobylanka within Stargard County West Pomeranian Voivodeship in north-western Poland." (other user, skip)
+- [Feb 07, 2025 → Feb 2025] [by 93571] "Black Joy is a railroad museum in El Paso Texas United States." (other user, skip)
+Partial = \boxed{none}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> 26558:33|67990:38.
+Items per user among 26558, 67990: 26558=33, 67990=38; the most is 67990 (38).
+The question asks for the form 'User: [X]', so I box it that way.
+\boxed{User: 67990}
+
+##############################################################################################################
+# author_count rank 1 noun author  seed 2900013  budget 8000  gold ['Author: 77282']  root answer 'Author: 77282'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line has three fields separated by `||`: `Section:` (a section (`S<n>`, numbered from 1 and appearing in order)), `Posted by:` (the author) and `Item:` (the item's text). Each item is a one-sentence factual claim about a named thing; its label is whether the claim is True or False. Items fall into exactly one of these labels: False, True.
+
+QUESTION:
+Which author is represented the most often? Break ties by the author that comes first in alphabetical order. Give your final answer in the form 'Author: [X]', where [X] is the author exactly as written in the `Posted by:` field (just the name or id); put it inside \boxed{}.
+
+ROOT FIRST TURN:
+This document is 11159 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-author tally of items (counting items per author; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..11159 is not below 500; splitting at midpoint 5579.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..5579, compute the per-author tally of items (counting items per author; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (counting items per author; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `Posted by:` field; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..348 per author (tallying how many items each author has (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 348 belongs to the next range):
+- [S1] [by 96016] "Galore is the debut studio album by Canadian electronic music band Dragonette." → 96016: 1
+- [S1] [by 77282] "Hoar Tavern is an American racquetball player." → 77282: 1
+- [S1] [by 96016] "Stephen Robert Pate (born May 26 1961) is a town and Village Development Committee in Dang Deokhuri District in the Rapti Zone of south-western Nepal." → 96016: 2
+- [S1] [by 77282] "Vincentian Academy is a mountain range in U.S. state of Colorado." → 77282: 2
+- [S1] [by 86587] "Matthew Thomas Belisle (beh-LYLE; born June 6 1980) is an American professional baseball pitcher for the Colorado Rockies of Major League Baseball." → 86587: 1
+- [S1] [by 96016] "Hazardia is a historic commercial building located at Newport News Virginia." → 96016: 3
+- [S1] [by 96016] "Poštová banka (Post Bank) is a universal commercial bank operates in Slovakia." → 96016: 4
+- [S1] [by 54565] "Derobrachus inaequalis is a species of legume in the Fabaceae family.It is found in Somalia and Tanzania." → 54565: 1
+- [S1] [by 96016] "Eugenia hypoleuca was an American World War II-era basic trainer aircraft built by Vultee Aircraft for the United States Army Air Corps and later US Army Air Forces." → 96016: 5
+Partial = \boxed{54565:1|77282:2|86587:1|96016:5}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> 54565:62|77282:63|86587:58|96016:55.
+Items per author: 54565=62, 77282=63, 86587=58, 96016=55; the most is 77282 (63).
+The question asks for the form 'Author: [X]', so I box it that way.
+\boxed{Author: 77282}
+
+##############################################################################################################
+# author_count rank 3 noun author  seed 2900035  budget 3000  gold ['Diaz']  root answer 'Diaz'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line has three fields separated by `||`: `Date:` (the item's date (`Mon DD, YYYY`)), `Author:` (the author) and `Content:` (the item's text). Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. The overall sentiment of each review can be classified into one of 2 categories: negative, positive.
+
+QUESTION:
+Which author has the THIRD most instances (regardless of label) overall? Break ties by the author that comes first in alphabetical order. Give the author exactly as written in the `Author:` field (e.g. Cho) in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 6283 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-author tally of items (counting items per author; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..6283 is not below 500; splitting at midpoint 3141.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..3141, compute the per-author tally of items (counting items per author; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-author tally of items (counting items per author; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|`, where `<author>` is the author exactly as written in the item's `Author:` field; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..392 per author (tallying how many items each author has (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 392 belongs to the next range):
+- [May 02, 2025 → May 2025] [by Diaz] "we rarely have McDonalds and mad…" → Diaz: 1
+- [May 05, 2025 → May 2025] [by Cho] "The shark tacos were great. The …" → Cho: 1
+- [May 18, 2025 → May 2025] [by Sato] "not a fan. the food was meh, the…" → Sato: 1
+- [Aug 25, 2024 → Aug 2024] [by Cho] "The worst chinese food ever. The…" → Cho: 2
+- [May 13, 2025 → May 2025] [by Kim] "Just spent two nights at the Rio…" → Kim: 1
+- [Oct 19, 2023 → Oct 2023] [by Diaz] "My friend and I had the all you …" → Diaz: 2
+Partial = \boxed{Cho:2|Diaz:2|Kim:1|Sato:1}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> Cho:16|Diaz:16|Kim:21|Park:10|Sato:15.
+Items per author: Cho=16, Diaz=16, Kim=21, Park=10, Sato=15; ranked (ties alphabetical): Kim (21), Cho (16), Diaz (16), Sato (15); the third most is Diaz.
+\boxed{Diaz}
+
+##############################################################################################################
+# author_count rank 3 noun user  seed 2900036  budget 8000  gold ['Han']  root answer 'Han'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line starts with the item's date `[Mon DD, YYYY]` and an author tag `[by <author>]`, followed by the item's text. Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a pair of sentences separated by the marker "<-->": a premise, then a hypothesis; its label is the RELATIONSHIP of the hypothesis to the premise. Every item has one label (not shown in the document), one of: contradiction, entailment, neutral.
+
+QUESTION:
+Ignore the items that do not have user Diaz or Han or Ivanov (the `[by …]` tag). Among the remaining items, which user is represented the third most often? Break ties by the user that comes first in alphabetical order. Give the user exactly as written in the `[by …]` tag (e.g. Diaz) in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 7080 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-user tally of items over ONLY the items of users Diaz, Han and Ivanov (counting items per user; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..7080 is not below 500; splitting at midpoint 3540.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..3540, compute the per-user tally of items over ONLY the items of users Diaz, Han and Ivanov (counting items per user; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-user tally of items over ONLY the items of users Diaz, Han and Ivanov (counting items per user; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<author>:<count>` entries joined by `|` for ONLY authors Diaz, Han, Ivanov, each written exactly as in the item's `[by …]` tag; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..442 per user (tallying how many items each user has, for the items of users Diaz, Han and Ivanov only (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 442 belongs to the next range):
+- [Sep 25, 2023 → Sep 2023] [by Ivanov] "Mom strokes her sons head while he licks his lips and looks at the camera <--> A woman hangs the laundry." → Ivanov: 1
+- [Oct 01, 2024 → Oct 2024] [by Diaz] "A man with a blue shirt, mustache and glasses is working with lumber on a deck. <--> A man is grilling on his deck." → Diaz: 1
+- [Oct 21, 2025 → Oct 2025] [by Sato] "a chef in an outdoor kitchen preparing food in a marketplace <--> The chef is working in the hot, stuffy kitchen." (other user, skip)
+- [Oct 14, 2025 → Oct 2025] [by Han] "A dog splashing through a puddle in the grass. <--> A little dog is in water." → Han: 1
+- [Feb 20, 2024 → Feb 2024] [by Kim] "A redheaded young boy in front of a fence holds a fishing pole in one hand and a line with a fish at the end of it in the other. <--> A kid has a fishing pole and a fish." (other user, skip)
+- [Sep 04, 2023 → Sep 2023] [by Kim] "A cop is reading over his paper next to the church. <--> A cop is reading near the church." (other user, skip)
+- [Oct 22, 2024 → Oct 2024] [by Han] "A man wearing jeans, a white shirt, and sandals with a bandage around his left ankle is sitting on a skateboard. <--> The man is wearing a bandage on his ankle." → Han: 2
+- [Sep 23, 2023 → Sep 2023] [by Han] "The dogs run in the green field. <--> There are dogs swimming in a lake." → Han: 3
+- [Sep 12, 2023 → Sep 2023] [by Ivanov] "Cowboy roping a black calf from a brown horse. <--> A rodeo performer is practicing for the event." → Ivanov: 2
+- [Feb 27, 2024 → Feb 2024] [by Diaz] "A large group of people wearing life jackets canoe down a river in a wooded ravine. <--> The people are in the desert." → Diaz: 2
+Partial = \boxed{Diaz:2|Han:3|Ivanov:2}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> Diaz:32|Han:29|Ivanov:36.
+Items per user among Diaz, Han, Ivanov: Diaz=32, Han=29, Ivanov=36; ranked (ties alphabetical): Ivanov (36), Diaz (32), Han (29); the third most is Han.
+\boxed{Han}
+
+##############################################################################################################
+# author_count rank 2 noun user  seed 2900060  budget 3000  gold ['52890']  root answer '52890'
+##############################################################################################################
+TASK CONTEXT:
+The document is a list of text items, ONE per line. Each line has three fields separated by `||`: `Date:` (the item's date (`Mon DD, YYYY`)), `Posted by:` (the author) and `Item:` (the item's text). Questions about MONTHS refer to the month and year of that date (e.g. `Jul 28, 2022` is in month `Jul 2022`). Each item is a customer review of a business; its label is the review's overall SENTIMENT. Every item has one label (not shown in the document), one of: negative, positive.
+
+QUESTION:
+Which user has the SECOND most lines (regardless of label) overall? Break ties by the user that comes first in alphabetical order. Give the user exactly as written in the `Posted by:` field (e.g. 11082) in \boxed{}.
+
+ROOT FIRST TURN:
+This document is 11435 tokens — too long to read in one context. The result over a range does not depend on the order of the items, so I split the range in half recursively, having a subagent compute the per-user tally of items (counting items per user; labels do not matter) over each half and combining the two partials. Once I have it for the whole document, I turn the combined result into the final answer.
+Range 0..11435 is not below 500; splitting at midpoint 5717.
+
+ROOT SUBTASK:
+Over the items STARTING in tokens 0..5717, compute the per-user tally of items (counting items per user; labels do not matter). Recursively split the range at its midpoint, delegating each half to a subagent, until the range is less than 500 tokens. When the range is less than 500 tokens, read it and compute the per-user tally of items (counting items per user; labels do not matter) over the items STARTING in the range. Put the result in \boxed{}: the partial tally as `<user>:<count>` entries joined by `|`, where `<user>` is the user exactly as written in the item's `Posted by:` field; `none` if no item starts in the range.
+
+LEAF OUTPUT:
+Counting the items whose line STARTS in 0..357 per user (tallying how many items each user has (the label is irrelevant); the trailing reads only finish the last line, and any item starting at/after 357 belongs to the next range):
+- [May 10, 2024 → May 2024] [by 69352] "I came out here for a peaceful w…" → 69352: 1
+- [Sep 27, 2025 → Sep 2025] [by 52890] "Having had numerous favorable ex…" → 52890: 1
+Partial = \boxed{52890:1|69352:1}
+
+ROOT FINAL:
+Merge my two children's tallies (above) -> 11082:7|52890:7|69352:7|78434:7.
+Items per user: 11082=7, 52890=7, 69352=7, 78434=7; ranked (ties alphabetical): 11082 (7), 52890 (7), 69352 (7); the second most is 52890.
+\boxed{52890}
+

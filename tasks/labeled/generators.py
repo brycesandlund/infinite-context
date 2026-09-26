@@ -66,7 +66,11 @@ _QTYPES = ["count", "count", "most_common", "relative", "sections_cmp", "section
            # run 15: filtered-subset questions were 2 of 12 qtypes and run 14w's OOLONG-user leaves dropped the user
            # filter (tallied every line). Author-filtered share raised to ~30%: a filtered COUNT ("how many of user
            # X's items are L" — the agnews seed shape we never taught) and extra author_most/least draws.
-           "author_label_count", "author_label_count", "author_most", "author_least"]
+           "author_label_count", "author_label_count", "author_most", "author_least",
+           # v18: a second author_count — LABEL-FREE user questions ("which user is represented most / second most
+           # often") were 11/1229 traces, and 18w AND 19w roots broke 25-30 of 31 of them (invented label filters,
+           # "judging each review's label", closed `User 1..5` lists). Now with rank 1/2/3 and a "user" noun.
+           "author_count"]
 # author_count / author_top ask about a SUBSET of authors this often (OOLONG-user: "only consider the subset of users
 # with IDs …; which user is represented most often / has the most instances with the label L"). The state then holds
 # only the listed authors. Audit 2026-09-24: no training question had this shape.
@@ -90,10 +94,10 @@ def _pick_subset(rng, authors) -> list[str]:
     return sorted(rng.sample(authors, rng.randint(2, min(3, len(authors) - 1))))
 
 
-def _author_cond(aus) -> str:
+def _author_cond(aus, noun: str = "author") -> str:
     if len(aus) == 1:
-        return f"author = {aus[0]} (the `[by {aus[0]}]` tag)"
-    return f"author {' or '.join(aus)} (the `[by …]` tag)"
+        return f"{noun} = {aus[0]} (the `[by {aus[0]}]` tag)"
+    return f"{noun} {' or '.join(aus)} (the `[by …]` tag)"
 
 
 # LABEL-QUALITY FILTER (v15): keep only rows whose gold label a strong text-only judge (Opus 4.6, allowed to answer
@@ -376,13 +380,21 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         sub = _pick_subset(rng, authors) if rng.random() < _AUTHOR_SUBSET_FRAC else None
         pool = sub or authors
         c = Counter(r["au"] for r in recs)
-        best = max(c[a] for a in pool)
-        gold = next(a for a in pool if c[a] == best)              # pool sorted -> first in sort order on ties
-        grading, params = "exact", ({"qauthor": sub[0], "qauthors": sub} if sub else {})
-        tail = (f"Break ties by the author that comes first in alphabetical order. Give the author exactly as written in "
+        # v18: rank 1/2/3 ("most" / "second most" / "third most") and the noun "user" half the time (OOLONG's word)
+        rrng = random.Random(f"rank-{seed}")
+        rank = min(rrng.choices([1, 2, 3], weights=[6, 3, 1])[0], len(pool))
+        noun = rrng.choice(["author", "user"])
+        ranked = sorted(pool, key=lambda a: (-c[a], a))              # ties -> alphabetical (stated in the question)
+        gold = ranked[rank - 1]
+        grading, params = "exact", ({"qauthor": sub[0], "qauthors": sub, "qrank": rank, "au_noun": noun} if sub
+                                    else {"qrank": rank, "au_noun": noun})
+        nth = {1: "MOST", 2: "SECOND most", 3: "THIRD most"}[rank]
+        tail = (f"Break ties by the {noun} that comes first in alphabetical order. Give the {noun} exactly as written in "
                 f"the `[by …]` tag (e.g. {pool[0]}) in \\boxed{{}}.")
-        q = (filtered_question(rng, "items", _author_cond(sub), "which author has the MOST items (regardless of label)", tail)
-             if sub else f"Which author has the MOST items overall (regardless of label)? {tail}")
+        ask = rrng.choice([f"which {noun} has the {nth} items (regardless of label)",
+                           f"which {noun} is represented the {nth.lower()} often"])
+        q = (filtered_question(rng, "items", _author_cond(sub, noun), ask, tail) if sub
+             else f"{ask[0].upper() + ask[1:]}{' overall' if 'has the' in ask else ''}? {tail}")
     elif qtype == "section_mode_count":
         L = rng.choice(labels)
         gold = sum(1 for s_ in sections if per[s_][L] > max((per[s_][l] for l in labels if l != L), default=0))
@@ -477,13 +489,16 @@ def make_labeled_problem(task, corpus_tokens, tokenizer, doc_size_tokens, seed) 
         word = {"most_common": "Label", "relative": "Answer", "section_most": unit_word.capitalize(),
                 "author_most": "Label", "author_top": "Author", "author_count": "Author",
                 "author_least": "Label", "author_cmp": "Author"}.get(qtype, "Answer")
+        if word == "Author" and params.get("au_noun") == "user":
+            word = "User"                                          # OOLONG's form: "Give … in the form 'User: [X]'"
         answer_form = word
         # drop the question's own "Give … in \boxed{}." sentence and replace it with the form instruction
         # the question's closing "Give … in \boxed{}." sentence may contain dots ("e.g. S1", "e.g. 30140"), so
         # match up to the boxed instruction at the END rather than stopping at the first dot
         q = re.sub(r"\s*Give [^\n]*? in \\boxed\{\}\.\s*$", "", q)        # "Give the author … (e.g. Kim) in \boxed{}."
         q = re.sub(r"\s*Put it in \\boxed\{\}\.\s*$", "", q)              # "…equally common as. Put it in \boxed{}."
-        what = {"Label": "the label", "Author": "the author exactly as written in the `[by …]` tag (just the name or id)"}.get(word, "the answer")
+        what = {"Label": "the label", "Author": "the author exactly as written in the `[by …]` tag (just the name or id)",
+                "User": "the user exactly as written in the `[by …]` tag (just the name or id)"}.get(word, "the answer")
         q += f" Give your final answer in the form '{word}: [X]', where [X] is {what}; put it inside \\boxed{{}}."
         gold = f"{word}: {gold}"
     q = _layout_refs(_jitter_item_words(q, seed), lay)

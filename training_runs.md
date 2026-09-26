@@ -1838,3 +1838,24 @@ repetition loops), fwe 0.93 -> 0.33; t=0.2 0.929 / 0.606, 54 (10 loops); t=0.4 0
 @40K t=0 0.529 vs 0.535. Keep t=0.2. The `word:1|word:1|…` loop is trained behaviour that greedy decoding exposes.
 
 Raw: `eval_results/raw/sft_general19w*`, `eval_results/qa_judge_19w.txt`, `eval_results/probe_19w.log`.
+
+### OOLONG chart @20K (18w and 19w) + root-contract probe — 2026-09-25
+
+| OOLONG chart (June problems, 8K budget, t=0.2) | 10K | 20K | 40K | 80K | mean |
+|---|---|---|---|---|---|
+| 18w | **0.606** | 0.540 | **0.535** | **0.561** | 0.561 |
+| 19w | 0.489 | **0.559** | 0.534 | 0.533 | 0.529 |
+| – counting 18w / 19w | 0.45 / 0.54 | 0.42 / 0.43 | 0.42 / 0.46 | 0.41 / 0.41 | |
+| – user 18w / 19w | 0.86 / 0.36 | 0.72 / **0.80** | 0.80 / 0.78 | 0.73 / 0.70 | |
+| – temporal 18w / 19w | 0.51 / 0.57 | 0.48 / 0.44 | 0.39 / 0.36 | 0.54 / 0.49 | |
+
+**The 19w user @10K drop was a bad draw of a SHARED flaw, not a regression.** `scripts/root_contract_probe.py` samples only the
+root's first turn on 200 fresh OOLONG-user questions @10K (OOLONG_BASE 5,000,000) and checks the spawned contract:
+18w 37/200 broken (label-FREE questions 30/31, label-conditioned 7/169); 19w 28/200 (25/31, 3/169). Both checkpoints turn
+"which user is represented most / second most often" into a labeled tally ("per-user tally of the labels (judging each
+claim as true or false)", "the sentences marked as true", "an `agent:` line names the questioner"); ~9/200 roots per
+checkpoint spawn nothing. Cause: label-free author questions were 11/1229 traces of the run-19 corpus (no "second most"
+variant). Fix -> cache **v18**: a second `author_count` entry (12% of labeled_records), rank most/second/third, noun
+author|user (question, subset clause, subtask "per-user tally … (counting items per user; labels do not matter)", form
+`User: [X]`). Snippets: `trace_snippets/labeled_v18_user_questions.txt`. Raw: `eval_results/raw/sft_general1{8,9}w_C1{8,9}w_20k.*`,
+`eval_results/root_contract_probe_10k.json`.

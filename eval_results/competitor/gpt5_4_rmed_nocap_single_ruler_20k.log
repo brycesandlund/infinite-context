@@ -1,0 +1,95 @@
+Backend: openai/gpt-5.4-2026-03-05 | mode: single | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal', 'niah_single_1', 'niah_single_2', 'niah_single_3', 'niah_multikey_1', 'niah_multikey_2', 'niah_multikey_3', 'niah_multivalue', 'niah_multiquery', 'vt', 'cwe', 'fwe', 'qa_1', 'qa_2'] | n/task: 5 | budget: n/a (whole doc in context) | doc: 20000 | depth: None
+Loading + tokenizing PG-essay corpus...
+[92m22:37:54 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m22:37:54 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+temp=None | out=eval_results/competitor/gpt5_4_rmed_nocap_single_ruler_20k.{jsonl,txt}
+
+========================================================================
+EVAL: backend=openai/gpt-5.4-2026-03-05 ckpt=BASE
+========================================================================
+# task=niah_single_1 seed=3003000 dataset=None gold=['2172054'] nodes=1 answer='2172054' term=answered score=1.000
+# task=niah_single_1 seed=3003001 dataset=None gold=['1178196'] nodes=1 answer='1178196' term=answered score=1.000
+# task=niah_single_1 seed=3003002 dataset=None gold=['2114230'] nodes=1 answer='2114230' term=answered score=1.000
+# task=niah_single_1 seed=3003003 dataset=None gold=['9823913'] nodes=1 answer='9823913' term=answered score=1.000
+# task=niah_single_1 seed=3003004 dataset=None gold=['3589833'] nodes=1 answer='3589833' term=answered score=1.000
+# task=niah_single_2 seed=3004000 dataset=None gold=['2550029'] nodes=1 answer='2550029' term=answered score=1.000
+# task=niah_single_2 seed=3004001 dataset=None gold=['5768593'] nodes=1 answer='5768593' term=answered score=1.000
+# task=niah_single_2 seed=3004002 dataset=None gold=['5026612'] nodes=1 answer='5026612' term=answered score=1.000
+# task=niah_single_2 seed=3004003 dataset=None gold=['4565457'] nodes=1 answer='4565457' term=answered score=1.000
+# task=niah_single_2 seed=3004004 dataset=None gold=['6830448'] nodes=1 answer='6830448' term=answered score=1.000
+# task=niah_single_3 seed=3005000 dataset=None gold=['2915b78d-b754-43a0-9960-a1c99019756b'] nodes=1 answer='2915b78d-b754-43a0-9960-a1c99019756b' term=answered score=1.000
+# task=niah_single_3 seed=3005001 dataset=None gold=['86d95637-568d-48bb-9562-3937fb7aba06'] nodes=1 answer='86d95637-568d-48bb-9562-3937fb7aba06' term=answered score=1.000
+# task=niah_single_3 seed=3005002 dataset=None gold=['20a8e55c-af14-4482-80e7-5910e2d83334'] nodes=1 answer='20a8e55c-af14-4482-80e7-5910e2d83334' term=answered score=1.000
+# task=niah_single_3 seed=3005003 dataset=None gold=['47f4ce45-464e-4348-9549-6f03ce3d80c9'] nodes=1 answer='47f4ce45-464e-4348-9549-6f03ce3d80c9' term=answered score=1.000
+# task=niah_single_3 seed=3005004 dataset=None gold=['872bba13-86fd-455e-b7d4-5d3948691da3'] nodes=1 answer='872bba13-86fd-455e-b7d4-5d3948691da3' term=answered score=1.000
+# task=niah_multikey_1 seed=3006000 dataset=None gold=['2015254'] nodes=1 answer='2015254' term=answered score=1.000
+# task=niah_multikey_1 seed=3006001 dataset=None gold=['1758294'] nodes=1 answer='1758294' term=answered score=1.000
+# task=niah_multikey_1 seed=3006002 dataset=None gold=['9217484'] nodes=1 answer='9217484' term=answered score=1.000
+# task=niah_multikey_1 seed=3006003 dataset=None gold=['2371335'] nodes=1 answer='2371335' term=answered score=1.000
+# task=niah_multikey_1 seed=3006004 dataset=None gold=['9471471'] nodes=1 answer='9471471' term=answered score=1.000
+# task=niah_multikey_2 seed=3007000 dataset=None gold=['9732546'] nodes=1 answer='9732546' term=answered score=1.000
+# task=niah_multikey_2 seed=3007001 dataset=None gold=['6596340'] nodes=1 answer='6596340' term=answered score=1.000
+# task=niah_multikey_2 seed=3007002 dataset=None gold=['6229520'] nodes=1 answer='6229520' term=answered score=1.000
+# task=niah_multikey_2 seed=3007003 dataset=None gold=['2699062'] nodes=1 answer='2699062' term=answered score=1.000
+# task=niah_multikey_2 seed=3007004 dataset=None gold=['2200643'] nodes=1 answer='2200643' term=answered score=1.000
+# task=niah_multikey_3 seed=3008000 dataset=None gold=['354e3215-08e2-4027-b6c4-44a1eeb7767b'] nodes=1 answer='354e3215-08e2-4027-b6c4-44a1eeb7767b' term=answered score=1.000
+# task=niah_multikey_3 seed=3008001 dataset=None gold=['c934150a-5002-4171-8c78-3e75ac49b793'] nodes=1 answer='c934150a-5002-4171-8c78-3e75ac49b793' term=answered score=1.000
+# task=niah_multikey_3 seed=3008002 dataset=None gold=['d179aa25-cd6d-4adc-bd4d-10af0d491a6a'] nodes=1 answer='d179aa25-cd6d-4adc-bd4d-10af0d491a6a' term=answered score=1.000
+# task=niah_multikey_3 seed=3008003 dataset=None gold=['fc766674-4b44-4651-a2a9-882d22eb0d16'] nodes=1 answer='fc766674-4b44-4651-a2a9-882d22eb0d16' term=answered score=1.000
+# task=niah_multikey_3 seed=3008004 dataset=None gold=['eb774a7c-a57f-4be1-8afc-830fae2c3245'] nodes=1 answer='eb774a7c-a57f-4be1-8afc-830fae2c3245' term=answered score=1.000
+# task=niah_multivalue seed=3009000 dataset=None gold=['5819966', '8060081', '2084426', '4656285'] nodes=1 answer='4656285, 2084426, 5819966, 8060081' term=answered score=1.000
+# task=niah_multivalue seed=3009001 dataset=None gold=['7550529', '1190800', '2410387', '4108101'] nodes=1 answer='2410387, 4108101, 1190800, 7550529' term=answered score=1.000
+# task=niah_multivalue seed=3009002 dataset=None gold=['7199405', '8381382', '4021803', '9255748'] nodes=1 answer='8381382, 9255748, 4021803, 7199405' term=answered score=1.000
+# task=niah_multivalue seed=3009003 dataset=None gold=['9652481', '3420852', '7464906', '1507969'] nodes=1 answer='7464906, 9652481, 3420852, 1507969' term=answered score=1.000
+# task=niah_multivalue seed=3009004 dataset=None gold=['5898840', '6110547', '2521008', '2536009'] nodes=1 answer='2536009, 2521008, 6110547, 5898840' term=answered score=1.000
+# task=niah_multiquery seed=3010000 dataset=None gold=['2785937', '3927047', '4890071', '1354865'] nodes=1 answer='warlike-kitchen=2785937, shocking-almighty=3927047, soggy-roast=4890071, shallow-savior=1354865' term=answered score=1.000
+# task=niah_multiquery seed=3010001 dataset=None gold=['3479087', '1074020', '9912517', '8386061'] nodes=1 answer='yielding-half =3479087, crazy-writing =1074020, determined-stitch =9912517, thankful-offence =8386061' term=answered score=1.000
+# task=niah_multiquery seed=3010002 dataset=None gold=['4975620', '7211411', '9663979', '5348933'] nodes=1 answer='poised-son = 4975620, friendly-infix = 7211411, mysterious-grey = 9663979, tacky-wharf = 5348933' term=answered score=1.000
+# task=niah_multiquery seed=3010003 dataset=None gold=['2345922', '5758306', '9080377', '9613522'] nodes=1 answer='2345922, 5758306, 9080377, 9613522' term=answered score=1.000
+# task=niah_multiquery seed=3010004 dataset=None gold=['3939454', '9290572', '2484596', '6370749'] nodes=1 answer='nice-believer=3939454, lethal-seat=9290572, dashing-swallow=2484596, moaning-coliseum=6370749' term=answered score=1.000
+# task=vt seed=3011000 dataset=None gold=['EPTEE', 'KXZGO', 'TDBLJ', 'FXGKK', 'LEZQV'] nodes=1 answer='EPTEE, KXZGO, TDBLJ, FXGKK, LEZQV' term=answered score=1.000
+# task=vt seed=3011001 dataset=None gold=['QXJHA', 'BZYLB', 'LHDWH', 'IVFLP', 'COPMW'] nodes=1 answer='QXJHA, BZYLB, LHDWH, IVFLP, COPMW' term=answered score=1.000
+# task=vt seed=3011002 dataset=None gold=['YBJXV', 'KFSXU', 'MELWZ', 'BRDRG', 'NSNII'] nodes=1 answer='YBJXV, KFSXU, MELWZ, BRDRG, NSNII' term=answered score=1.000
+# task=vt seed=3011003 dataset=None gold=['YCNYS', 'OJDAR', 'XPILA', 'ESRUW', 'IWOLS'] nodes=1 answer='YCNYS, OJDAR, XPILA, ESRUW, IWOLS' term=answered score=1.000
+# task=vt seed=3011004 dataset=None gold=['YVHKK', 'FYYZJ', 'IHCZC', 'NALAH', 'PNPTN'] nodes=1 answer='YVHKK, FYYZJ, IHCZC, NALAH, PNPTN' term=answered score=1.000
+# task=cwe seed=3012000 dataset=None gold=['indicator', 'thunderstorm', 'shoot', 'troubleshoot', 'carboxyl', 'cylinder', 'woodchuck', 'tuxedo', 'lacking', 'stopwatch'] nodes=1 answer='indicator (30), thunderstorm (30), carboxyl (30), cylinder (29), shoot (29), tuxedo (29), woodchuck (29), lacking (28), stopwatch (28), troubleshoot (28)' term=answered score=1.000
+# task=cwe seed=3012001 dataset=None gold=['space', 'gaudy', 'employ', 'noon', 'sectional', 'reader', 'servant', 'fame', 'ecosystem', 'coffee'] nodes=1 answer='fame, coffee, ecosystem, employ, noon, reader, servant, gaudy, sectional, space' term=answered score=1.000
+# task=cwe seed=3012002 dataset=None gold=['brushfire', 'washer', 'charm', 'annoy', 'selective', 'benefit', 'shrink', 'diagram', 'bough', 'fingerling'] nodes=1 answer='annoy, benefit, brushfire, diagram, fingerling, washer, bough, charm, selective, shrink' term=answered score=1.000
+# task=cwe seed=3012003 dataset=None gold=['impartial', 'dude', 'numeracy', 'alpha', 'scattered', 'deadpan', 'cell', 'complexity', 'direction', 'conspirator'] nodes=1 answer='alpha, direction, deadpan, conspirator, cell, numeracy, impartial, scattered, dude, complexity' term=answered score=1.000
+# task=cwe seed=3012004 dataset=None gold=['glider', 'thought', 'zoot-suit', 'carnation', 'awe', 'shaw', 'fly', 'proof', 'proposition', 'compose'] nodes=1 answer='awe, compose, glider, shaw, carnation, proposition, thought, fly, proof, zoot-suit' term=answered score=1.000
+# task=fwe seed=3013000 dataset=None gold=['gwvfrr', 'oepgtl', 'schogu'] nodes=1 answer='gwvfrr, oepgtl, schogu' term=answered score=1.000
+# task=fwe seed=3013001 dataset=None gold=['swqgle', 'rzbato', 'hequqj'] nodes=1 answer='swqgle, rzbato, hequqj' term=answered score=1.000
+# task=fwe seed=3013002 dataset=None gold=['lmwblx', 'jwwnqh', 'awzdsc'] nodes=1 answer='lmwblx, jwwnqh, awzdsc' term=answered score=1.000
+# task=fwe seed=3013003 dataset=None gold=['gwdohf', 'bfyqhq', 'zcjpwh'] nodes=1 answer='gwdohf, bfyqhq, zcjpwh' term=answered score=1.000
+# task=fwe seed=3013004 dataset=None gold=['irdpkj', 'rdmhsq', 'jpghbi'] nodes=1 answer='irdpkj, rdmhsq, jpghbi' term=answered score=1.000
+# task=qa_1 seed=3014000 dataset=squad gold=['within the premises of the hospital', 'premises of the hospital', 'within the premises of the hospital'] nodes=1 answer='Within the premises of the hospital' term=answered score=1.000
+# task=qa_1 seed=3014001 dataset=squad gold=['unit-dose, or a single dose of medicine', 'unit-dose', 'unit-dose, or a single dose of medicine'] nodes=1 answer='unit-dose, or a single dose of medicine' term=answered score=1.000
+# task=qa_1 seed=3014002 dataset=squad gold=['high risk preparations and some other compounding functions', 'high risk preparations and some other compounding functions', 'high risk preparations and some other compounding functions'] nodes=1 answer='High-risk preparations and some other compounding functions.' term=answered score=0.000
+# task=qa_1 seed=3014003 dataset=squad gold=['The high cost of medications and drug-related technology', 'high cost of medications', 'high cost of medications and drug-related technology'] nodes=1 answer='the high cost of medications' term=answered score=1.000
+# task=qa_1 seed=3014004 dataset=squad gold=['Hospital pharmacies usually stock a larger range of medications, including more specialized medications', 'more specialized medications', 'stock a larger range of medications, including more specialized medications'] nodes=1 answer='They can stock a wider range of medicines, including specialized drugs, provide unit-dose medications, and compound sterile IV products such as TPN—helping improve patient care outcomes and safety.' term=answered score=0.000
+# task=qa_2 seed=3015000 dataset=hotpotqa gold=['no'] nodes=1 answer='No' term=answered score=1.000
+# task=qa_2 seed=3015001 dataset=hotpotqa gold=['Ernst & Young'] nodes=1 answer='EY' term=answered score=0.000
+# task=qa_2 seed=3015002 dataset=hotpotqa gold=['35 people'] nodes=1 answer='35' term=answered score=0.000
+# task=qa_2 seed=3015003 dataset=hotpotqa gold=['Bolshoi Theatre'] nodes=1 answer='Bolshoi Theatre' term=answered score=1.000
+# task=qa_2 seed=3015004 dataset=hotpotqa gold=['Kal Ho Naa Ho'] nodes=1 answer='Kal Ho Naa Ho' term=answered score=1.000
+
+------------------------------------------------------------------------
+cwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+fwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_multikey_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_multikey_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_multikey_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_multiquery: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_multivalue: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_single_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_single_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+niah_single_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+qa_1: 0.600  (grounded 0.600 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+    dataset squad          0.600  (n=5)
+qa_2: 0.600  (grounded 0.600 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+    dataset hotpotqa       0.600  (n=5)
+vt: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=1.0)
+
+OVERALL: 0.938  (grounded 0.938 | 65 rollouts)
+SCORE (held-out ['cwe', 'fwe', 'niah_multikey_1', 'niah_multikey_2', 'niah_multikey_3', 'niah_multiquery', 'niah_multivalue', 'niah_single_1', 'niah_single_2', 'niah_single_3', 'qa_1', 'qa_2', 'vt']): 0.938  (65 rollouts)
+All 65 rollouts saved -> eval_results/competitor/gpt5_4_rmed_nocap_single_ruler_20k.jsonl + eval_results/competitor/gpt5_4_rmed_nocap_single_ruler_20k.txt
