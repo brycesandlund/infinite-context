@@ -156,7 +156,14 @@ niah x8, vt, cwe, fwe 1.00; **niah_multiquery 0.00**; qa_1 0.60 / judged 1.00; q
 answered; output 0.06M tokens; cost ≈ $10 (3.5M input, est. in OpenAI tokens). The multiquery 0.00 and most qa string
 misses are an **extractor bug** (next section), not wrong answers.
 **After the extractor fix: RULER-13 = 0.954** — niah_multiquery 1.00, qa_1 0.60, qa_2 0.80
-(string), everything else 1.00. RULER is saturated for gpt-5.4 at 80K; other lengths not run.
+(string), everything else 1.00. RULER is saturated for gpt-5.4 at 80K.
+
+**gpt-5.4, medium reasoning, no output cap, RULER-13 @320K** (same 65 problems, fixed extractor, `CONCURRENCY=3`, no
+rate-limit hits): **0.920** (string) — everything 1.00 except **cwe 0.56**, qa_1 0.60 / judged 1.00, qa_2 0.80 /
+judged 1.00 (string misses: `High-risk` hyphenation, a paraphrase, `35` for "35 people"). LLM-judged RULER-13 ≈ 0.966.
+All 65 answered; output only 0.03M tokens. Cost ≈ $36 at the standard rate (14.1M input, est. in OpenAI tokens) —
+up to ~2x if >272K prompts bill higher. The only real loss at 320K is cwe (common-word counting over ~4x more words).
+Raw: `eval_results/competitor/gpt5_4_rmed_nocap_single_ruler_320k.*`.
 
 ### Boxed-answer extractor bug (found 2026-09-25)
 
@@ -267,6 +274,7 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium reasoning @320K, uncapped = 0.479. `OUT_TOKENS=0` = no output cap sent.
 - 2026-09-25: base Qwen single-shot RULER-13 @10/20/40K = 0.923 / 0.938 / 0.938 (identical problems to eval_long.sh).
 - 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
+- 2026-09-25: gpt-5.4 medium RULER-13 @320K = 0.920 (cwe 0.56; qa judged 1.00); ~$36.
 - 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
   `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
   `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call

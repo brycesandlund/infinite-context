@@ -3,7 +3,7 @@
 #   1. wait for run 19's "ALL DONE"; pin the 19w checkpoint (last_sft_checkpoint.txt is shared with other runs, e.g. 18b)
 #   2. archive the 4K scoreboard eval
 #   3. plain leaf-classification probe
-#   4. OOLONG chart @10K/@40K, RULER-13+OOLONG @10K/@40K (8K budget), then the same @80K
+#   4. OOLONG chart @10K/@40K/@80K + RULER-13 @10K/@40K/@80K (8K budget; eval_long OOLONG count 0 — RULER seeds unchanged)
 #   5. LLM-judge the open-ended QA rollouts
 #   nohup caffeinate -is bash scripts/after_run19.sh > /tmp/after_run19.log 2>&1 &
 cd "$(dirname "$0")/.."
@@ -28,7 +28,7 @@ CKPT=$CK TAG=19w PYTHONPATH=. uv run python scripts/leaf_classify_probe.py 6 > e
 
 run_set() {   # $1 = doc length tag (10k/40k/80k), $2 = doc tokens
   bash scripts/eval_oolong_chart.sh C19w_$1 "$CK" $2 > /tmp/eval_C19w_$1.log 2>&1 &
-  bash scripts/eval_long.sh R19w_$1_b8k "$CK" $2 8000 > /tmp/eval_R19w_$1_b8k.log 2>&1 &
+  bash scripts/eval_long.sh R19w_$1_b8k "$CK" $2 8000 5 0 > /tmp/eval_R19w_$1_b8k.log 2>&1 &
 }
 say "evals @10K and @40K"
 run_set 10k 10000; run_set 40k 40000; wait

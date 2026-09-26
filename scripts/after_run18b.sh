@@ -30,8 +30,8 @@ CKPT=$CK TAG=18b PYTHONPATH=. uv run python scripts/leaf_classify_probe.py 6 > e
 say "18b OOLONG chart @10K / @40K and RULER-13+OOLONG @10K / @40K (8K budget)"
 bash scripts/eval_oolong_chart.sh C18b_10k "$CK" 10000 > /tmp/eval_C18b_10k.log 2>&1 &
 bash scripts/eval_oolong_chart.sh C18b_40k "$CK" 40000 > /tmp/eval_C18b_40k.log 2>&1 &
-bash scripts/eval_long.sh R18b_10k_b8k "$CK" 10000 8000 > /tmp/eval_R18b_10k_b8k.log 2>&1 &
-bash scripts/eval_long.sh R18b_40k_b8k "$CK" 40000 8000 > /tmp/eval_R18b_40k_b8k.log 2>&1 &
+bash scripts/eval_long.sh R18b_10k_b8k "$CK" 10000 8000 5 0 > /tmp/eval_R18b_10k_b8k.log 2>&1 &
+bash scripts/eval_long.sh R18b_40k_b8k "$CK" 40000 8000 5 0 > /tmp/eval_R18b_40k_b8k.log 2>&1 &
 wait
 for t in C18b_10k C18b_40k R18b_10k_b8k R18b_40k_b8k; do
   cp /tmp/eval_$t.jsonl eval_results/raw/sft_general18b_$t.jsonl 2>/dev/null

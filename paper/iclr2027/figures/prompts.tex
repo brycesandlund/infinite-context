@@ -1,0 +1,79 @@
+% !TEX root = ../paper.tex
+% Appendix A: the harness prompts, verbatim from harness.py (make_system_prompt, make_single_shot_prompt, tool
+% descriptions) and the per-benchmark prompt slots (tasks/oolong, tasks/oolong_real, tasks/ruler/_common.py).
+\newcommand{\slot}[1]{\textrm{\textit{$\langle$#1$\rangle$}}}
+\newcommand{\promptbox}[1]{\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\footnotesize\ttfamily
+  \raggedright\setlength{\parskip}{0.6em}#1}}}
+
+\begin{figure}[!ht]
+\promptbox{%
+You are a long-document assistant. The document is \slot{N} tokens long; you cannot see it directly. Your own
+context window is \slot{B} tokens {\rmfamily\textemdash} the conversation (system prompt, user message, your responses, and all
+tool results) must fit in this budget or the episode ends.
+
+\slot{task context, if the benchmark provides one}
+
+You have two tools:\\
+- `read\_chunk(start, end)`: read the document tokens in [start, end).\\
+- `spawn\_subagent(subtask)`: delegate to a fresh-context copy of yourself (also \slot{B} tokens) with `subtask` as
+the user prompt. The same tools and system prompt as above are inherited by the subagent.
+
+When you are confident in the final answer, emit it as \textbackslash{}boxed\{value\} and stop.}
+
+\vspace{2mm}
+\promptbox{%
+\textrm{\textbf{Tool descriptions}} (function-calling schema)\\[0.3em]
+read\_chunk: Read a slice of the document and return the decoded text of tokens [start, end). The document has a
+fixed length (stated in the system prompt). Each call is capped at the chunk limit; for larger ranges, issue multiple
+reads or delegate to a subagent.\\
+\quad start: First token position to read (inclusive).\enspace end: Last token position to read (exclusive).\\[0.3em]
+spawn\_subagent: Spawn a fresh-context copy of yourself to solve `subtask`; returns the child's \textbackslash{}boxed\{\}
+answer.\\
+\quad subtask: Sub-problem statement (free text) for the child to solve}
+\caption{\textbf{Agent system prompt}, shared by the root and every subagent, and the two tool descriptions. \slot{N}
+is the document length and \slot{B} the per-agent context budget. The root's user message is the benchmark question
+(Table~\ref{tab:prompt-slots}); a subagent's user message is the \texttt{subtask} string its parent wrote.}
+\label{fig:system-prompt}
+\end{figure}
+
+\begin{figure}[!ht]
+\promptbox{%
+\textrm{\textbf{System}}\\[0.3em]
+\slot{task context, if the benchmark provides one}
+
+You are given a complete document followed by a question about it. Read the document carefully and answer the
+question. Show your reasoning, then emit your final answer as \textbackslash{}boxed\{value\} and stop.}
+
+\vspace{2mm}
+\promptbox{%
+\textrm{\textbf{User}}\\[0.3em]
+\slot{full document text}
+
+\slot{question}}
+\caption{\textbf{Full-document prompt}, used for the single-shot baselines: the whole document is placed in one
+user message, with no tools and no budget prose.}
+\label{fig:full-doc-prompt}
+\end{figure}
+
+\begin{table}[!ht]
+\centering\small
+\begin{tabular}{@{}p{0.13\linewidth}p{0.29\linewidth}p{0.29\linewidth}p{0.19\linewidth}@{}}
+\toprule
+Benchmark & System prompt: task context & Root user message & Document \\
+\midrule
+OOLONG-synth & OOLONG's dataset description, verbatim (its intro, the number of items, the label set) &
+  OOLONG's question, verbatim, + ``Put your final answer inside \textbackslash{}boxed\{\}.'' &
+  One item per line: \texttt{Date: \ldots{} || User: \ldots{} || Instance: \ldots} \\[0.4em]
+OOLONG-real & Everything before the first \texttt{[START OF EPISODE]}, verbatim: the instructions and the
+  player-to-character mapping & The dataset question, verbatim & The episode transcripts, verbatim \\[0.4em]
+RULER & None (empty) & RULER's task template, verbatim, with \texttt{\{context\}} replaced by a pointer to the
+  document (below) + ``Reply with the answer inside \textbackslash{}boxed\{\}.'' & RULER's haystack with its
+  inserted needles \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Where each benchmark's text goes.} The task context is placed in the system prompt, so every
+subagent inherits it without the parent restating it. For RULER, \texttt{\{context\}} in the template is replaced
+by: ``[The relevant text is in a separate document accessible via the read\_chunk tool --- see the system prompt for
+usage.] (Document length: \slot{N} tokens.)''}
+\label{tab:prompt-slots}
+\end{table}

@@ -8,6 +8,7 @@
 
 \usepackage{hyperref}
 \usepackage{url}
+\usepackage{booktabs}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing,calc}
 
@@ -124,7 +125,7 @@ For example, consider the training question ``In how many sections are there STR
 
 Our training data is primarily record-based, but also includes real prose, dot-separated word lists, and haystacks with injected needles. For more details on our complete training data, see Appendix~\ref{app:data}.
 
-We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judge on subagent trajectories, as described in Recursive Agent Optimization~\cite{gandhi2026rao}, the policy exhibits high-variance and latches onto simpler strategies that weaken overall performance. We suspect RL to be useful in learning recovery and strengthening generalization; however, to do this properly probably requires group-level baselines on subagent trajectories, to cut variance, and compute beyond the scope of this paper.
+We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judge rewards on subagent trajectories, as described in Recursive Agent Optimization~\cite{gandhi2026rao}, the policy exhibits high-variance and latches onto simpler strategies that weaken overall performance. We suspect RL to be useful in learning recovery and strengthening generalization; however, to do this properly probably requires group-level baselines on subagent trajectories, to cut variance, and compute beyond the scope of this paper.
  
 
 \section{Experiments}
@@ -133,11 +134,11 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 \section{Conclusion}
 \label{conclude}
 
-In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compression.
+In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compaction.
 
-The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. The methods of this paper can be incorporated into frontier model development, so such models exhibit improved agentic performance under context pressure. This is in contrast to an external harness which must be applied at runtime.
+The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. The methods of this paper can be incorporated into frontier model development, so such models exhibit improved agentic performance under context pressure, without wasting tokens. This is in contrast to an external harness which must be applied at runtime.
 
-To develop our curriculum into a fully-general product, the training distribution would need to be widened further and likely a reinforcement learning stage would be necessary to hone agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
+To develop our curriculum into a fully-general product, the training distribution would need to be widened and a reinforcement learning stage would likely prove fruitful in supercharging agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
 
 \subsection*{AI use statement}
 
@@ -164,7 +165,7 @@ including text, claims or artifacts produced with the aid of generative AI.
 \appendix
 \section{Harness and prompts}
 \label{app:harness}
-You may include other additional sections here.
+\input{figures/prompts}
 
 \section{Training corpus}
 \label{app:data}

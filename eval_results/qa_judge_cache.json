@@ -598,5 +598,30 @@
 "correct": 1,
 "reason": "The candidate answer states \"Within the premises of the hospital,\" which matches the reference answer.\n\nVERDICT: CORRECT",
 "parsed": true
+},
+"456afe129686b9a2137bfccb18fd724c0d14769b": {
+"correct": 1,
+"reason": "The candidate answer matches the reference exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"c96f5770ffbdcf752b33969d28897724072b77f6": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"45f1410b17d4010b4224537a2303e176218b266e": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"83b0126bf0b789fd07c855559c4edb561fad7f53": {
+"correct": 1,
+"reason": "The candidate answer \"Ernst & Young (EY)\" matches the reference answer \"Ernst & Young.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"97de0dba513e5dfc289faa75a91880ec9d2e1fca": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"can stock a wider range of medicines, including specialized drugs,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\" The additional details provided are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }
