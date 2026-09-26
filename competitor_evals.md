@@ -44,6 +44,42 @@ Per family, gpt-5.4 (2026-09-25):
 
 All 120 rollouts answered (no truncation at the 16K output cap); every rollout reports `gpt-5.4-2026-03-05`.
 
+### gpt-5.4 WITH reasoning (`reasoning_effort=medium`) — 2026-09-25
+
+**Finding: every gpt-5.4 number above (and June's) is gpt-5.4 WITHOUT reasoning.** In our setup its default reasoning
+effort is "none": 0 reasoning tokens on OOLONG prompts, answers in 100-370 output tokens. The OOLONG paper runs GPT-5 at
+its default (medium) and RLM uses "medium reasoning", so medium is the literature-matching baseline. OpenAI accepts
+ONLY temperature 1 when reasoning is on (temperature 0 → "gpt-5 models don't support temperature=0 ... supported when
+reasoning_effort='none'"), so this row is `TEMP=none REASONING_EFFORT=medium OUT_TOKENS=65536`.
+
+| 40K chart | counting | user | temporal | overall |
+|---|---|---|---|---|
+| **gpt-5.4, medium reasoning** (64K output cap) | 0.237 | 0.875 | 0.689 | **0.600** |
+| gpt-5.4, no reasoning (temp 0) | 0.305 | 0.450 | 0.443 | 0.399 |
+| *18w, harness, 8K/agent* | *0.42* | *0.80* | *0.39* | *0.535* |
+
+**gpt-5.4 medium reasoning, full chart row** (64K output cap, all 120 answered, no call hit the cap):
+
+| | 10K | 20K | 40K | 80K |
+|---|---|---|---|---|
+| overall | **0.708** | **0.662** | **0.600** | **0.500** |
+| counting / user / temporal | 0.601 / 0.856 / 0.665 | 0.510 / 0.800 / 0.677 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.626 |
+| output tokens median / max | 5.0K / 22.3K | 9.8K / 31.5K | 11.8K / 26.1K | 10.3K / 43.1K |
+
+| 80K chart | counting | user | temporal | overall |
+|---|---|---|---|---|
+| **gpt-5.4, medium reasoning** (64K output cap) | 0.301 | 0.573 | 0.626 | **0.500** |
+| gpt-5.4, no reasoning (temp 0) | 0.301 | 0.507 | 0.620 | 0.476 |
+| *18w, harness, 8K/agent* | *0.41* | *0.73* | *0.54* | *0.561* |
+
+80K: all 30 answered; output tokens median 10.3K / max 43.1K (4 calls > 32K; none hit 64K).
+
+40K: all 30 answered; reasoning tokens median 11.6K / max 25.7K (output 11.8K / 26.1K) — a 16K cap would have truncated
+several. Reasoning lifts user/temporal sharply; exact counts do not improve (single-pass counting of ~800 items stays
+off by enough that 0.75^|err| ≈ 0). ~$8 for the length. Raw: `eval_results/competitor/gpt5_4_rmed_out64k_single_chart_40k.*`.
+Test on one 10K problem (gold 38): no reasoning 53/53/92 (t0), 58/57/58 (default); medium 49 (14.3K reasoning tokens);
+high 43 (24.6K).
+
 ### Base Qwen3.6-35B-A3B (no fine-tune), single-shot, 20K chart — 2026-09-25
 
 Tinker, our usual renderer (thinking disabled). The output limit decides this model's score, not the temperature:
@@ -61,6 +97,15 @@ Per family, 64K context: t0 counting 0.478 / user 0.675 / temporal 0.523; t0.2 0
 - **Context ceiling: Tinker serves this model with a 64K window** (the model itself supports 262K; Tinker's tokenizer
   still reports 262,144). Base-Qwen single-shot is therefore limited by Tinker's serving limit, not the model: 40K docs
   leave ~24K for output, 80K docs do not fit. Our harness runs are unaffected (each agent uses <= 8-12K).
+
+**Base Qwen, temp 0, Tinker max context (64K total) — the chart row:**
+
+| | 10K | 20K | 40K | 80K |
+|---|---|---|---|---|
+| overall | **0.536** | **0.558** | **0.388** | n/a (80K doc > 64K window) |
+| counting / user / temporal | 0.507 / 0.642 / 0.460 | 0.478 / 0.675 / 0.523 | 0.359 / 0.475 / 0.330 | — |
+| no answer (out of room / no \boxed) | 1 / 1 | 2 / 0 | 5 / 1 | — |
+| output tokens median / max | 8.1K / 56.6K | 13.3K / 48.0K | 18.2K / 37.5K | — |
 
 **40K chart, 64K total context:**
 
@@ -159,6 +204,12 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: base Qwen single-shot 20K at temp 0 / 0.2, with a 16K output cap and with a 64K total context (above).
   `eval/run.py` gained `SINGLE_CONTEXT` (total-context limit for single-shot) and `TEMP=none`.
 - 2026-09-25: base Qwen single-shot 40K at temp 0 / 0.2, 64K total context (above).
+- 2026-09-25: gpt-5.4 found to run with NO reasoning by default; rerun at reasoning_effort=medium @40K = 0.600,
+  @80K = 0.500 (18w 0.561). Plan: drop the output cap (use each model's max) for future runs.
+- 2026-09-25: base Qwen t0 / 64K context @10K = 0.536 — base-Qwen chart row complete (80K cannot run on Tinker).
+- 2026-09-25: gpt-5.4 medium reasoning @10K = 0.708, @20K = 0.662 — row complete.
+  `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call
+  `usage` (output + reasoning tokens).
 
 ## Next
 

@@ -42,7 +42,6 @@
 \end{tikzpicture}
 \end{minipage}
 
-\caption{\textbf{Boundary handling.} A leaf/fold agent owns the records whose first line starts in its range. It reads its
-range plus the next 200 tokens; while its last owned record is still cut off, it reads 200 more (dashed).}
+\caption{\textbf{Boundary handling.} A leaf/fold agent owns the records that \emph{start} in its range. It reads 200 additional tokens at a time until its last record is complete.}
 \label{fig:boundary}
 \end{figure}
