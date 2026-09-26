@@ -125,3 +125,16 @@ def render_question(template: str, *, context: str, doc_token_count: int, **fiel
     body = body.replace("__RULER_CONTEXT_SENTINEL__", placeholder)
     body += "\n\nReply with the answer inside \\boxed{}."
     return context, body
+
+
+_PLACEHOLDER_RE = re.compile(re.escape(CONTEXT_PLACEHOLDER) + r" \(Document length: \d+ tokens\.\)")
+
+
+def inline_document(question: str, doc_text: str) -> str | None:
+    """Single-shot (MODE=single) form of a RULER question: put the document back where RULER's
+    template had `{context}`, replacing the read_chunk placeholder — the model has no tools there,
+    so the placeholder would point it at a tool that does not exist. None if `question` carries no
+    placeholder (every non-RULER task), so the caller falls back to document-then-question."""
+    if not _PLACEHOLDER_RE.search(question):
+        return None
+    return _PLACEHOLDER_RE.sub(lambda _: doc_text, question, count=1)

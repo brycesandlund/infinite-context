@@ -51,7 +51,8 @@ question. Show your reasoning, then emit your final answer as \textbackslash{}bo
 
 \slot{question}}
 \caption{\textbf{Full-document prompt}, used for the single-shot baselines: the whole document is placed in one
-user message, with no tools and no budget prose.}
+user message, with no tools and no budget prose. For RULER, whose template embeds the document mid-prompt, the
+document is instead placed back at the template's \texttt{\{context\}} position, reproducing RULER's own prompt.}
 \label{fig:full-doc-prompt}
 \end{figure}
 

@@ -18,6 +18,7 @@ import asyncio
 from dataclasses import dataclass, field
 
 import harness
+from tasks.ruler._common import inline_document
 from eval.backends import AssistantTurn, ModelBackend, ToolCall
 
 
@@ -179,9 +180,12 @@ async def run_single_shot(
     run_agent so eval/run.py's scoring + persistence path is identical across modes."""
     system = harness.make_single_shot_prompt(task_context)
     doc_text = tokenizer.decode(document_tokens)
+    # RULER's template embeds {context} mid-prompt; restore it there instead of leaving the
+    # read_chunk placeholder (no tools in this mode). Every other task: document, then question.
+    user = inline_document(question, doc_text) or f"{doc_text}\n\n{question}"
     messages: list[dict] = [
         {"role": "system", "content": system},
-        {"role": "user", "content": f"{doc_text}\n\n{question}"},
+        {"role": "user", "content": user},
     ]
     if context_limit:     # total-context models: output gets what the prompt leaves (prompt + output <= limit)
         max_output_tokens = min(max_output_tokens, context_limit - backend.count_tokens(messages))
