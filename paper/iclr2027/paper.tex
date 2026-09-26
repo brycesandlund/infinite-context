@@ -133,6 +133,20 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 \section{Conclusion}
 \label{conclude}
 
+In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compression.
+
+The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. Incorporating the methods of this paper into frontier model development, so such models exhibit better behavior under context pressure, 
+
+
+ if a specific model can show a capability, a more general one 
+
+
+To develop our curriculum into a fully-general product, we would need to widen our training distribution further and likely perform a reinforcement learning stage to further develop agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
+
+We also believe similar context decomposition training can be folded into existing frontier model development. The thesis of the last ten years of development in AI is basically to train on everything, and if a specific 
+
+We believe the methods outlined in this paper can easily be incorporated into frontier model training
+
 \subsection*{AI use statement}
 
 In this work, we used generative AI tools to write all our code, administer experiments, create figures, search and analyze relevant literature, format references, generate synthetic data sets, propose or refine hypotheses/brainstorming, design or provide feedback on research methodology/experiments, clean and reformat data, support qualitative and thematic data analysis, and interpret results. We have not used generative AI tools to draft parts of this research paper, and the following topics are not applicable to this work: help develop theoretical models or conceptual frameworks, formulate mathematical claims, provide critical ingredients for proving mathematical claims, assist in the writing of proofs, and assist with translation. We have reviewed our AI-assisted work, for example, by reviewing AI code and conducting manual audits of synthetic data. We take responsibility for the final content of this work,

@@ -58,34 +58,14 @@ reasoning_effort='none'"), so this row is `TEMP=none REASONING_EFFORT=medium OUT
 | gpt-5.4, no reasoning (temp 0) | 0.305 | 0.450 | 0.443 | 0.399 |
 | *18w, harness, 8K/agent* | *0.42* | *0.80* | *0.39* | *0.535* |
 
-**gpt-5.4 medium reasoning, full chart row** (64K output cap, all 120 answered, no call hit the cap):
+**gpt-5.4 medium reasoning, full chart row** (temperature omitted = 1; all 210 answered, no call hit its cap):
 
-| | 10K | 20K | 40K | 80K |
-|---|---|---|---|---|
-| overall | **0.708** | **0.662** | **0.600** | **0.500** |
-| counting / user / temporal | 0.601 / 0.856 / 0.665 | 0.510 / 0.800 / 0.677 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.626 |
-| output tokens median / max | 5.0K / 22.3K | 9.8K / 31.5K | 11.8K / 26.1K | 10.3K / 43.1K |
-
-**160K** (128K output cap): overall **0.556** — counting 0.306 / user 0.887 / temporal 0.475; all 30 answered, output
-median 8.8K / max 50.0K, none > 64K. Non-monotone vs 80K (0.500): user 0.573 → 0.887, temporal 0.626 → 0.475 —
-10 problems per family, so per-family swings of ±0.2-0.3 between lengths are within noise.
-Raw: `eval_results/competitor/gpt5_4_rmed_out128k_single_chart_160k.*`.
-
-**320K** (NO output cap — `OUT_TOKENS=0` sends no max_tokens): overall **0.479** — counting 0.300 / user 0.412 / temporal
-0.725; all 30 answered, output median 5.1K / max 58.9K (0.26M total). gpt-5.4 accepts 320K prompts despite the pricing
-page's "short only (<272K)" (a billing tier, not a limit). Cost ≈ 8.2M input × $2.50 (possibly a higher >272K rate) +
-0.26M × $15 ≈ $25-45. Raw: `eval_results/competitor/gpt5_4_rmed_nocap_single_chart_320k.*`.
-
-**640K** (no output cap, `CONCURRENCY=2`): overall **0.419** — counting 0.200 / user 0.484 / temporal 0.573; all 30
-answered, output median 6.3K / max 32.2K (0.27M total). First attempt at CONCURRENCY=4 crashed on OpenAI's gpt-5.4
-long-context quota (2M tokens/min; each 640K prompt ≈ 432K OpenAI tokens) and lost its in-flight results (a few calls
-billed); fixed with `CONCURRENCY` env + 429 retry/backoff in `APIBackend`. At 640K the smaller OOLONG datasets repeat
-items heavily (e.g. metaphors: 333 "incorrect" examples fill 6,174 slots) — sampling with replacement, as OOLONG does.
-Cost ≈ 13M input (OpenAI tokens) × $2.50 (possibly higher >272K rate) + 0.27M × $15 ≈ $35-70.
-Raw: `eval_results/competitor/gpt5_4_rmed_nocap_single_chart_640k.*`.
-
-Medium-reasoning curve: 0.708 (10K) · 0.662 (20K) · 0.600 (40K) · 0.500 (80K) · 0.556 (160K) · 0.479 (320K) ·
-0.419 (640K).
+| | 10K | 20K | 40K | 80K | 160K | 320K | 640K |
+|---|---|---|---|---|---|---|---|
+| overall | **0.708** | **0.662** | **0.600** | **0.500** | **0.556** | **0.479** | **0.419** |
+| counting / user / temporal | 0.601 / 0.856 / 0.665 | 0.510 / 0.800 / 0.677 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.626 | 0.306 / 0.887 / 0.475 | 0.300 / 0.412 / 0.725 | 0.200 / 0.484 / 0.573 |
+| output tokens median / max | 5.0K / 22.3K | 9.8K / 31.5K | 11.8K / 26.1K | 10.3K / 43.1K | 8.8K / 50.0K | 5.1K / 58.9K | 6.3K / 32.2K |
+| output cap | 64K | 64K | 64K | 64K | 128K | none | none |
 
 | 80K chart | counting | user | temporal | overall |
 |---|---|---|---|---|
@@ -142,6 +122,33 @@ Per family, 64K context: t0 counting 0.478 / user 0.675 / temporal 0.523; t0.2 0
 - At 40K the ~24K output room is below base Qwen's median answer length, so it runs out of room often (5 / 10); that,
   not temperature, drives most of the 40K gap (e.g. t0.2 counting 0.102).
 - At 40K: base Qwen single-shot 0.33-0.39 ≈ gpt-5.4 single-shot 0.399 < 18w harness 0.535.
+
+## Results — RULER-13, single-shot (same problems as the fine-tune `eval_long.sh` runs)
+
+Runner `scripts/competitor_ruler.sh`: `eval_long.sh`'s exact 16-task order with the three OOLONG tasks at 0 problems
+(so each RULER task keeps its seed index), `SEED_OFFSET=3000000`, 5 per task. **Problem identity verified** against
+18w's 10K fine-tune rollouts: same 65 (task, seed) pairs; 60/65 byte-identical question+gold; the 5 vt problems differ
+only in the "(Document length: N tokens)" line (±1) with the same gold set — vt's generator orders items by
+per-process Python hash, so its layout reshuffles between ANY two runs (fine-tune runs included); vt is set-graded.
+
+**Base Qwen3.6-35B-A3B, single-shot, temp 0, Tinker 64K total context:**
+
+| | 10K | 20K | 40K |
+|---|---|---|---|
+| **RULER-13 mean (string)** | **0.923** | **0.938** | **0.938** |
+| RULER-13 mean, qa_2 LLM-judged | 0.938 | 0.954 | 0.954 |
+| niah x9, vt, qa_1 | 1.00 each | 1.00 each | 1.00 each |
+| cwe | 0.80 | 0.60 | 1.00 |
+| fwe | 0.40 | 0.80 | 0.40 |
+| qa_2 string / judged | 0.80 / 1.00 | 0.80 / 1.00 | 0.80 / 1.00 |
+| no answer (ran out of context) | 4 (cwe 1, fwe 3) | 3 (cwe 2, fwe 1) | 3 (fwe 3) |
+| *18w harness (8K/agent, temp 0.2), string* | *0.949* | *—* | *0.929* |
+
+- Base Qwen is perfect on every retrieval / tracking / single-hop task at <=40K when the whole doc fits; its only losses
+  are word-frequency tasks (cwe/fwe), almost all from running out of the 64K window while writing out word counts,
+  plus the qa_2 `35` vs "35 people" surface form (judged correct).
+- 18w @40K per task: cwe 0.74, fwe 0.93, qa_1 0.80, qa_2 0.60 (string), everything else 1.00.
+- Raw: `eval_results/competitor/base_qwen_t0_ctx64k_single_ruler_{10,20,40}k.*`.
 
 ## Reproducing June's gpt-5.4 numbers — what changed and why the numbers move
 
@@ -231,6 +238,7 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium reasoning @10K = 0.708, @20K = 0.662 — row complete.
 - 2026-09-25: gpt-5.4 medium reasoning @160K = 0.556 (128K output cap; max used 50K).
 - 2026-09-25: gpt-5.4 medium reasoning @320K, uncapped = 0.479. `OUT_TOKENS=0` = no output cap sent.
+- 2026-09-25: base Qwen single-shot RULER-13 @10/20/40K = 0.923 / 0.938 / 0.938 (identical problems to eval_long.sh).
 - 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
   `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
   `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call

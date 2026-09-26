@@ -518,5 +518,85 @@
 "correct": 0,
 "reason": "The candidate provides a lengthy discussion about clinical pharmacists' roles and responsibilities but does not address the specific question about advantages of hospital pharmacies. The reference answer focuses on hospital pharmacies stocking a larger range of medications, including more specialized medications, which the candidate never mentions.\n\nVERDICT: INCORRECT",
 "parsed": true
+},
+"e1ce739c50ade66304051b7d986ba59144b03754": {
+"correct": 1,
+"reason": "The candidate answer \"unit-dose\" matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"ff1ee695f8564f0c373b8c396c97979753c011ce": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"3de63075cd26791984e59b2a0918031f8e666cf6": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"e822d85d28da5f9a221171e661dac06c69a772f0": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"ab2ac96713b529b31ef3380649a4bee6b88367dc": {
+"correct": 1,
+"reason": "The candidate's answer matches the reference by stating that hospital pharmacies \"usually stock a larger range of medications, including more specialized medications,\" with only minor additional context about the community setting.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"fc1344f1c2e385d239d82432225916fba579ae1d": {
+"correct": 1,
+"reason": "The candidate includes the reference answer about stocking a larger range of medications, including more specialized medications, and adds an additional consistent detail about unit-dose medications.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"42fc788a2a4af38b461f60f264be3f01beb879ca": {
+"correct": 1,
+"reason": "The candidate includes the reference answer (\"the high cost of medications and drug-related technology\") and adds additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"a60966eae547443bdb4a1ca4c88e34b9bb39950e": {
+"correct": 1,
+"reason": "The candidate includes the reference answer about stocking a larger range of medications, including more specialized medications, and adds additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"6a9c0c4bb8c3f23b943fca05c75ebc40c187149d": {
+"correct": 1,
+"reason": "The candidate answer \"Unit-dose (a single dose of medicine)\" matches the reference answer \"unit-dose, or a single dose of medicine.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"5d238f4d8defffefc995f105f4a5adb1af24c33f": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly in content.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"210be5c9bed31daf330ea73186e07edf84e65640": {
+"correct": 1,
+"reason": "The candidate answers \"Bolshoi Theatre,\" which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"fb787ab2ed4d109310c5569bfe9ca7d7be48767b": {
+"correct": 1,
+"reason": "The candidate matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d04036d7fffe768b2ac30e717bb11ad8b20653a4": {
+"correct": 1,
+"reason": "The candidate answer \"Ernst \\& Young\" is the same as the reference answer \"Ernst & Young\" \u2014 the backslash is just a formatting artifact.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"655e3c707245a7f99274ff5c7b29e3b8bed6cb0a": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"can stock a wider and more specialized range of medicines,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"c31e6fb8f428a02eab17e38f66eba2d7b33f780f": {
+"correct": 1,
+"reason": "The candidate answer \"Kal Ho Naa Ho\" (with escape characters) matches the reference answer \"Kal Ho Naa Ho.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"d231cca017b3b4ed96cb5793add3138cb4d49ab3": {
+"correct": 1,
+"reason": "The candidate answer states \"Within the premises of the hospital,\" which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }
