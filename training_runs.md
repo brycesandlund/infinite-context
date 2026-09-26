@@ -1890,3 +1890,28 @@ v16/v17 (its cwe @40K 0.78 is the old pruned-tally ceiling; 19w's v16 top-K gets
 recipe's old advantage looks like a corpus effect rather than a staging effect — one comparison, not settled. Noise: 30 chart / 65 RULER rollouts per point — only the 40K RULER lead
 (0.965 vs 0.908-0.929) is clearly outside it. No 80K for 18b (cost). Raw: `eval_results/raw/sft_general18b*`,
 `eval_results/qa_judge_18b.txt`, `eval_results/probe_18b.log`.
+
+### 18w long-context OOLONG chart (8K budget) — 2026-09-26 — 160K **0.464**, 320K **0.470**
+
+| 18w OOLONG chart | 10K | 20K | 40K | 80K | 160K | 320K |
+|---|---|---|---|---|---|---|
+| mean | 0.606 | 0.540 | 0.535 | 0.561 | **0.464** | **0.470** |
+| counting / user / temporal | 0.45/0.86/0.51 | 0.42/0.72/0.48 | 0.42/0.80/0.39 | 0.41/0.73/0.54 | 0.40/0.61/0.37 | 0.40/0.60/0.41 |
+
+Flat 10K-80K, first real drop at 160K. Mechanism (from the saved trees): **split failure at modest ranges** — ~270 leaves
+were handed ~4-5K ranges ("Over the questions STARTING in tokens 0..4391 …") at depth ~5 and READ them instead of
+splitting to <500, then overflowed enumerating every item (121 user, 119 counting, 31 temporal); plus 47 temporal INTERNAL
+overflows (whole-document tally growth). Trees: median 995 nodes (nominal ~1,280), min 93; 2 root overflows. A 4.4K range is
+inside the trained range and 18w split such ranges correctly at 80K, so the decision seems to key on the stated document
+length ("The document is 160000 tokens long") and/or depth — out-of-training cues, like the 32K budget below.
+
+**Budget is not a free knob for 18w.** A single 160K rollout at a 32K budget (compute-shortcut test) built a 55-node tree
+(nominal ~640) with 21-32K-token leaves: the stated budget changes the tree, so a large-budget run cannot be projected to
+smaller budgets. At 80K / 8K, 18w's nodes had median ~2.1K and p99 ~3.0K context (chart); only the upper user/temporal
+tallies (up to ~6.8K) and repetition loops approached 8K. 18b at 80K and 20w (6 leaves) showed the same read-instead-of-split
+failure; 18w and 19w were clean at 80K.
+**320K (0.470):** the collapse is far worse but the SCORE does not fall further — median tree 315 nodes (nominal ~2,560;
+min 99, max 2,054), 1,256 leaves + 91 internal nodes overflowed, 1 root overflow. OOLONG's comparison questions survive
+losing much of the document under skewed labels (counting was already ~0.40 at every length), so the flat 160K-320K
+curve hides a failing tree: footnote it on the chart. Raw: `eval_results/raw/sft_general18w_C18w_160k.*`. Eval progress logging added
+to eval/run.py (`[progress]` lines + `{OUT}.progress.jsonl`); `scripts/eval_status.sh <tags…>` reads them.

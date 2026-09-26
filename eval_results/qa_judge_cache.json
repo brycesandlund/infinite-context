@@ -753,5 +753,40 @@
 "correct": 1,
 "reason": "The candidate mentions that hospital pharmacies \"can stock a wider range of medicines, including specialized drugs,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\" The additional details about compounding are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
 "parsed": true
+},
+"3ce1a6bbd9c82f1d6f48c1fc79b4f5c9f8181355": {
+"correct": 1,
+"reason": "The candidate's answer includes \"medication management system development, deployment and optimization,\" which matches the reference answer, along with additional details that are consistent and not contradictory.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"88efe85a246450829e838afa24278bdc824da12e": {
+"correct": 1,
+"reason": "The candidate includes the correct figure \"500-room\" as part of a quoted sentence, even though it then hedges about whether the information is reliable. The key fact \u2014 500 rooms \u2014 matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"f69936885bb4fe716bf04b3f69edb449a8a596eb": {
+"correct": 1,
+"reason": "The candidate's response includes references to Sister Anthony (Mary O'Connell) whose portrait hangs in the Smithsonian Institution, alongside Florence Nightingale who is known as the founder of modern nursing. However, the question asks specifically what portrait hangs there, and the reference answer is \"Sister Anthony, S.C.\" The candidate's response does mention Sister Anthony/Mary O'Connell in ",
+"parsed": true
+},
+"0ae7dbd89d8ba3ea09d42e6a6d68d5bf2f4d1b39": {
+"correct": 0,
+"reason": "The candidate provides no answer, while the correct answer is the Bolshoi Theatre.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"7411f1952adbca31b6f536ba9c95c2a4efbb8d8f": {
+"correct": 1,
+"reason": "The candidate mentions \"Kal Ho Naa Ho\" as one of the films, which matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"8a6ae8097f0119a2d147c0c40ad351515813aa8e": {
+"correct": 1,
+"reason": "The candidate's answer includes the key reference point \u2014 that hospital pharmacies \"usually stock a larger range of medications, including more specialized medications\" \u2014 along with additional consistent detail. This matches the reference answer.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"3bf3bb32d01dbabe4ecd7beaef9d782b2401d98c": {
+"correct": 1,
+"reason": "The candidate's answer includes the key reference point: \"Hospital pharmacies usually stock a larger range of medications, including more specialized medications.\" Although it contains a great deal of extra information, the core correct answer is present and consistent with the reference.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }

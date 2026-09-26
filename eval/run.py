@@ -236,7 +236,27 @@ async def main() -> None:
                 max_nodes=MAX_NODES,
             )
 
-    nodes = await asyncio.gather(*[_one(p) for (_, _, p) in work])
+    # PROGRESS (2026-09-26): one line per finished rollout + an incremental record in {OUT}.progress.jsonl, so a long
+    # eval can be read mid-run and a run cut off at a deadline still leaves its finished rollouts.
+    import time as _time
+    _t0, _done = _time.time(), [0]
+    _prog = open(f"{OUT}.progress.jsonl", "w")
+
+    async def _tracked(task, seed, problem):
+        node = await _one(problem)
+        sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
+        _done[0] += 1
+        n_nodes = len(flatten(node))
+        print(f"[progress] {_done[0]}/{len(work)} done | {task} seed {seed} score {sc:.2f} | {n_nodes} nodes | "
+              f"{(_time.time() - _t0) / 60:.1f} min", flush=True)
+        _prog.write(json.dumps({"task": task, "seed": seed, "score": sc, "answer": node.answer,
+                                "gold": problem.gold_answers, "nodes": n_nodes,
+                                "dataset": problem.metadata.get("dataset")}) + "\n")
+        _prog.flush()
+        return node
+
+    nodes = await asyncio.gather(*[_tracked(t, s, p) for (t, s, p) in work])
+    _prog.close()
 
     def _grounded(node: AgentNode) -> bool:
         """Did any agent in the tree actually read the document? An answer produced

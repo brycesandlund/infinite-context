@@ -1,1 +1,7 @@
 Warning: Requested 122 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+19w: defective root contracts 32/200 (16.0%) | label-free 28/31 | label-conditioned 4/169 | {'label/judging on label-free question': 19, 'no spawn': 11, 'user ID not in question': 1, 'non-existent field `…`': 1}
+20w: defective root contracts 24/200 (12.0%) | label-free 21/31 | label-conditioned 3/169 | {'label/judging on label-free question': 12, 'no spawn': 11, 'closed user list': 1, 'non-existent field `…`': 1}
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
