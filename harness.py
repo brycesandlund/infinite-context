@@ -167,9 +167,33 @@ def make_single_shot_prompt(task_context: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-_BOXED_RE = re.compile(r"\\boxed\{([^}]+)\}")
+_LATEX_WRAP_RE = re.compile(r"\\(?:text|mathrm|textbf|mathbf|textit)\{([^{}]*)\}")
+
+
+def _strip_latex(a: str) -> str:
+    r"""LaTeX formatting some models (gpt-5.4) put inside \boxed{}: `\text{X}` -> X, `\&` -> &, `\ ` / `\,` -> space."""
+    prev = None
+    while prev != a:
+        prev, a = a, _LATEX_WRAP_RE.sub(r"\1", a)
+    return a.replace("\\&", "&").replace("\\%", "%").replace("\\ ", " ").replace("\\,", " ").strip()
 
 
 def extract_boxed(text: str) -> str | None:
-    matches = _BOXED_RE.findall(text)
-    return matches[-1].strip() if matches else None
+    r"""Content of the LAST closed \boxed{...}, braces balanced. (Was the regex `\boxed\{([^}]+)\}`, which stopped at
+    the first `}`: `\boxed{\text{a}=1, \text{b}=2}` came out as `\text{a` and gpt-5.4's multiquery answers all graded 0.)
+    An unclosed box (output truncated mid-answer) is ignored, as before."""
+    if not text:
+        return None
+    out, i = None, 0
+    while True:
+        j = text.find("\\boxed{", i)
+        if j < 0:
+            break
+        k, depth = j + 7, 1
+        while k < len(text) and depth:
+            depth += (text[k] == "{") - (text[k] == "}")
+            k += 1
+        if depth == 0:
+            out = text[j + 7:k - 1]
+        i = k
+    return _strip_latex(out) if out is not None else None

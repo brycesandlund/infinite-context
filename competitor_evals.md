@@ -58,18 +58,19 @@ reasoning_effort='none'"), so this row is `TEMP=none REASONING_EFFORT=medium OUT
 | gpt-5.4, no reasoning (temp 0) | 0.305 | 0.450 | 0.443 | 0.399 |
 | *18w, harness, 8K/agent* | *0.42* | *0.80* | *0.39* | *0.535* |
 
-**gpt-5.4 medium reasoning, full chart row** (temperature omitted = 1; all 210 answered, no call hit its cap):
+**gpt-5.4 medium reasoning, full chart row** (temperature omitted = 1; all 210 answered, no call hit its cap; scores
+after the boxed-extractor fix — changed cells: 10K, 20K, 80K overall; 10K counting; 20K and 80K temporal; 160K temporal 0.475→0.476):
 
 | | 10K | 20K | 40K | 80K | 160K | 320K | 640K |
 |---|---|---|---|---|---|---|---|
-| overall | **0.708** | **0.662** | **0.600** | **0.500** | **0.556** | **0.479** | **0.419** |
-| counting / user / temporal | 0.601 / 0.856 / 0.665 | 0.510 / 0.800 / 0.677 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.626 | 0.306 / 0.887 / 0.475 | 0.300 / 0.412 / 0.725 | 0.200 / 0.484 / 0.573 |
+| overall | **0.718** | **0.666** | **0.600** | **0.539** | **0.556** | **0.479** | **0.419** |
+| counting / user / temporal | 0.633 / 0.856 / 0.665 | 0.510 / 0.800 / 0.687 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.744 | 0.306 / 0.887 / 0.476 | 0.300 / 0.412 / 0.725 | 0.200 / 0.484 / 0.573 |
 | output tokens median / max | 5.0K / 22.3K | 9.8K / 31.5K | 11.8K / 26.1K | 10.3K / 43.1K | 8.8K / 50.0K | 5.1K / 58.9K | 6.3K / 32.2K |
 | output cap | 64K | 64K | 64K | 64K | 128K | none | none |
 
 | 80K chart | counting | user | temporal | overall |
 |---|---|---|---|---|
-| **gpt-5.4, medium reasoning** (64K output cap) | 0.301 | 0.573 | 0.626 | **0.500** |
+| **gpt-5.4, medium reasoning** (64K output cap; extractor-fixed) | 0.301 | 0.573 | 0.744 | **0.539** |
 | gpt-5.4, no reasoning (temp 0) | 0.301 | 0.507 | 0.620 | 0.476 |
 | *18w, harness, 8K/agent* | *0.41* | *0.73* | *0.54* | *0.561* |
 
@@ -149,6 +150,32 @@ per-process Python hash, so its layout reshuffles between ANY two runs (fine-tun
   plus the qa_2 `35` vs "35 people" surface form (judged correct).
 - 18w @40K per task: cwe 0.74, fwe 0.93, qa_1 0.80, qa_2 0.60 (string), everything else 1.00.
 - Raw: `eval_results/competitor/base_qwen_t0_ctx64k_single_ruler_{10,20,40}k.*`.
+
+**gpt-5.4, medium reasoning, no output cap, RULER-13 @80K** (same 65 problems): as first scored **0.846** (string);
+niah x8, vt, cwe, fwe 1.00; **niah_multiquery 0.00**; qa_1 0.60 / judged 1.00; qa_2 0.40 / judged 1.00. All 65
+answered; output 0.06M tokens; cost ≈ $10 (3.5M input, est. in OpenAI tokens). The multiquery 0.00 and most qa string
+misses are an **extractor bug** (next section), not wrong answers.
+**After the extractor fix: RULER-13 = 0.954** — niah_multiquery 1.00, qa_1 0.60, qa_2 0.80
+(string), everything else 1.00. RULER is saturated for gpt-5.4 at 80K; other lengths not run.
+
+### Boxed-answer extractor bug (found 2026-09-25)
+
+`harness.extract_boxed` used `\boxed\{([^}]+)\}`, which stops at the FIRST `}`. gpt-5.4 writes LaTeX inside its box
+(`\boxed{\text{warlike-kitchen}=2785937,\ \text{shocking-almighty}=3927047, ...}`), so only `\text{warlike-kitchen`
+was extracted — every multiquery answer was correct but graded 0 (June's gpt-5.4 multiquery 0.000 was the same bug).
+LaTeX escapes left in answers (`Ernst \& Young`, `Kal\ Ho\ Naa\ Ho`) also failed string match. Qwen / our fine-tunes
+box plain text and are unaffected. Offline re-grade with a brace-balanced extractor + LaTeX cleanup (no API calls):
+
+| rollouts | extractions changed | score before → after |
+|---|---|---|
+| gpt-5.4 medium, RULER @80K | 33/65 | 0.846 → **0.954** |
+| gpt-5.4 medium, chart 10K / 20K / 40K / 80K | 22-28/30 | 0.708→0.718 · 0.662→0.666 · 0.600→0.600 · 0.500→0.539 |
+| gpt-5.4 medium, chart 160K / 320K / 640K | 26-29/30 | unchanged |
+| gpt-5.4 no reasoning, chart (all lengths) | 20-24/30 | unchanged |
+| base Qwen (all), 18w (all) | 0-1 | unchanged |
+
+Fix: brace-balanced `extract_boxed` + LaTeX cleanup in `harness.py`; saved gpt-5.4 rollouts re-graded in place
+(originals kept as `*.pre_boxfix.jsonl`). Tables in this doc are updated to the fixed scores.
 
 ## Reproducing June's gpt-5.4 numbers — what changed and why the numbers move
 
@@ -239,6 +266,7 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium reasoning @160K = 0.556 (128K output cap; max used 50K).
 - 2026-09-25: gpt-5.4 medium reasoning @320K, uncapped = 0.479. `OUT_TOKENS=0` = no output cap sent.
 - 2026-09-25: base Qwen single-shot RULER-13 @10/20/40K = 0.923 / 0.938 / 0.938 (identical problems to eval_long.sh).
+- 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
 - 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
   `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
   `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call

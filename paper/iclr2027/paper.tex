@@ -135,17 +135,9 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 
 In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compression.
 
-The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. Incorporating the methods of this paper into frontier model development, so such models exhibit better behavior under context pressure, 
+The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. The methods of this paper can be incorporated into frontier model development, so such models exhibit improved agentic performance under context pressure. This is in contrast to an external harness which must be applied at runtime.
 
-
- if a specific model can show a capability, a more general one 
-
-
-To develop our curriculum into a fully-general product, we would need to widen our training distribution further and likely perform a reinforcement learning stage to further develop agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
-
-We also believe similar context decomposition training can be folded into existing frontier model development. The thesis of the last ten years of development in AI is basically to train on everything, and if a specific 
-
-We believe the methods outlined in this paper can easily be incorporated into frontier model training
+To develop our curriculum into a fully-general product, the training distribution would need to be widened further and likely a reinforcement learning stage would be necessary to hone agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
 
 \subsection*{AI use statement}
 
