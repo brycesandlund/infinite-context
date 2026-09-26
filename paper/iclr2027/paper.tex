@@ -42,9 +42,7 @@ funding agencies.  Funding acknowledgements go at the end of the paper.} \\
 \maketitle
 
 \begin{abstract}
-We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B over this harness. With only 8,000 tokens of context, our small model outperforms GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens.
-
-%Our approach is a simple SFT over a recursive decomposition strategy. We train on documents not exceeding 14K tokens; the strategy generalizes seamlessly to larger context lengths, losing accuracy only due to leaf-level error accumulation. While our training corpus is task-specific, we believe a task-agnostic curriculum is viable, putting into doubt the need to train long-context natively and showing the power of trained agentic context
+We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B on this harness. With only 8,000 tokens of context, our small model is as strong as GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens.
 \end{abstract}
 
 \section{Introduction}
@@ -56,6 +54,8 @@ While native context scaling is appealing as a concrete engineering problem, it 
 While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
 We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{enable capability}, without \emph{fixing choices} or \emph{instilling a prior}.
+
+\pagebreak
 
 \subsection{Harness}
 
@@ -72,13 +72,13 @@ Unmodified long-context prompts are provided to the model over a document access
 
 We finetune Qwen3.6-35B-A3B on the above harness on a diverse synthetic data mixture and achieve the following results:
 \begin{enumerate}
-  \item blah
-  \item blah blah
+  \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 80K tokens.
+  \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model holds score $>85\%$ on document size from 10K to 320K tokens.
 \end{enumerate}
 
 \subsection{Paper Organization}
 
-In the next section, we survey related work to frame the contribution of the following sections. In Section~\ref{methods}, we describe our training methodology. In Section~\ref{experiments}, we discuss all our experiments, and we conclude in Section~\ref{conclude}.
+In the next section, we survey related work to frame the contribution of the following sections. In Section~\ref{methods}, we describe our training methodology. In Section~\ref{experiments}, we discuss our experiments, and we conclude in Section~\ref{conclude}.
 
 \section{Related Work}
 \label{related}
@@ -114,11 +114,11 @@ In general, models have a \emph{weak prior} for context decomposition. Pre-train
 
 One idea might be to RL an open weight model on our harness. Unfortunately, exploration in LLM RL is far too weak to escape the weak decomposition prior at modest compute budgets. It is also unclear what reward to assign subagents, and if GRPO~\citep{shao2024deepseekmath} or its derivatives~\citep{yu2025dapo,liu2025drgrpo,zheng2025gspo} are used, what group to compare subagent trajectories in.
 
-\input{figures/decomposition}
-\input{figures/boundary}
-
 We instead SFT a decomposition strategy. We train \emph{tree reduce} for order-independent tasks (see Figure~\ref{fig:treereduce}), \emph{sequential fold} for order-dependent tasks (see Figure~\ref{fig:fold}), and \emph{agentic delegation} to handle boundary conditions whenever we read the document (see Figure~\ref{fig:boundary}).
 By not hardcoding a decomposition structure in our harness, our model internalizes and composes delegation strategies according to the task and current problem-solving state.
+
+\input{figures/decomposition}
+\input{figures/boundary}
 
 We generate synthetic oracle demonstration data on a wide distribution of aggregation, retrieval, and sequential tasks. While we cover similar shapes to our evals, our training distribution uses independent questions and vastly more diverse examples. The technical challenge is to instill the necessary prior so the model knows how to take a question and delegate appropriate subtasks to agents from which the final answer can be determined.
 
@@ -134,11 +134,11 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 
 We test our finetune on RULER~\citep{hsieh2024ruler}, the standard long context eval, and OOLONG-synth~\citep{bertsch2025oolong}, a newer long context benchmark frontier models have not yet saturated, also used in Recursive Language Models~\citep{zhang2025rlm}, Recursive Agent Optimization~\citep{gandhi2026rao}, and Recursive Agent Harnesses~\citep{lumer2026rah}. RULER is an extension of needle-in-a-haystack style tasks with variable tracking, word frequencies, and Q\&A. OOLONG-synth composes classification tasks on ten datasets into long documents on which aggregation queries are asked.
 
-We compare against base Qwen3.6-35B-A3B and GPT-5.4. We chose GPT-5.4 as a selection from the best frontier models available upon Qwen3.6-35B-A3B release. While we do not eval against additional frontier models, due to compute requirements, we recommend the reader to take a look at the OOLONG paper for more comparisons~\citep{bertsch2025oolong}. While we do eval GPT-5.4 on RULER, this benchmark is largely saturated for frontier models. For more RULER reference points, consult model release cards.
+We compare against base Qwen3.6-35B-A3B and GPT-5.4. We chose GPT-5.4 as a selection from the best frontier models available upon Qwen3.6-35B-A3B release. While we do not eval against additional frontier models, due to compute requirements, we recommend the reader take a look at the OOLONG paper for more comparisons (GPT-5 tops the chart)~\citep{bertsch2025oolong}. While we do eval GPT-5.4 on RULER, this benchmark is largely saturated for frontier models. For more RULER reference points, consult model release cards.
 
-For RULER, we fix a sample of 
+For RULER, we fix a sample of 5 questions per problem type, for a total of 65 problems per document length. For OOLONG-synth, we fix a sample of a 10 questions for each family: counting, user, and temporal, one sampled from each underlying classification dataset type. We vendor generators for both benchmarks and generate our problems from scratch.
 
-\begin{figure}[t]
+\begin{figure}[H]
 \centering
 \begin{minipage}[t]{0.49\linewidth}\centering
 \includegraphics[width=\linewidth]{figures/eval_ruler.pdf}
@@ -147,12 +147,16 @@ For RULER, we fix a sample of
 \includegraphics[width=\linewidth]{figures/eval_oolong.pdf}
 \end{minipage}
 \caption{\textbf{Results} on RULER and OOLONG-synth. Our fine-tune runs in our harness with an 8K token
-per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively.}
+per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
+baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
 %\caption{\textbf{Score vs.\ document length} on RULER (mean of 13 tasks, 65 problems per length) and OOLONG-synth (mean
 %of counting, user, and temporal families, 30 questions per length). Our fine-tune runs in our harness with an 8K token
 %per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with a 64K and 1M token context limits, respectively.}
 \label{fig:length-sweep}
 \end{figure}
+
+On RULER, our finetune performs worse than GPT-5.4, while remaining 
+On OOLONG-synth, our model starts worse than GPT-5.4, then matches its performance when document size exceeds 80K, despite being far smaller and using at most 8K tokens in each agent trajectory.
 
 \section{Conclusion}
 \label{conclude}
