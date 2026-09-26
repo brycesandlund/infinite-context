@@ -1,6 +1,7 @@
 % !TEX TS-program = pdflatexmk
 \documentclass{article} % For LaTeX2e
 \usepackage{iclr2027_conference,times}
+\usepackage{float}
 
 % Optional math commands from https://github.com/goodfeli/dlbook_notation.
 \input{math_commands.tex}
@@ -111,12 +112,19 @@ In general, models have a \emph{weak prior} for context decomposition. Pre-train
 
 One idea might be to RL an open weight model on our harness. Unfortunately, exploration in LLM RL is far too weak to escape the weak decomposition prior at modest compute budgets. It is also unclear what reward to assign subagents, and if GRPO~\citep{shao2024deepseekmath} or its derivatives~\citep{yu2025dapo,liu2025drgrpo,zheng2025gspo} are used, what group to compare subagent trajectories in.
 
-We instead SFT a decomposition strategy. We train \emph{tree reduce} for order-independent tasks (see Figure~\ref{fig:treereduce}), \emph{sequential fold} for order-dependent tasks (see Figure~\ref{fig:fold}), and \emph{agentic delegation} to handle boundary conditions whenever we read the document (see Figure~\ref{fig:boundary}). We generate synthetic oracle demonstration data on a wide distribution of aggregation, retrieval, and running-state tasks. While we cover similar shapes to our evals, our training distribution uses independent questions and vastly more diverse examples. The technical challenge is to instill the necessary prior so the model knows how to decompose a question into subagent tasks.
-
-For example, consider the training question ``In how many sections are there STRICTLY more named than unnamed sentences?" (the prompt defines a \emph{named} sentence as a sentence with a proper noun). To answer the question, each leaf must compute a tally of named and unnamed sentences per section in its assigned range. Thus, the root must recognize the necessary, often multi-dimensional, key space and dictate that to mid-level agents, who pass the instruction down to other mid-level agents, until leaves compute their range, and counts are aggregated back up the tree, until the root can make the final determination with full tallies.
-
 \input{figures/decomposition}
 \input{figures/boundary}
+
+We instead SFT a decomposition strategy. We train \emph{tree reduce} for order-independent tasks (see Figure~\ref{fig:treereduce}), \emph{sequential fold} for order-dependent tasks (see Figure~\ref{fig:fold}), and \emph{agentic delegation} to handle boundary conditions whenever we read the document (see Figure~\ref{fig:boundary}).
+By not hardcoding a decomposition structure in our harness, our model internalizes and composes delegation strategies according to the task and current problem-solving state.
+
+We generate synthetic oracle demonstration data on a wide distribution of aggregation, retrieval, and sequential tasks. While we cover similar shapes to our evals, our training distribution uses independent questions and vastly more diverse examples. The technical challenge is to instill the necessary prior so the model knows how to take a question and delegate appropriate subtasks to agents from which the final answer can be determined.
+
+For example, consider the training question ``In how many sections are there STRICTLY more named than unnamed sentences?" (the prompt defines a \emph{named} sentence as a sentence with a proper noun). To answer this question, each leaf must compute a tally of named and unnamed sentences per section in its assigned range. Thus, the root must recognize the necessary, often multi-dimensional, key space and dictate this and a recursive strategy to mid-level agents, who pass the instruction down to other mid-level agents, until leaves compute their range and counts are aggregated back up the tree, culminating in a final judgement at the root.
+
+Our training data is primarily record-based, but also includes real prose, dot-separated word lists, and haystacks with injected needles. For more details on our complete training data, see Appendix~\ref{app:data}.
+
+We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judge on subagent trajectories, as described in Recursive Agent Optimization~\cite{gandhi2026rao}, the policy exhibits high-variance and latches onto simpler strategies that weaken overall performance. We suspect RL to be useful in learning recovery and strengthening generalization; however, to do this properly probably requires group-level baselines on subagent trajectories, to cut variance, and compute beyond the scope of this paper.
  
 
 \section{Experiments}
@@ -152,6 +160,9 @@ including text, claims or artifacts produced with the aid of generative AI.
 \label{app:harness}
 You may include other additional sections here.
 
+\section{Training corpus}
+\label{app:data}
+You may include other additional sections here.
 
 \iffalse
 

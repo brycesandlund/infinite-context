@@ -21,6 +21,7 @@ its own structured tool schema; the driver only carries the prose system prompt
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import uuid
@@ -235,7 +236,7 @@ class APIBackend(ModelBackend):
     Each model counts tokens in its own tokenizer (litellm.token_counter).
     """
 
-    def __init__(self, model: str, temperature: float | None = 1.0, max_output_cap: int = 16384,
+    def __init__(self, model: str, temperature: float | None = 1.0, max_output_cap: int | None = 16384,
                  reasoning_effort: str | None = None):
         self.name = model
         self.model = model
@@ -292,12 +293,9 @@ class APIBackend(ModelBackend):
     ) -> AssistantTurn:
         import litellm
 
-        out_cap = max(256, min(max_tokens, self.max_output_cap))
-        kwargs = dict(
-            model=self.model,
-            messages=self._to_openai(messages),
-            max_tokens=out_cap,
-        )
+        kwargs = dict(model=self.model, messages=self._to_openai(messages))
+        if self.max_output_cap is not None:     # None = uncapped: send no max_tokens (provider maximum applies)
+            kwargs["max_tokens"] = max(256, min(max_tokens, self.max_output_cap))
         if self.temperature is not None:        # None = omit (some models reject any sampling parameter)
             kwargs["temperature"] = self.temperature
         if self.reasoning_effort:
@@ -305,7 +303,16 @@ class APIBackend(ModelBackend):
         if tools:
             kwargs["tools"] = self._tools
             kwargs["tool_choice"] = "auto"
-        resp = await litellm.acompletion(**kwargs)
+        # Rate limits (429) are retried with backoff instead of killing the whole eval (a 640K gpt-5.4 run hit the
+        # 2M tokens/min long-context quota and lost every in-flight result).
+        for attempt in range(8):
+            try:
+                resp = await litellm.acompletion(**kwargs)
+                break
+            except litellm.RateLimitError:
+                if attempt == 7:
+                    raise
+                await asyncio.sleep(min(120, 15 * 2 ** attempt))
         msg = resp.choices[0].message
         # finish_reason == "length" => generation hit the cap (overflow).
         truncated = getattr(resp.choices[0], "finish_reason", None) == "length"

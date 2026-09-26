@@ -89,7 +89,8 @@ OOLONG_BASE = int(os.environ.get("OOLONG_BASE", "2000000"))
 # Only keep problems whose question type is in this set (csv); empty = all. Lets
 # us target the HARD exact-count questions, e.g. QTYPE=numeric_one_class,represented_n_times.
 QTYPE = set(filter(None, os.environ.get("QTYPE", "").split(",")))
-CONCURRENCY = 4                  # max parent rollouts in flight (mind API rate limits)
+CONCURRENCY = int(os.environ.get("CONCURRENCY", "4"))   # max parent rollouts in flight (mind API rate limits:
+# gpt-5.4 long-context prompts share a 2M tokens/min quota — 640K docs need CONCURRENCY<=2)
 VERBOSE = os.environ.get("VERBOSE", "0") == "1"   # also dump trees to stdout (all are saved regardless)
 # EVERY rollout (full tree) is persisted here — OUT.jsonl (structured) + OUT.txt.
 OUT = os.environ.get("OUT", "/tmp/eval_rollouts")
@@ -142,8 +143,9 @@ async def _build_backend(tokenizer) -> ModelBackend:
         renderer = get_renderer(RENDERER_NAME, tokenizer)
         return TinkerBackend(sampling_client, tokenizer, renderer, temperature=TEMPERATURE)
 
+    # OUT_TOKENS=0 -> no output cap sent at all (the provider's own maximum applies)
     return APIBackend(BACKEND, temperature=TEMPERATURE, reasoning_effort=REASONING_EFFORT,
-                      max_output_cap=max(16384, OUT_TOKENS))
+                      max_output_cap=max(16384, OUT_TOKENS) if OUT_TOKENS > 0 else None)
 
 
 # ---------------------------------------------------------------------------

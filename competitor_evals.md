@@ -66,6 +66,27 @@ reasoning_effort='none'"), so this row is `TEMP=none REASONING_EFFORT=medium OUT
 | counting / user / temporal | 0.601 / 0.856 / 0.665 | 0.510 / 0.800 / 0.677 | 0.237 / 0.875 / 0.689 | 0.301 / 0.573 / 0.626 |
 | output tokens median / max | 5.0K / 22.3K | 9.8K / 31.5K | 11.8K / 26.1K | 10.3K / 43.1K |
 
+**160K** (128K output cap): overall **0.556** — counting 0.306 / user 0.887 / temporal 0.475; all 30 answered, output
+median 8.8K / max 50.0K, none > 64K. Non-monotone vs 80K (0.500): user 0.573 → 0.887, temporal 0.626 → 0.475 —
+10 problems per family, so per-family swings of ±0.2-0.3 between lengths are within noise.
+Raw: `eval_results/competitor/gpt5_4_rmed_out128k_single_chart_160k.*`.
+
+**320K** (NO output cap — `OUT_TOKENS=0` sends no max_tokens): overall **0.479** — counting 0.300 / user 0.412 / temporal
+0.725; all 30 answered, output median 5.1K / max 58.9K (0.26M total). gpt-5.4 accepts 320K prompts despite the pricing
+page's "short only (<272K)" (a billing tier, not a limit). Cost ≈ 8.2M input × $2.50 (possibly a higher >272K rate) +
+0.26M × $15 ≈ $25-45. Raw: `eval_results/competitor/gpt5_4_rmed_nocap_single_chart_320k.*`.
+
+**640K** (no output cap, `CONCURRENCY=2`): overall **0.419** — counting 0.200 / user 0.484 / temporal 0.573; all 30
+answered, output median 6.3K / max 32.2K (0.27M total). First attempt at CONCURRENCY=4 crashed on OpenAI's gpt-5.4
+long-context quota (2M tokens/min; each 640K prompt ≈ 432K OpenAI tokens) and lost its in-flight results (a few calls
+billed); fixed with `CONCURRENCY` env + 429 retry/backoff in `APIBackend`. At 640K the smaller OOLONG datasets repeat
+items heavily (e.g. metaphors: 333 "incorrect" examples fill 6,174 slots) — sampling with replacement, as OOLONG does.
+Cost ≈ 13M input (OpenAI tokens) × $2.50 (possibly higher >272K rate) + 0.27M × $15 ≈ $35-70.
+Raw: `eval_results/competitor/gpt5_4_rmed_nocap_single_chart_640k.*`.
+
+Medium-reasoning curve: 0.708 (10K) · 0.662 (20K) · 0.600 (40K) · 0.500 (80K) · 0.556 (160K) · 0.479 (320K) ·
+0.419 (640K).
+
 | 80K chart | counting | user | temporal | overall |
 |---|---|---|---|---|
 | **gpt-5.4, medium reasoning** (64K output cap) | 0.301 | 0.573 | 0.626 | **0.500** |
@@ -208,6 +229,10 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
   @80K = 0.500 (18w 0.561). Plan: drop the output cap (use each model's max) for future runs.
 - 2026-09-25: base Qwen t0 / 64K context @10K = 0.536 — base-Qwen chart row complete (80K cannot run on Tinker).
 - 2026-09-25: gpt-5.4 medium reasoning @10K = 0.708, @20K = 0.662 — row complete.
+- 2026-09-25: gpt-5.4 medium reasoning @160K = 0.556 (128K output cap; max used 50K).
+- 2026-09-25: gpt-5.4 medium reasoning @320K, uncapped = 0.479. `OUT_TOKENS=0` = no output cap sent.
+- 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
+  `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
   `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call
   `usage` (output + reasoning tokens).
 

@@ -1,0 +1,106 @@
+Backend: openai/gpt-5.4-2026-03-05 | mode: single | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: n/a (whole doc in context) | doc: 160000 | depth: None
+Loading + tokenizing PG-essay corpus...
+[92m17:38:05 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m17:38:05 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+temp=None | out=eval_results/competitor/gpt5_4_rmed_out128k_single_chart_160k.{jsonl,txt}
+Warning: Requested 767 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 1329 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 1496 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 1476 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 969 samples for label 'numeric value', but only 649 are available. Using duplicate examples.
+Warning: Requested 1112 samples for label 'location', but only 732 are available. Using duplicate examples.
+Warning: Requested 608 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 1345 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 1895 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+Warning: Requested 1077 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 792 samples for label 'location', but only 732 are available. Using duplicate examples.
+Warning: Requested 686 samples for label 'entity', but only 665 are available. Using duplicate examples.
+Warning: Requested 1015 samples for label 'numeric value', but only 649 are available. Using duplicate examples.
+Warning: Requested 518 samples for label 'abbreviation', but only 81 are available. Using duplicate examples.
+Warning: Requested 992 samples for label 'spam', but only 641 are available. Using duplicate examples.
+Warning: Requested 1432 samples for label 'correct', but only 200 are available. Using duplicate examples.
+Warning: Requested 1540 samples for label 'incorrect', but only 333 are available. Using duplicate examples.
+
+========================================================================
+EVAL: backend=openai/gpt-5.4-2026-03-05 ckpt=BASE
+========================================================================
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['630'] nodes=1 answer='\\text{Answer: 891' term=answered score=0.000
+# task=oolong_counting seed=2000001 dataset=imdb gold=['more common than'] nodes=1 answer='\\text{Answer: negative is more common than positive' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['772'] nodes=1 answer='\\text{Answer: 321' term=answered score=0.000
+# task=oolong_counting seed=2000003 dataset=negation gold=['1054'] nodes=1 answer='\\text{Answer: 1684' term=answered score=0.000
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['less common than'] nodes=1 answer='\\text{Answer: Computers \\& Internet is less common than Politics \\& Government' term=answered score=1.000
+# task=oolong_counting seed=2000005 dataset=formality gold=['more common than'] nodes=1 answer='\\text{Answer: formal is more common than informal' term=answered score=1.000
+# task=oolong_counting seed=2000006 dataset=spam gold=['spam'] nodes=1 answer='\\text{Label: ham' term=answered score=0.000
+# task=oolong_counting seed=2000007 dataset=multinli gold=['999'] nodes=1 answer='\\text{Answer: 965' term=answered score=0.000
+# task=oolong_counting seed=2000008 dataset=metaphors gold=['1496'] nodes=1 answer='\\text{Answer: 1486' term=answered score=0.056
+# task=oolong_counting seed=2000009 dataset=app_reviews gold=['1733'] nodes=1 answer='\\text{Answer: 1641' term=answered score=0.000
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['6'] nodes=1 answer='\\text{Answer: 7' term=answered score=0.750
+# task=oolong_user seed=2100001 dataset=imdb gold=['25601'] nodes=1 answer='\\text{User: 25601' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['3'] nodes=1 answer='\\text{Answer: 1' term=answered score=0.562
+# task=oolong_user seed=2100003 dataset=negation gold=['True'] nodes=1 answer='\\text{Label: True' term=answered score=1.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['same frequency as'] nodes=1 answer='\\text{Answer: Politics \\& Government is same frequency as Entertainment \\& Music' term=answered score=1.000
+# task=oolong_user seed=2100005 dataset=formality gold=['7'] nodes=1 answer='\\text{Answer: 5' term=answered score=0.562
+# task=oolong_user seed=2100006 dataset=spam gold=['spam'] nodes=1 answer='\\text{Label: spam' term=answered score=1.000
+# task=oolong_user seed=2100007 dataset=multinli gold=['contradiction'] nodes=1 answer='\\text{Label: contradiction' term=answered score=1.000
+# task=oolong_user seed=2100008 dataset=metaphors gold=['62554'] nodes=1 answer='\\text{User: 62554' term=answered score=1.000
+# task=oolong_user seed=2100009 dataset=app_reviews gold=['positive'] nodes=1 answer='\\text{Label: positive' term=answered score=1.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['February 2022'] nodes=1 answer='\\text{Answer: February 2022' term=answered score=1.000
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['positive'] nodes=1 answer='Label: positive' term=answered score=1.000
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['2'] nodes=1 answer='\\text{Answer: 3' term=answered score=0.750
+# task=oolong_temporal seed=2200003 dataset=negation gold=['more common'] nodes=1 answer='Answer: True is less common before 2022-12-18' term=answered score=0.000
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['29'] nodes=1 answer='\\text{Answer: [5]' term=answered score=0.001
+# task=oolong_temporal seed=2200005 dataset=formality gold=['3'] nodes=1 answer='\\text{Answer: 23' term=answered score=0.003
+# task=oolong_temporal seed=2200006 dataset=spam gold=['less common than'] nodes=1 answer='\\text{Answer: spam is less common than ham' term=answered score=1.000
+# task=oolong_temporal seed=2200007 dataset=multinli gold=['99'] nodes=1 answer='\\text{Answer:' term=answered score=0.000
+# task=oolong_temporal seed=2200008 dataset=metaphors gold=['265'] nodes=1 answer='\\text{Answer: 298' term=answered score=0.000
+# task=oolong_temporal seed=2200009 dataset=app_reviews gold=['less common than'] nodes=1 answer='\\text{Answer: negative is less common than positive' term=answered score=1.000
+
+------------------------------------------------------------------------
+oolong_counting: 0.306  (grounded 0.306 | 10 rollouts | no_answer=0/10 | mean_tree=1.0)
+    dataset agnews         0.000  (n=1)
+    dataset app_reviews    0.000  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.056  (n=1)
+    dataset multinli       0.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset spam           0.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   least_common_label 0.000  (n=1)
+    qtype   numeric_one_class  0.009  (n=6)
+    qtype   relative_freq      1.000  (n=3)
+oolong_temporal: 0.475  (grounded 0.475 | 10 rollouts | no_answer=0/10 | mean_tree=1.0)
+    dataset agnews         0.750  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      0.003  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.000  (n=1)
+    dataset multinli       0.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.001  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   numeric_one_class  0.000  (n=2)
+    qtype   relative_freq      0.625  (n=6)
+    qtype   represented_n_times 0.003  (n=1)
+oolong_user: 0.887  (grounded 0.887 | 10 rollouts | no_answer=0/10 | mean_tree=1.0)
+    dataset agnews         0.562  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      0.562  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      1.000  (n=1)
+    dataset multinli       1.000  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.750  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   least_common_label 1.000  (n=3)
+    qtype   most_common_label  1.000  (n=2)
+    qtype   numeric_one_class  0.625  (n=3)
+    qtype   relative_freq      1.000  (n=2)
+
+OVERALL: 0.556  (grounded 0.556 | 30 rollouts)
+SCORE (held-out ['oolong_counting', 'oolong_temporal', 'oolong_user']): 0.556  (30 rollouts)
+All 30 rollouts saved -> eval_results/competitor/gpt5_4_rmed_out128k_single_chart_160k.jsonl + eval_results/competitor/gpt5_4_rmed_out128k_single_chart_160k.txt
