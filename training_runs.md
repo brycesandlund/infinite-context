@@ -1797,3 +1797,44 @@ String-vs-judge disagreements (surface form, not errors): `High risk preparation
 - qa_1 3014004 @80K: the leaf whose read held the gold sentence ("Hospital pharmacies usually stock a larger range of
   medications…") returned "No relevant information"; the root answered from related pharmacist context. Leaf recall miss.
 - qa_2 3015001 @40K: root hedged between two firms.
+
+## sft_general19w (run 19, warm start from 18w, cache v17) — 2026-09-25 — 4K SCORE-9 **0.864** (best); RULER-13 0.969 / 0.908 / 0.922 @10K/40K/80K; OOLONG chart 0.489 / 0.534 / 0.533
+
+Checkpoint `tinker://9febd22f-7451-540d-ad76-4139c3e759a1:train:0/weights/sft_general19w` (pinned in
+`~/.cache/infinite-context/ckpt_sft_general19w.txt`). Recipe `scripts/run_sft19_warm.sh` = run-18 mix, synth_topk 40 -> 120,
+cache v17 (v16 topk top-K / one-pass leaf / word ownership / one-line docs / sparse + coded regimes, niah_bridge pronoun
+units; v17 results written once, trace gates). 1,229 traces / 52,652 datums / 91.8M tokens, LR 5e-6, final NLL ~0.0017;
+trained 14:18-20:37. Watcher `scripts/after_run19.sh` (long evals = OOLONG chart + RULER-13 only; fresh-seed OOLONG cut).
+
+| | 18w | 19w |
+|---|---|---|
+| 4K SCORE-9 (3K budget) | 0.800 | **0.864** (oolong counting 0.21 -> 0.47, user 0.60 -> 0.80) |
+| RULER-13 @10K / 40K / 80K (8K budget) | 0.949 / 0.929 / 0.885 | **0.969** / 0.908 / **0.922** |
+| – cwe @40K / 80K | 0.74 / 0.58 | **0.90 / 0.86** (v16 top-K tallies; simulated ceiling ~0.97) |
+| – fwe @10K / 40K | 0.93 / 0.93 | **1.00 / 1.00** |
+| – qa_1 LLM-judged @10K / 40K / 80K | 0.80 / 1.00 / 0.80 | **1.00 / 1.00 / 1.00** |
+| – qa_2 LLM-judged @10K / 40K / 80K | 0.80 / 0.60 / 0.80 | 0.80 / 0.60 / 0.60 |
+| OOLONG chart @10K / 40K / 80K | 0.606 / 0.535 / 0.561 | **0.489** / 0.534 / 0.533 |
+| – user @10K / 40K / 80K | 0.86 / 0.80 / 0.73 | **0.36** / 0.78 / 0.70 |
+| plain leaf probe | 91.6% | 90.7% (negation 80 -> 77) |
+
+**OOLONG user @10K regression (0.86 -> 0.36) is ROOT-CONTRACT breakage, not labels** — 5/10 newly failed:
+- imdb "which user is represented the second most often" -> subtask "per-user tally of reviews (judging each review's
+  label)" with an INVENTED closed key space "`<user>` is exactly one of `User 1` … `User 5`" -> `User: User 91202`.
+- negation "which user is represented most often" -> "per-user tally of the sentences marked as true" (invented label
+  filter) -> boxed `true`.
+- yahoo -> "`<user>` is the user's `name:` as in the question" (no such field; layout-reference wording leaking) -> `User: none`.
+- formality user-subset question -> filter to "user 885999" (not in the question) -> `Label: none`.
+- multinli -> wrong user.
+@40K/80K user only slips (0.80 -> 0.78, 0.73 -> 0.70); 4K user improved. Hypothesis (unverified): a second pass over the same
+v15 labeled_records surfaces (layout field names, author/user wording) drifts the root's user contracts.
+**Other @40K dips:** niah_multikey_1 1 -> 0.80 (one `none`); niah_multiquery 1 -> 0.90 (two answers boxed the whole
+`key=value|…` state instead of the values).
+**Pronoun fix did not take:** "Ravi Khote … 2003 Indian drama" still fails ("(unproven by the document)" @40K,
+"Baghban (film)" @80K).
+
+**Temperature study (18w, RULER-13 + fresh-seed OOLONG @40K):** t=0 RULER 0.899 / OOLONG 0.597, 90 overflowed nodes (40
+repetition loops), fwe 0.93 -> 0.33; t=0.2 0.929 / 0.606, 54 (10 loops); t=0.4 0.911 / 0.557, 126 (20 loops). OOLONG chart
+@40K t=0 0.529 vs 0.535. Keep t=0.2. The `word:1|word:1|…` loop is trained behaviour that greedy decoding exposes.
+
+Raw: `eval_results/raw/sft_general19w*`, `eval_results/qa_judge_19w.txt`, `eval_results/probe_19w.log`.

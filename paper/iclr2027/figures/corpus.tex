@@ -1,0 +1,66 @@
+% !TEX root = ../paper.tex
+% Appendix B: the training mix of run 19 (scripts/run_sft19_warm.sh): SFT_TASKS, N_PER_TASK=10 + N_PER_TASK_OVERRIDE.
+\begin{table}[!ht]
+\centering\footnotesize
+\begin{tabular}{@{}l@{\hspace{5pt}}l@{\hspace{5pt}}r@{\hspace{7pt}}p{0.52\linewidth}@{}}
+\toprule
+Task & Strategy & $N$ & Example question / what the leaf does \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Order-independent aggregation over structured records} (one record per line)} \\
+\cmidrule{1-4}
+\texttt{synth\_sum} & tree & 10 & SUM of \texttt{amt} over all records \\
+\texttt{synth\_count} & tree & 10 & how many records have \texttt{flag=Y} \\
+\texttt{synth\_max} & tree & 10 & largest \texttt{amt} \\
+\texttt{synth\_min} & tree & 10 & smallest \texttt{amt} \\
+\texttt{synth\_sumwhere} & tree & 10 & SUM of \texttt{amt} over only the \texttt{flag=Y} records \\
+\texttt{synth\_maxwhere} & tree & 10 & largest \texttt{amt} among a flag-filtered subset \\
+\texttt{synth\_mode} & tree & 10 & most common \texttt{grp} (per-\texttt{grp} tally) \\
+\texttt{synth\_distinct} & tree & 10 & how many distinct \texttt{grp} values (set state) \\
+\texttt{synth\_sumby} & tree & 10 & which \texttt{grp} has the largest total \texttt{amt} \\
+\texttt{synth\_count2} & tree & 10 & count under a conjunction of two field conditions \\
+\texttt{synth\_diff} & tree & 10 & SUM over \texttt{flag=Y} minus SUM over \texttt{flag=N} \\
+\texttt{synth\_count\_cmp} & tree & 10 & how many records have \texttt{amt} below a threshold \\
+\texttt{synth\_count\_range} & tree & 10 & how many records have \texttt{amt} in an interval \\
+\texttt{synth\_filter\_argmax} & tree & 15 & most / least common value among a filtered subset \\
+\texttt{synth\_2d} & tree & 24 & two-level questions (e.g.\ for how many months is \texttt{K3} the most common group) \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Sequential folds}} \\
+\cmidrule{1-4}
+\texttt{synth\_runreset} & fold & 20 & running total that resets at \texttt{grp=RST} \\
+\texttt{synth\_varchain} & fold & 20 & final value of a variable under \texttt{set B = A} copies \\
+\texttt{synth\_peak} & fold & 20 & highest value the running total reaches \\
+\texttt{synth\_streak} & fold & 20 & longest run of consecutive \texttt{flag=Y} records \\
+\texttt{synth\_adjacent} & fold & 20 & records whose \texttt{amt} exceeds the previous record's \\
+\texttt{synth\_first\_exceed} & fold & 20 & index where the running total first exceeds a threshold \\
+\texttt{vt\_novel} & fold & 150 & variable-assignment chains hidden in prose (RULER-style variable tracking) \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Open-vocabulary frequency}} \\
+\cmidrule{1-4}
+\texttt{synth\_topk} & tree & 120 & the $k$ most frequent words in a word list; partials are pruned \texttt{word:count} tallies \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Multi-line records}} \\
+\cmidrule{1-4}
+\texttt{long\_records} & tree & 120 & header + prose-body entries; counts, argmaxes, 2-D tallies, and word mentions in bodies \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Labelling real text, then aggregating}} \\
+\cmidrule{1-4}
+\texttt{labeled\_records} & tree & 240 & items from 7 labelled datasets; the leaf judges each label, then counts / compares \\
+\texttt{rule\_label} & tree & 40 & prose sentences labelled by a stated rule (e.g.\ ends with ``?''), then aggregated \\
+\texttt{realdoc\_count} & tree & 40 & occurrences of a word in a Gutenberg novel passage \\
+\midrule
+\multicolumn{4}{@{}l}{\textit{Retrieval and QA in prose}} \\
+\cmidrule{1-4}
+\texttt{niah\_novel} & tree & 60 & find the one sentence stating a key's magic value \\
+\texttt{niah\_multi} & tree & 60 & collect several hidden facts, or a lookup instruction plus all facts, and resolve at the root \\
+\texttt{niah\_bridge} & tree & 80 & two-hop: fact 1 names who holds a role, fact 2 answers about that person \\
+\texttt{narrativeqa} & tree & 30 & short-answer questions over book / script windows; model-executed leaf \\
+\midrule
+Total & & 1{,}229 & \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Training tasks.} $N$ is the number of problems per task. \emph{Tree}: recursive halving, with
+each parent merging its two children's partials (for retrieval, the half that finds the answer wins). \emph{Fold}: one
+agent reads a slice and hands the rest of the document and its accumulator to the next. Every agent in each tree is a
+training example.}
+\label{tab:corpus}
+\end{table}

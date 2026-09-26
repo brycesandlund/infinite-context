@@ -5,7 +5,7 @@
 \newcommand{\promptbox}[1]{\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}{\footnotesize\ttfamily
   \raggedright\setlength{\parskip}{0.6em}#1}}}
 
-\begin{figure}[!ht]
+\begin{figure}[H]
 \promptbox{%
 You are a long-document assistant. The document is \slot{N} tokens long; you cannot see it directly. Your own
 context window is \slot{B} tokens {\rmfamily\textemdash} the conversation (system prompt, user message, your responses, and all
@@ -36,7 +36,7 @@ is the document length and \slot{B} the per-agent context budget. The root's use
 \label{fig:system-prompt}
 \end{figure}
 
-\begin{figure}[!ht]
+\begin{figure}[H]
 \promptbox{%
 \textrm{\textbf{System}}\\[0.3em]
 \slot{task context, if the benchmark provides one}
@@ -56,25 +56,50 @@ document is instead placed back at the template's \texttt{\{context\}} position,
 \label{fig:full-doc-prompt}
 \end{figure}
 
-\begin{table}[!ht]
+\begin{table}[H]
 \centering\small
-\begin{tabular}{@{}p{0.13\linewidth}p{0.29\linewidth}p{0.29\linewidth}p{0.19\linewidth}@{}}
+\begin{tabular}{@{}p{0.15\linewidth}p{0.37\linewidth}p{0.4\linewidth}@{}}
 \toprule
-Benchmark & System prompt: task context & Root user message & Document \\
+Benchmark & System prompt task context & Root user message \\
 \midrule
 OOLONG-synth & OOLONG's dataset description, verbatim (its intro, the number of items, the label set) &
-  OOLONG's question, verbatim, + ``Put your final answer inside \textbackslash{}boxed\{\}.'' &
-  One item per line: \texttt{Date: \ldots{} || User: \ldots{} || Instance: \ldots} \\[0.4em]
-OOLONG-real & Everything before the first \texttt{[START OF EPISODE]}, verbatim: the instructions and the
-  player-to-character mapping & The dataset question, verbatim & The episode transcripts, verbatim \\[0.4em]
+  OOLONG's question, verbatim, + ``Put your final answer inside \textbackslash{}boxed\{\}.'' \\[0.4em]
+%OOLONG-real & Everything before the first \texttt{[START OF EPISODE]}, verbatim: the instructions and the
+%  player-to-character mapping & The dataset question, verbatim \\[0.4em]
 RULER & None (empty) & RULER's task template, verbatim, with \texttt{\{context\}} replaced by a pointer to the
-  document (below) + ``Reply with the answer inside \textbackslash{}boxed\{\}.'' & RULER's haystack with its
-  inserted needles \\
+  document (below) + ``Reply with the answer inside \textbackslash{}boxed\{\}.'' \\
 \bottomrule
 \end{tabular}
-\caption{\textbf{Where each benchmark's text goes.} The task context is placed in the system prompt, so every
+\caption{\textbf{Benchmark text fields.} The task context is placed in the system prompt, so every
 subagent inherits it without the parent restating it. For RULER, \texttt{\{context\}} in the template is replaced
 by: ``[The relevant text is in a separate document accessible via the read\_chunk tool --- see the system prompt for
 usage.] (Document length: \slot{N} tokens.)''}
 \label{tab:prompt-slots}
+\end{table}
+
+\begin{table}[!ht]
+\centering\small
+\begin{tabular}{@{}p{0.42\linewidth}p{0.53\linewidth}@{}}
+\toprule
+Event & Tool result returned to the calling agent (verbatim) \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{\texttt{spawn\_subagent}}} \\
+\cmidrule{1-2}
+Subagent ends with a boxed answer & The content of its last closed \texttt{\textbackslash boxed\{\ldots\}} \\
+Subagent exceeds its context budget & \texttt{agent overflowed context} \\
+Subagent stops without a boxed answer & \texttt{agent did not box an answer} \\
+Tree node cap reached & \texttt{Error: rollout node budget reached. Solve directly.} \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{\texttt{read\_chunk}}} \\
+\cmidrule{1-2}
+Valid range & The decoded text of tokens \texttt{[start, end)}, clamped to the document \\
+Empty range after clamping & \texttt{Empty range.} \\
+Non-integer arguments & \texttt{Error: read\_chunk requires integer `start' and `end'.} \\
+\bottomrule
+\end{tabular}
+\caption{\textbf{Harness responses.} An agent's budget counts its whole rendered conversation (system
+prompt, tool schema, user message, its own turns and every tool result); each generation is capped at the remaining
+room. A subagent that answers returns only its boxed
+content, so its reads and reasoning never enter the parent's context.}
+\label{tab:tool-results}
 \end{table}

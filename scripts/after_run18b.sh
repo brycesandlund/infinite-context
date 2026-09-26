@@ -39,4 +39,8 @@ for t in C18b_10k C18b_40k R18b_10k_b8k R18b_40k_b8k; do
   cp /tmp/eval_$t.log eval_results/raw/sft_general18b_$t.log 2>/dev/null
   say "$t: $(grep -o '^SCORE.*' /tmp/eval_$t.log | tail -1)"
 done
+say "LLM-judging open-ended QA"
+PYTHONPATH=. uv run python scripts/judge_open_qa.py eval_results/raw/sft_general18b.jsonl \
+  eval_results/raw/sft_general18b_R18b_10k_b8k.jsonl eval_results/raw/sft_general18b_R18b_40k_b8k.jsonl \
+  > eval_results/qa_judge_18b.txt 2>&1
 say "ALL 18b EVALS DONE"

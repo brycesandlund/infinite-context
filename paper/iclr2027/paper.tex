@@ -159,17 +159,28 @@ including text, claims or artifacts produced with the aid of generative AI.
 
 
 
+\raggedbottom   % end the reference list at its natural length before the appendix's \clearpage
 \bibliography{iclr2027_conference}
 \bibliographystyle{iclr2027_conference}
 
+\pagebreak
+
+\clearpage
 \appendix
 \section{Harness and prompts}
 \label{app:harness}
+
+The full system prompt and tool descriptions are given in Figure~\ref{fig:system-prompt}. The full-document prompt, used for single shot baselines, is given in Figure~\ref{fig:full-doc-prompt}. Benchmark text fields are supplied in Table~\ref{tab:prompt-slots}. Harness responses are given in Table~\ref{tab:tool-results}.
+
 \input{figures/prompts}
 
+\clearpage
 \section{Training corpus}
+
+A high-level description of our training tasks is given in Table~\ref{tab:corpus}.
+
 \label{app:data}
-You may include other additional sections here.
+\input{figures/corpus}
 
 \iffalse
 

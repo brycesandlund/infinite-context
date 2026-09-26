@@ -623,5 +623,50 @@
 "correct": 1,
 "reason": "The candidate mentions that hospital pharmacies \"can stock a wider range of medicines, including specialized drugs,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\" The additional details provided are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
 "parsed": true
+},
+"5bc964996e030623bc0e57e397fdd577524ed1ba": {
+"correct": 1,
+"reason": "The candidate answer \"Due to a leg injury\" matches the reference answer \"leg injury.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"867cbb763d4c34f31afb966b616f7e83e1a57823": {
+"correct": 0,
+"reason": "The reference answer specifies \"medication management system development, deployment and optimization,\" while the candidate lists \"pharmacy practice areas, information technology departments, and healthcare information technology vendor companies.\" These are different concepts \u2014 the reference describes functional areas of work (what they do), while the candidate describes organizational settings (",
+"parsed": true
+},
+"e0663c0ea5dbb25ee3273c5981cb4bbeead910a7": {
+"correct": 1,
+"reason": "The candidate identifies the same person as the reference answer, Sister Anthony, S.C., simply adding her birth name Mary O'Connell as additional consistent detail.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"e2b5973f6e807f9a67d908bd547b3b03269126d1": {
+"correct": 1,
+"reason": "The candidate's answer includes the reference answer (\"Hospital pharmacies usually stock a larger range of medications, including more specialized medications\") along with extensive additional detail. Since it contains the correct information matching the reference, it is correct.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"37160ed7c6ae2359c1d65f2d15c2a20d42ae32cb": {
+"correct": 1,
+"reason": "The candidate answer \"the Bolshoi Theatre\" matches the reference answer \"Bolshoi Theatre.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"dabe4f4f98373d7478b5e8090612a2b249763ad5": {
+"correct": 0,
+"reason": "The candidate does not provide a specific answer, effectively giving no answer.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"bc7381f32b0811e2584f4c9005b0e635df6ff430": {
+"correct": 1,
+"reason": "The candidate includes the reference answer about stocking a larger range of medications including specialized ones, and adds additional consistent details.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"5f636288334f840cab9155a0e5e8bf391325bbed": {
+"correct": 0,
+"reason": "The candidate provides no answer (\"none\"), while the correct answer is \"Ernst & Young.\"\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"1fb42aca233407400488a913062b5ae8cd891669": {
+"correct": 1,
+"reason": "The candidate's answer includes the reference answer (\"Hospital pharmacies usually stock a larger range of medications, including more specialized medications\") along with extensive additional detail that is consistent with the reference. It correctly identifies the key advantage mentioned in the reference.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }
