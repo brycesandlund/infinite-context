@@ -1916,19 +1916,25 @@ losing much of the document under skewed labels (counting was already ~0.40 at e
 curve hides a failing tree: footnote it on the chart. Raw: `eval_results/raw/sft_general18w_C18w_160k.*`. Eval progress logging added
 to eval/run.py (`[progress]` lines + `{OUT}.progress.jsonl`); `scripts/eval_status.sh <tags…>` reads them.
 
-### 18w RULER-13 @160K (8K budget) — 2026-09-26 — **0.868**
+### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.850** (320K partial)
 
-| 18w RULER-13 | 10K | 40K | 80K | 160K |
-|---|---|---|---|---|
-| mean | 0.949 | 0.929 | 0.885 | **0.868** |
-| niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 |
-| vt | 1.00 | 1.00 | 0.92 | 0.84 |
-| cwe | 1.00 | 0.74 | 0.58 | **0.24** |
-| fwe | 0.93 | 0.93 | 1.00 | 1.00 |
-| qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 |
+| 18w RULER-13 | 10K | 40K | 80K | 160K | 320K (partial, 64/65) |
+|---|---|---|---|---|---|
+| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.850** |
+| niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| vt | 1.00 | 1.00 | 0.92 | 0.84 | 0.70 (n=4) |
+| cwe | 1.00 | 0.74 | 0.58 | **0.24** | **0.02** |
+| fwe | 0.93 | 0.93 | 1.00 | 1.00 | 0.93 |
+| qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 | 0.60 / 0.80 |
 
 Nearly all of the decline is cwe — 18w predates the v16 top-K tally fix, and the old "2+ times, at most 10" leaves lose the
 common words as they thin out per leaf (19w/20w with v16: cwe 0.90-1.00 @40K, 0.86 @80K). Without cwe the 160K mean is
 ~0.93. niah stays 1.00 through 160K (and 320K, 40/40 so far). Timing: 65 rollouts in 78 min at CONCURRENCY=4 (the
 default); the 5 serial vt fold chains (~330 hops each) set the length — CONCURRENCY >= 5 would remove the second vt round.
-Raw: `eval_results/raw/sft_general18w_R18w_160k_b8k.*` (qa not yet LLM-judged).
+**320K is PARTIAL: 64/65 rollouts** (the 5th vt fold chain was still running at write time; the task mean can move by
+at most ~0.02). Mean = average of the 13 per-task means (the reported RULER-13 figure; an earlier per-ROLLOUT average of
+0.853 from scripts/eval_status.sh was wrong — the script now reports the task mean). cwe collapses to 0.02 with the same
+read-instead-of-split failure as the 320K chart (cwe trees ~215 nodes vs nominal ~2,560; fwe ~311 nodes but its dominant
+words survive, 0.93); search tasks (niah, qa) build full trees and hold.
+Raw: `eval_results/raw/sft_general18w_R18w_160k_b8k.*`; 320K partial rollouts
+`eval_results/raw/sft_general18w_R18w_320k_b8k.partial_progress.jsonl` (no trees). qa not yet LLM-judged.

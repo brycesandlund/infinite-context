@@ -42,7 +42,7 @@ funding agencies.  Funding acknowledgements go at the end of the paper.} \\
 \maketitle
 
 \begin{abstract}
-We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B on this harness. With only 8,000 tokens of context, our small model is as strong as GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens.
+We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness. With only 8,000 tokens of context, our small model is as strong as GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens.
 \end{abstract}
 
 \section{Introduction}
@@ -66,11 +66,11 @@ Our harness has two tools:
   \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
 \end{enumerate}
 
-Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition, a generic instruction, and potentially task-specific background, in accordance with the specified eval\footnote{Precise harness environment is given in Appendix~\ref{app:harness}.}. Subagents' user prompt is specified by the calling model.
+Unmodified long-context prompts are provided to the model over a document accessed via the above harness. The system prompt is propagated to child agents and includes the above harness definition, a generic instruction, and potentially task-specific background, in accordance with the respective eval\footnote{Precise harness environment is given in Appendix~\ref{app:harness}.}. Subagents' user prompt is specified by the calling model.
 
 \subsection{Results}
 
-We finetune Qwen3.6-35B-A3B on the above harness on a diverse synthetic data mixture and achieve the following results:
+We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness and achieve the following results:
 \begin{enumerate}
   \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 80K tokens.
   \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model holds score $>85\%$ on document size from 10K to 320K tokens.
@@ -132,11 +132,11 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 \section{Experiments}
 \label{experiments}
 
-We test our finetune on RULER~\citep{hsieh2024ruler}, the standard long context eval, and OOLONG-synth~\citep{bertsch2025oolong}, a newer long context benchmark frontier models have not yet saturated, also used in Recursive Language Models~\citep{zhang2025rlm}, Recursive Agent Optimization~\citep{gandhi2026rao}, and Recursive Agent Harnesses~\citep{lumer2026rah}. RULER is an extension of needle-in-a-haystack style tasks with variable tracking, word frequencies, and Q\&A. OOLONG-synth composes classification tasks on ten datasets into long documents on which aggregation queries are asked.
+We test our finetune on RULER~\citep{hsieh2024ruler}, the standard long context eval, and OOLONG-synth~\citep{bertsch2025oolong}, a newer long context benchmark frontier models have not yet saturated, also used in Recursive Language Models~\citep{zhang2025rlm}, Recursive Agent Optimization~\citep{gandhi2026rao}, and Recursive Agent Harnesses~\citep{lumer2026rah}. RULER is an extension of needle-in-a-haystack style tasks with variable tracking, word frequencies, and Q\&A. OOLONG-synth composes classification tasks on ten datasets into long documents on which aggregation is queried.
 
-We compare against base Qwen3.6-35B-A3B and GPT-5.4. We chose GPT-5.4 as a selection from the best frontier models available upon Qwen3.6-35B-A3B release. While we do not eval against additional frontier models, due to compute requirements, we recommend the reader take a look at the OOLONG paper for more comparisons (GPT-5 tops the chart)~\citep{bertsch2025oolong}. While we do eval GPT-5.4 on RULER, this benchmark is largely saturated for frontier models. For more RULER reference points, consult model release cards.
+We compare against base Qwen3.6-35B-A3B and GPT-5.4. We chose GPT-5.4 as a selection from the best frontier models available upon Qwen3.6-35B-A3B release. While we do not eval against additional frontier models, due to compute requirements, we recommend the reader read the OOLONG paper for more comparisons (GPT-5 tops the chart)~\citep{bertsch2025oolong}. While we do eval GPT-5.4 on RULER, this benchmark is largely saturated for frontier models. For more RULER reference points, consult model release cards.
 
-For RULER, we fix a sample of 5 questions per problem type, for a total of 65 problems per document length. For OOLONG-synth, we fix a sample of a 10 questions for each family: counting, user, and temporal, one sampled from each underlying classification dataset type. We vendor generators for both benchmarks and generate our problems from scratch.
+For RULER, we fix a sample of 5 questions per problem type, for a total of 65 problems per document length. For OOLONG-synth, we fix a sample of a 10 questions per family: counting, user, and temporal, each sampled from a different underlying classification dataset. We vendor generators for both benchmarks and generate our problems from scratch.
 
 \begin{figure}[H]
 \centering
@@ -146,14 +146,15 @@ For RULER, we fix a sample of 5 questions per problem type, for a total of 65 pr
 \begin{minipage}[t]{0.49\linewidth}\centering
 \includegraphics[width=\linewidth]{figures/eval_oolong.pdf}
 \end{minipage}
-\caption{\textbf{Results} on RULER and OOLONG-synth. Our fine-tune runs in our harness with an 8K token
-per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
+\caption[Results on RULER and OOLONG-synth]{\textbf{Results} on RULER and OOLONG-synth. Our fine-tune runs in our harness with an 8K token
+per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for details). Base Qwen and GPT-5.4 are served with 64K\protect\footnotemark and 1M token context limits, respectively. The OOLONG random
 baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
 %\caption{\textbf{Score vs.\ document length} on RULER (mean of 13 tasks, 65 problems per length) and OOLONG-synth (mean
 %of counting, user, and temporal families, 30 questions per length). Our fine-tune runs in our harness with an 8K token
 %per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with a 64K and 1M token context limits, respectively.}
 \label{fig:length-sweep}
 \end{figure}
+\footnotetext{While Qwen3.6-35B-A3B was trained with a 256K token context limit, we sample Qwen3.6-35B-A3B from Tinker, which caps the model at 64K token context.}
 
 On RULER, our finetune performs worse than GPT-5.4, while remaining 
 On OOLONG-synth, our model starts worse than GPT-5.4, then matches its performance when document size exceeds 80K, despite being far smaller and using at most 8K tokens in each agent trajectory.
