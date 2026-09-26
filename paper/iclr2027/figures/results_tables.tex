@@ -1,0 +1,38 @@
+% !TEX root = ../paper.tex
+% 18w (sft_general18w), harness, 8K per-agent budget, t=0.2. Recomputed from eval_results/raw/sft_general18w_{R18w_*_b8k,C18w_*}.
+% RULER 320K is PROVISIONAL: 64/65 rollouts (one vt missing); mean lands in [0.840, 0.855], vt in [0.56, 0.76].
+\begin{table}[H]
+\centering\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{minipage}[c]{0.51\linewidth}\centering
+\begin{tabular}{@{}l@{\hspace{5pt}}ccccc@{}}
+\toprule
+RULER & 10K & 40K & 80K & 160K & 320K \\
+\midrule
+NIAH (8 tasks) & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+VT             & 1.00 & 1.00 & 0.92 & 0.84 & 0.70$^\dagger$ \\
+CWE            & 1.00 & 0.74 & 0.58 & 0.24 & 0.02 \\
+FWE            & 0.93 & 0.93 & 1.00 & 1.00 & 0.93 \\
+QA-1           & 0.60 & 0.80 & 0.60 & 0.60 & 0.60 \\
+QA-2           & 0.80 & 0.60 & 0.40 & 0.60 & 0.80 \\
+\midrule
+Mean (13 tasks) & 0.949 & 0.929 & 0.885 & 0.868 & 0.850$^\dagger$ \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.475\linewidth}\centering
+\begin{tabular}{@{}l@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{}}
+\toprule
+OOLONG & 10K & 20K & 40K & 80K & 160K & 320K \\
+\midrule
+Counting & 0.45 & 0.42 & 0.42 & 0.41 & 0.41 & 0.40 \\
+User     & 0.86 & 0.72 & 0.80 & 0.73 & 0.61 & 0.60 \\
+Temporal & 0.51 & 0.48 & 0.39 & 0.54 & 0.37 & 0.41 \\
+\midrule
+Mean     & 0.606 & 0.540 & 0.535 & 0.561 & 0.464 & 0.470 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\caption{\textbf{Results by task family}. \textbf{Left:} On RULER, our model chooses a lossy aggregation strategy for the common words ``CWE" problem type, which degrades when common words are diluted by fillers as document length grows. GPT-5.4 scores 0.56 on CWE at doc size 320K. \textbf{Right:} On OOLONG-synth, leaf classification and merge errors compound at length. Distribution mismatch also arises at 160K+ document length (it sees $\leq 14K$ doc size in training).
+ $^\dagger$4 of 5 problems.}
+\label{tab:family-results}
+\end{table}
