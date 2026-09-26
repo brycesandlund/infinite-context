@@ -151,6 +151,21 @@ per-process Python hash, so its layout reshuffles between ANY two runs (fine-tun
 - 18w @40K per task: cwe 0.74, fwe 0.93, qa_1 0.80, qa_2 0.60 (string), everything else 1.00.
 - Raw: `eval_results/competitor/base_qwen_t0_ctx64k_single_ruler_{10,20,40}k.*`.
 
+**gpt-5.4, medium reasoning, no output cap — full RULER-13 row** (same 65 problems per length; fixed extractor):
+
+| | 10K | 20K | 40K | 80K | 160K | 320K | 640K |
+|---|---|---|---|---|---|---|---|
+| **RULER-13 mean (string)** | **0.954** | **0.938** | **0.954** | **0.954** | **0.929** | **0.920** | **0.866** |
+| RULER-13 mean, qa LLM-judged | 1.000 | 1.000 | 1.000 | 1.000 | 0.991 | 0.966 | 0.912 |
+| tasks below 1.00 (string) | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.60 | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.80 | multivalue 0.95, fwe 0.93, qa_1 0.60, qa_2 0.60 | cwe 0.56, qa_1 0.60, qa_2 0.80 | cwe 0.26, multikey_3 0.80, multivalue 0.80, qa_1 0.60, qa_2 0.80 |
+| cost (est., standard rate) | ~$1.7 | ~$2.8 | ~$5.1 | ~$10 | ~$18 | ~$36 | ~$71 |
+
+Every qa string miss is judged correct (surface forms: `High-risk` hyphenation, `EY` for "Ernst & Young", `35` for
+"35 people", paraphrases of the pharmacy answer). gpt-5.4 is saturated on RULER through 320K except cwe @320K;
+at 640K it starts to slip (cwe 0.26, multikey_3 and multivalue 0.80). 640K ran at CONCURRENCY=2 with no rate-limit hits.
+Side by side at the shared lengths (string): 10K gpt-5.4 0.954 · base Qwen 0.923 · 18w 0.949; 40K gpt-5.4 0.954 · base
+Qwen 0.938 · 18w 0.929; 80K gpt-5.4 0.954 · 18w 0.885.
+
 **gpt-5.4, medium reasoning, no output cap, RULER-13 @80K** (same 65 problems): as first scored **0.846** (string);
 niah x8, vt, cwe, fwe 1.00; **niah_multiquery 0.00**; qa_1 0.60 / judged 1.00; qa_2 0.40 / judged 1.00. All 65
 answered; output 0.06M tokens; cost ≈ $10 (3.5M input, est. in OpenAI tokens). The multiquery 0.00 and most qa string
@@ -275,6 +290,8 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: base Qwen single-shot RULER-13 @10/20/40K = 0.923 / 0.938 / 0.938 (identical problems to eval_long.sh).
 - 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
 - 2026-09-25: gpt-5.4 medium RULER-13 @320K = 0.920 (cwe 0.56; qa judged 1.00); ~$36.
+- 2026-09-25: gpt-5.4 medium RULER-13 @10/20/40/160K = 0.954 / 0.938 / 0.954 / 0.929; ~$28.
+- 2026-09-25: gpt-5.4 medium RULER-13 @640K = 0.866 (judged 0.912); ~$71 at standard rate. Row complete 10K-640K.
 - 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
   `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
   `eval/run.py` gained `REASONING_EFFORT`; API backend output ceiling now follows `OUT_TOKENS`; rollouts record per-call

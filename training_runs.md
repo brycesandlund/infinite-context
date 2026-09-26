@@ -1859,3 +1859,34 @@ variant). Fix -> cache **v18**: a second `author_count` entry (12% of labeled_re
 author|user (question, subset clause, subtask "per-user tally … (counting items per user; labels do not matter)", form
 `User: [X]`). Snippets: `trace_snippets/labeled_v18_user_questions.txt`. Raw: `eval_results/raw/sft_general1{8,9}w_C1{8,9}w_20k.*`,
 `eval_results/root_contract_probe_10k.json`.
+
+## sft_general18b (run 18b, FROM BASE, cache v15, run-13 scale) — 2026-09-25 — 4K SCORE-9 **0.847**; RULER-13 0.954 / **0.965** @10K/40K; OOLONG chart **0.621 / 0.551**
+
+Checkpoint `tinker://06b61cbe-eab2-53db-93b2-884ab09876d8:train:0/weights/sft_general18b` (pinned in
+`ckpt_sft_general18b.txt`). Recipe `scripts/run_sft18_base.sh`: the run-18 corpus (v15) trained from base in ONE pass at the
+run-13 scale — base 40/task + run-13 overrides (labeled 400, vt_novel 300, long/rule/realdoc 160, niah_multi 120, topk 120,
+niah_novel 100, narrativeqa 80, synth_2d 80, filter_argmax 60) + niah_bridge 120, sequential synth 60 each. 2,740 traces /
+117,335 datums / 196.1M tokens, batch 16, LR 1e-5 (sft.py default), 7,334 steps; 10:26-22:41 (shared Tinker). (A first launch
+on the small warm mix was stopped after 100 batches: from-base runs use the run-13 scale.)
+
+| | 14w | 18w | 19w | **18b** |
+|---|---|---|---|---|
+| 4K SCORE-9 (3K budget) | 0.832 | 0.800 | **0.864** | 0.847 |
+| RULER-13 @10K / 40K (8K budget) | — | 0.949 / 0.929 | **0.969** / 0.908 | 0.954 / **0.965** |
+| – cwe @40K | — | 0.74 | **0.90** | 0.78 |
+| – qa_1 / qa_2 LLM-judged @10K | — | 0.80 / 0.80 | 1.00 / 0.80 | 1.00 / 0.80 |
+| – qa_1 / qa_2 LLM-judged @40K | — | 1.00 / 0.60 | 1.00 / 0.60 | 1.00 / **0.80** |
+| OOLONG chart @10K / 40K | — | 0.606 / 0.535 | 0.489 / 0.534 | **0.621 / 0.551** |
+| – counting / user / temporal @10K | — | 0.45 / 0.86 / 0.51 | 0.54 / 0.36 / 0.57 | 0.44 / 0.70 / **0.72** |
+| – counting / user / temporal @40K | — | 0.42 / 0.80 / 0.39 | 0.46 / 0.78 / 0.36 | 0.32 / **1.00** / 0.33 |
+| plain leaf probe | — | 91.6% | 90.7% | 91.2% |
+
+18b @4K: every task 1.00 except oolong counting 0.27, temporal 0.35, labeled_records 0.75, synth_topk 0.94, qa_1 0.80, qa_2
+0.40 (judged 0.60). @40K RULER misses: vt 0.96, cwe 0.78, qa_2 0.80 (judged 0.80; `KPMG and Ernst & Young` hedge).
+
+**Reading.** Single-stage vs staged, same corpus family: run 13 (base, old corpus) trailed the staged chain by 0.04-0.1; 18b
+(base, v15) matches or beats the staged checkpoints — best OOLONG chart at both lengths and best RULER-13 @40K — without
+v16/v17 (its cwe @40K 0.78 is the old pruned-tally ceiling; 19w's v16 top-K gets 0.90). On this evidence the staged
+recipe's old advantage looks like a corpus effect rather than a staging effect — one comparison, not settled. Noise: 30 chart / 65 RULER rollouts per point — only the 40K RULER lead
+(0.965 vs 0.908-0.929) is clearly outside it. No 80K for 18b (cost). Raw: `eval_results/raw/sft_general18b*`,
+`eval_results/qa_judge_18b.txt`, `eval_results/probe_18b.log`.

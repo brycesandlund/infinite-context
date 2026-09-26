@@ -1,0 +1,205 @@
+===== SFT (sft_general20w, warm start from tinker://9febd22f-7451-540d-ad76-4139c3e759a1:train:0/weights/sft_general19w, TRAIN=1) STARTING 22:59:18 =====
+SFT warm-start | tasks=31 x 5 | doc_mix=[6000x1] budget=3000 epochs=1 | BUDGET_MIX=[(3000, 50.0), (5000, 15.0), (8000, 13.0), (10000, 11.0), (12000, 11.0)] (doc ranges {3000: (4000, 14000), 5000: (5000, 14000), 8000: (6000, 14000), 10000: (9000, 14000), 12000: (11500, 14000)}, round share 0.2)
+Loading + tokenizing PG-essay corpus...
+Generating oracle traces (scripted, CPU)...
+[92m22:59:23 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m22:59:24 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+  [synth_topk] dropped 2/60 oracle traces (answer != gold, or an agent over its budget); topping up
+Token indices sequence length is longer than the specified maximum sequence length for this model (311729 > 262144). Running this sequence through the model will result in indexing errors
+  [narrativeqa] kept 15/15 distinct, accept 38%
+Budget mix (traces): {3000: 342, 5000: 79, 8000: 70, 10000: 64, 12000: 60} | doc tokens min/median/max 3645/8316/14227 | exact multiples of 1000: 5
+Printed 615 oracle traces -> /tmp/sft_general20w_traces.txt
+Traces: 615 | agents: 25542 | datums: 26498 (QA verdicts: pos=865x2, neg kept 1754/3508; root turns 615x4; internal split agents kept 8369/8369)
+Datum mode: agent | training tokens: 46,267,039 (1746/datum)
+  WARM START: loading weights from tinker://9febd22f-7451-540d-ad76-4139c3e759a1:train:0/weights/sft_general19w (fresh optimizer, LR 1e-05)
+  batch 100/415 | running mean NLL 0.0009
+  batch 200/415 | running mean NLL 0.0009
+  batch 300/415 | running mean NLL 0.0009
+  [ckpt] batch 300: tinker://fb0b9efd-33a2-5ff2-9259-3530c4debd24:train:0/weights/sft_general20w_resume
+  batch 400/415 | running mean NLL 0.0008
+Epoch 0: batches 415 | mean batch NLL 0.0008
+  saving checkpoint 'sft_general20w' (after epoch 0)...
+  saved: tinker://fb0b9efd-33a2-5ff2-9259-3530c4debd24:train:0/weights/sft_general20w  (path -> /Users/brycesandlund/.cache/infinite-context/last_sft_checkpoint.txt)
+  deleted intermediate checkpoint tinker://fb0b9efd-33a2-5ff2-9259-3530c4debd24:train:0/weights/sft_general20w_resume
+
+To warm-start RL: set rl.py LOAD_CHECKPOINT_PATH to the path above and RESUME_OPTIMIZER=False.
+===== SFT DONE, EVAL STARTING 23:38:41 =====
+Backend: tinker | mode: decompose | tasks: ['synth_sum', 'synth_count', 'synth_mode', 'synth_varchain', 'synth_count_cmp', 'realdoc_count', 'niah_novel', 'niah_multi', 'vt_novel', 'narrativeqa', 'oolong_counting', 'oolong_user', 'oolong_temporal', 'niah_single_1', 'niah_multikey_1', 'niah_multiquery', 'vt', 'cwe', 'fwe', 'synth_2d', 'synth_peak', 'long_records', 'rule_label', 'labeled_records', 'synth_topk', 'niah_single_2', 'niah_single_3', 'niah_multikey_2', 'niah_multikey_3', 'niah_multivalue', 'qa_1', 'qa_2'] | n/task: 2 | budget: 3000 | doc: 4000 | depth: None
+Loading + tokenizing PG-essay corpus...
+Loading checkpoint: tinker://fb0b9efd-33a2-5ff2-9259-3530c4debd24:train:0/weights/sft_general20w
+temp=0.2 | out=/tmp/eval_general20w.{jsonl,txt}
+Token indices sequence length is longer than the specified maximum sequence length for this model (311729 > 262144). Running this sequence through the model will result in indexing errors
+
+========================================================================
+EVAL: backend=tinker ckpt=tinker://fb0b9efd-33a2-5ff2-9259-3530c4debd24:train:0/weights/sft_general20w
+========================================================================
+# task=synth_sum seed=2000000 dataset=None gold=['-57'] nodes=17 answer='-57' term=answered score=1.000
+# task=synth_sum seed=2000001 dataset=None gold=['115'] nodes=17 answer='115' term=answered score=1.000
+# task=synth_mode seed=2002000 dataset=None gold=['K2'] nodes=15 answer='K2' term=answered score=1.000
+# task=synth_mode seed=2002001 dataset=None gold=['K3'] nodes=17 answer='K3' term=answered score=1.000
+# task=realdoc_count seed=2005000 dataset=None gold=['11'] nodes=31 answer='11' term=answered score=1.000
+# task=realdoc_count seed=2005001 dataset=None gold=['39'] nodes=31 answer='39' term=answered score=1.000
+# task=niah_multi seed=2007000 dataset=None gold=['d90e9234-7b8f-0bda-5106-4b27461cf0c0', '1d5985b1-40e5-7ca1-2b6b-b1ef336878a6', 'efe96747-d7e4-b5c7-5199-d4640e55bedc', '33c10903-035f-2abe-b3f0-0ffb64b60332'] nodes=31 answer='33c10903-035f-2abe-b3f0-0ffb64b60332, d90e9234-7b8f-0bda-5106-4b27461cf0c0, efe96747-d7e4-b5c7-5199-d4640e55bedc, 1d5985b1-40e5-7ca1-2b6b-b1ef336878a6' term=answered score=1.000
+# task=niah_multi seed=2007001 dataset=None gold=['5572626'] nodes=31 answer='5572626' term=answered score=1.000
+# task=vt_novel seed=2008000 dataset=None gold=['DKQTS', 'ICXLE', 'MHCWV', 'PGSDY', 'SNPJK', 'TDHZE'] nodes=11 answer='DKQTS, ICXLE, MHCWV, PGSDY, SNPJK, TDHZE' term=answered score=1.000
+# task=vt_novel seed=2008001 dataset=None gold=['CNWTE', 'ILIEY', 'OFANV', 'OMTIO', 'TEJNC', 'XRELC'] nodes=11 answer='CNWTE, ILIEY, OFANV, OMTIO, TEJNC, XRELC' term=answered score=1.000
+# task=narrativeqa seed=2009000 dataset=None gold=['The Rose'] nodes=31 answer='The Rose Theater' term=answered score=1.000
+# task=narrativeqa seed=2009001 dataset=None gold=['Annie'] nodes=15 answer='Annie' term=answered score=1.000
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['14'] nodes=15 answer='Answer: 21' term=answered score=0.133
+# task=oolong_counting seed=2000001 dataset=imdb gold=['more common than'] nodes=15 answer='Answer: negative is more common than positive' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['17'] nodes=15 answer='19' term=answered score=0.562
+# task=oolong_counting seed=2000003 dataset=negation gold=['23'] nodes=15 answer='21' term=answered score=0.562
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['less common than'] nodes=15 answer='Answer: Computers & Internet is the same frequency as Politics & Government' term=answered score=0.000
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['numeric value'] nodes=15 answer='Label: location' term=answered score=0.000
+# task=oolong_user seed=2100001 dataset=imdb gold=['negative'] nodes=15 answer='Label: negative' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['1'] nodes=15 answer='1' term=answered score=1.000
+# task=oolong_user seed=2100003 dataset=negation gold=['49255'] nodes=15 answer='User: 40974' term=answered score=0.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['30140'] nodes=15 answer='User: 30140' term=answered score=1.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['8'] nodes=15 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['4'] nodes=15 answer='Answer: 5' term=answered score=0.750
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['6'] nodes=15 answer='8' term=answered score=0.562
+# task=oolong_temporal seed=2200003 dataset=negation gold=['75'] nodes=15 answer='Answer: 70' term=answered score=0.237
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['6'] nodes=15 answer='6' term=answered score=1.000
+# task=niah_single_1 seed=2013000 dataset=None gold=['1389868'] nodes=23 answer='1389868' term=answered score=1.000
+# task=niah_single_1 seed=2013001 dataset=None gold=['3327249'] nodes=23 answer='3327249' term=answered score=1.000
+# task=niah_single_1 seed=2013002 dataset=None gold=['2148524'] nodes=27 answer='2148524' term=answered score=1.000
+# task=niah_single_1 seed=2013003 dataset=None gold=['9167102'] nodes=23 answer='9167102' term=answered score=1.000
+# task=niah_single_1 seed=2013004 dataset=None gold=['4964220'] nodes=25 answer='4964220' term=answered score=1.000
+# task=niah_multikey_1 seed=2014000 dataset=None gold=['9877562'] nodes=31 answer='9877562' term=answered score=1.000
+# task=niah_multikey_1 seed=2014001 dataset=None gold=['1574537'] nodes=31 answer='1574537' term=answered score=1.000
+# task=niah_multikey_1 seed=2014002 dataset=None gold=['2136960'] nodes=31 answer='2136960' term=answered score=1.000
+# task=niah_multikey_1 seed=2014003 dataset=None gold=['2780693'] nodes=31 answer='2780693' term=answered score=1.000
+# task=niah_multikey_1 seed=2014004 dataset=None gold=['1323691'] nodes=31 answer='1323691' term=answered score=1.000
+# task=niah_multiquery seed=2015000 dataset=None gold=['2317212', '2297150', '2483542', '9155445'] nodes=31 answer='dull-preservation=2317212|watery-atheist=none|concerned-music=2483542|bitter-software=9155445' term=answered score=0.750
+# task=niah_multiquery seed=2015001 dataset=None gold=['3548587', '9664940', '3902918', '5546353'] nodes=31 answer='quarrelsome-cocoa=3548587, massive-palm=9664940, ratty-beyond=3902918, nonstop-workhorse=none' term=answered score=0.750
+# task=niah_multiquery seed=2015002 dataset=None gold=['9646106', '7983932', '7575015', '4122396'] nodes=31 answer='helpful-opening=9646106|talented-due=7983932|madly-deputy=7575015|lazy-reveal=4122396' term=answered score=1.000
+# task=niah_multiquery seed=2015003 dataset=None gold=['9156422', '8222524', '9920121', '4040071'] nodes=31 answer='zany-spaghetti=9156422|whimsical-rider=8222524|festive-sulfur=9920121|comfortable-isogloss=4040071' term=answered score=1.000
+# task=niah_multiquery seed=2015004 dataset=None gold=['8399560', '4811721', '7402023', '2527289'] nodes=31 answer='likeable-rheumatism=8399560|auspicious-wrist=4811721|disillusioned-planning=7402023|massive-passing=2527289' term=answered score=1.000
+# task=vt seed=2016000 dataset=None gold=['ROOFJ', 'NGYUP', 'BRSMD', 'WZCLD', 'RGOYO'] nodes=10 answer='BRSMD, NGYUP, RGOYO, ROOFJ, WZCLD' term=answered score=1.000
+# task=vt seed=2016001 dataset=None gold=['TCXWF', 'PLOCW', 'LYRIQ', 'PZPFR', 'LGASV'] nodes=10 answer='LGASV, LYRIQ, PLOCW, PZPFR, TCXWF' term=answered score=1.000
+# task=vt seed=2016002 dataset=None gold=['PYVCS', 'MJHCS', 'YOOWJ', 'ANQAS', 'LDIFA'] nodes=12 answer='ANQAS, LDIFA, MJHCS, PYVCS, YOOWJ' term=answered score=1.000
+# task=vt seed=2016003 dataset=None gold=['OHYWF', 'HLVXX', 'FHORI', 'UTQPD', 'MKWPS'] nodes=11 answer='FHORI, HLVXX, MKWPS, OHYWF, UTQPD' term=answered score=1.000
+# task=vt seed=2016004 dataset=None gold=['WMKGQ', 'EEYOV', 'LSVJC', 'UZGAG', 'SMFJF'] nodes=10 answer='EEYOV, LSVJC, SMFJF, UMKGQ, UZGAG, WMKGQ' term=answered score=1.000
+# task=cwe seed=2017000 dataset=None gold=['disposal', 'banjo', 'van', 'payoff', 'neighbor', 'bootee', 'mitten', 'mourn', 'colt', 'counter'] nodes=15 answer='mitten, banjo, disposal, neighbor, payoff, bootee, mourn, van, colt, counter' term=answered score=1.000
+# task=cwe seed=2017001 dataset=None gold=['initialize', 'cyclone', 'thunderstorm', 'necessity', 'preserves', 'sale', 'acquaintance', 'harmony', 'scotch', 'pin'] nodes=27 answer='acquaintance, harmony, initialize, necessity, pin, preserves, sale, scotch, thunderstorm, cyclone' term=answered score=1.000
+# task=cwe seed=2017002 dataset=None gold=['font', 'miter', 'assess', 'salami', 'rejoice', 'snore', 'barrel', 'theism', 'piquant', 'bathroom'] nodes=27 answer='salami (32)|assess (30)|bathroom (30)|barrel (30)|font (30)|miter (30)|rejoice (30)|theism (30)|snore (29)|piquant (28)' term=answered score=1.000
+# task=cwe seed=2017003 dataset=None gold=['bookmark', 'composition', 'scam', 'raiment', 'lobby', 'auto', 'sleeping', 'pence', 'nestmate', 'cenotaph'] nodes=15 answer='nestmate:31|cenotaph:30|composition:30|sleeping:30|auto:30|lobby:30|pence:30|raiment:30|scam:29|bookmark:30' term=answered score=1.000
+# task=cwe seed=2017004 dataset=None gold=['councilperson', 'workbench', 'space', 'decline', 'future', 'uttermost', 'bra', 'passion', 'jockey', 'faithful'] nodes=15 answer='jockey:31|uttermost:30|bra:30|faithful:30|space:30|workbench:30|councilperson:30|decline:30|future:30|passion:30' term=answered score=1.000
+# task=fwe seed=2018000 dataset=None gold=['kmomkx', 'fhwuvj', 'tsbrhv'] nodes=31 answer='kmomkx, fhwuvj, tsbrhv' term=answered score=1.000
+# task=fwe seed=2018001 dataset=None gold=['zldkge', 'szwsuc', 'yvuyxr'] nodes=29 answer='zldkge, szwsuc, yvuyxr' term=answered score=1.000
+# task=fwe seed=2018002 dataset=None gold=['yoxnjk', 'fjgepj', 'wuozsq'] nodes=29 answer='yoxnjk, fjgepj, wuozsq' term=answered score=1.000
+# task=fwe seed=2018003 dataset=None gold=['uqgdsm', 'lugajd', 'uqdnnm'] nodes=21 answer='uqgdsm, lugajd, uqdnnm' term=answered score=1.000
+# task=fwe seed=2018004 dataset=None gold=['hcuuzt', 'mlphpg', 'xrkept'] nodes=15 answer='hcuuzt, mlphpg, xrkept' term=answered score=1.000
+# task=synth_2d seed=2019000 dataset=None gold=['1'] nodes=23 answer='1' term=answered score=1.000
+# task=synth_2d seed=2019001 dataset=None gold=['sales'] nodes=29 answer='sales' term=answered score=1.000
+# task=synth_peak seed=2020000 dataset=None gold=['0'] nodes=10 answer='0' term=answered score=1.000
+# task=synth_peak seed=2020001 dataset=None gold=['68'] nodes=10 answer='68' term=answered score=1.000
+# task=long_records seed=2021000 dataset=None gold=['A'] nodes=15 answer='A' term=answered score=1.000
+# task=long_records seed=2021001 dataset=None gold=['2'] nodes=15 answer='2' term=answered score=1.000
+# task=rule_label seed=2022000 dataset=None gold=['0'] nodes=27 answer='0' term=answered score=1.000
+# task=rule_label seed=2022001 dataset=None gold=['4'] nodes=21 answer='4' term=answered score=1.000
+# task=labeled_records seed=2023000 dataset=paws gold=['3'] nodes=15 answer='4' term=answered score=0.750
+# task=labeled_records seed=2023001 dataset=politeness gold=['30'] nodes=15 answer='34' term=answered score=0.316
+# task=synth_topk seed=2024000 dataset=None gold=['aifzel', 'bodmxd', 'mrihxt', 'ocijbl', 'rnrdvs', 'veukos', 'vpiiml', 'zkomjy'] nodes=15 answer='bodmxd, rnrdvs, veukos, vpiiml, zkomjy, mrihxt, aifzel, ociousbl' term=answered score=0.875
+# task=synth_topk seed=2024001 dataset=None gold=['coincided', 'follows', 'notes', 'policy', 'trained', 'cuts', 'inline', 'year'] nodes=29 answer='cuts, coincided, notes, policy, trained, inline, year, follows' term=answered score=1.000
+# task=niah_single_2 seed=2025000 dataset=None gold=['9264307'] nodes=29 answer='9264307' term=answered score=1.000
+# task=niah_single_2 seed=2025001 dataset=None gold=['6588894'] nodes=29 answer='6588894' term=answered score=1.000
+# task=niah_single_2 seed=2025002 dataset=None gold=['7370073'] nodes=31 answer='7370073' term=answered score=1.000
+# task=niah_single_2 seed=2025003 dataset=None gold=['9718187'] nodes=29 answer='9718187' term=answered score=1.000
+# task=niah_single_2 seed=2025004 dataset=None gold=['7823764'] nodes=29 answer='7823764' term=answered score=1.000
+# task=niah_single_3 seed=2026000 dataset=None gold=['063ca11e-016c-4c42-a5c4-3c2aa039832e'] nodes=31 answer='063ca11e-016c-4c42-a5c4-3c2aa039832e' term=answered score=1.000
+# task=niah_single_3 seed=2026001 dataset=None gold=['076c718a-ea19-467e-a032-60c38cd09718'] nodes=31 answer='076c718a-ea19-467e-a032-60c38cd09718' term=answered score=1.000
+# task=niah_single_3 seed=2026002 dataset=None gold=['b19485cb-5c10-46ee-b0fd-4de9543349ea'] nodes=31 answer='b19485cb-5c10-46ee-b0fd-4de9543349ea' term=answered score=1.000
+# task=niah_single_3 seed=2026003 dataset=None gold=['2b55634f-4a83-432a-8f3e-11bf8a0a9043'] nodes=31 answer='2b55634f-4a83-432a-8f3e-11bf8a0a9043' term=answered score=1.000
+# task=niah_single_3 seed=2026004 dataset=None gold=['f52273b0-fa94-4f78-89da-ef972b0248ae'] nodes=29 answer='f52273b0-fa94-4f78-89da-ef972b0248ae' term=answered score=1.000
+# task=niah_multikey_2 seed=2027000 dataset=None gold=['7363251'] nodes=15 answer='7363251' term=answered score=1.000
+# task=niah_multikey_2 seed=2027001 dataset=None gold=['4208194'] nodes=15 answer='4208194' term=answered score=1.000
+# task=niah_multikey_2 seed=2027002 dataset=None gold=['8133974'] nodes=15 answer='8133974' term=answered score=1.000
+# task=niah_multikey_2 seed=2027003 dataset=None gold=['5281507'] nodes=29 answer='5281507' term=answered score=1.000
+# task=niah_multikey_2 seed=2027004 dataset=None gold=['7233345'] nodes=19 answer='7233345' term=answered score=1.000
+# task=niah_multikey_3 seed=2028000 dataset=None gold=['fe51e062-7a0e-4d38-983f-e05b0fd58bc3'] nodes=15 answer='fe51e062-7a0e-4d38-983f-e05b0fd58bc3' term=answered score=1.000
+# task=niah_multikey_3 seed=2028001 dataset=None gold=['ea978593-4f5d-4721-9af1-74596956c7d5'] nodes=17 answer='ea978593-4f5d-4721-9af1-74596956c7d5' term=answered score=1.000
+# task=niah_multikey_3 seed=2028002 dataset=None gold=['659bac3c-7800-4c64-8a86-946c6732a4ba'] nodes=15 answer='659bac3c-7800-4c64-8a86-946c6732a4ba' term=answered score=1.000
+# task=niah_multikey_3 seed=2028003 dataset=None gold=['93f55a14-07c0-4283-82e7-1f607573217f'] nodes=27 answer='93f55a14-07c0-4283-82e7-1f607573217f' term=answered score=1.000
+# task=niah_multikey_3 seed=2028004 dataset=None gold=['c6d684f1-22cf-46c7-9652-112246403994'] nodes=25 answer='c6d684f1-22cf-46c7-9652-112246403994' term=answered score=1.000
+# task=niah_multivalue seed=2029000 dataset=None gold=['9616552', '4746142', '2518896', '8358811'] nodes=29 answer='2518896, 4746142, 8358811, 9616552' term=answered score=1.000
+# task=niah_multivalue seed=2029001 dataset=None gold=['8485229', '8255938', '1374944', '1572748'] nodes=31 answer='1374944, 1572748, 8255938, 8485229' term=answered score=1.000
+# task=niah_multivalue seed=2029002 dataset=None gold=['7621108', '7643448', '4616707', '4671684'] nodes=31 answer='4616707, 4671684, 7621108, 7643448' term=answered score=1.000
+# task=niah_multivalue seed=2029003 dataset=None gold=['7319509', '6743220', '7539698', '9357577'] nodes=31 answer='6743220, 7539698, 9357577' term=answered score=0.750
+# task=niah_multivalue seed=2029004 dataset=None gold=['6686125', '8180289', '7685751', '3507037'] nodes=31 answer='3507037, 6686125, 7685751, 8180289' term=answered score=1.000
+# task=qa_1 seed=2030000 dataset=squad gold=['medication management system development, deployment and optimization', 'medication management system development, deployment and optimization', 'medication management system development, deployment and optimization'] nodes=15 answer='Pharmacy practice areas, information technology departments, and healthcare information technology vendor companies; they also work on patient information projects and health system interoperability, and participate in medication management system development, deployment and optimization' term=answered score=1.000
+# task=qa_1 seed=2030001 dataset=squad gold=['quickly', 'growing quickly', 'quickly'] nodes=15 answer='Quickly' term=answered score=1.000
+# task=qa_1 seed=2030002 dataset=squad gold=['specialty pharmacies', 'specialty pharmacies', 'specialty pharmacies'] nodes=15 answer='Specialty pharmacies' term=answered score=1.000
+# task=qa_1 seed=2030003 dataset=squad gold=['19', '19', '19 of 28 newly FDA approved medications'] nodes=15 answer='19' term=answered score=1.000
+# task=qa_1 seed=2030004 dataset=squad gold=['cancer, hepatitis, and rheumatoid arthritis', 'chronic and complex disease states', 'chronic and complex disease states such as cancer, hepatitis, and rheumatoid arthritis'] nodes=15 answer='Cancer, hepatitis, and rheumatoid arthritis' term=answered score=1.000
+# task=qa_2 seed=2031000 dataset=hotpotqa gold=['Bertalan Farkas'] nodes=15 answer='Bertalan Farkas' term=answered score=1.000
+# task=qa_2 seed=2031001 dataset=hotpotqa gold=['Sister Anthony, S.C.'] nodes=15 answer='"Arvin was the most decorated Kentucky woman veteran serving in World War I. She was awarded the British Royal Red Cross (2nd Associate) Medal, the U. S. Army citation for exceptionally meritorious and conspicuous service (later exchanged for a Purple Heart), and the French Croix de guerre. Arvin was one of the first women to earn a Purple Heart. In 2006, Arvin was honored by the Kentucky Women Remembered and her portrait hangs in an exhibit at the Kentucky State Capital Rotunda." ‖ "For that reason, his portrait hangs in the Pro Football Hall of Fame in Canton, Ohio." ‖ "Her portrait hangs in the Smithsonian Institution in Washington, DC." [in reference to Mary O\'Connell/Sister Anthony] ‖ "Florence Nightingale, ( ; 12 May 1820 – 13 August 1910) was an English social reformer and statistician, and the founder of modern nursing."' term=answered score=0.000
+# task=qa_2 seed=2031002 dataset=hotpotqa gold=['leg injury'] nodes=15 answer='Due to a leg injury' term=answered score=1.000
+# task=qa_2 seed=2031003 dataset=hotpotqa gold=['500-room'] nodes=15 answer='"St. Paul\'s School is a 500-room brick edifice in the Village of Garden City, New York, United States." ‖ "St. Paul\'s School (1883)" and "Cathedral of the Incarnation Complex (1885)" are mentioned as buildings in Garden City, but the document does not state how many rooms are in any building built in 1883.' term=answered score=1.000
+# task=qa_2 seed=2031004 dataset=hotpotqa gold=['Chris Gould'] nodes=15 answer='Chris Gould' term=answered score=1.000
+
+------------------------------------------------------------------------
+cwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=19.8)
+fwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=25.0)
+labeled_records: 0.533  (grounded 0.533 | 2 rollouts | no_answer=0/2 | mean_tree=15.0)
+    dataset paws           0.750  (n=1)
+    dataset politeness     0.316  (n=1)
+long_records: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=15.0)
+narrativeqa: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=23.0)
+niah_multi: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=31.0)
+niah_multikey_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=31.0)
+niah_multikey_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=18.6)
+niah_multikey_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=19.8)
+niah_multiquery: 0.900  (grounded 0.900 | 5 rollouts | no_answer=0/5 | mean_tree=31.0)
+niah_multivalue: 0.950  (grounded 0.950 | 5 rollouts | no_answer=0/5 | mean_tree=30.6)
+niah_single_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=24.2)
+niah_single_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=29.4)
+niah_single_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=30.6)
+oolong_counting: 0.452  (grounded 0.452 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset agnews         0.562  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset negation       0.562  (n=1)
+    dataset trec_coarse    0.133  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   numeric_one_class  0.419  (n=3)
+    qtype   relative_freq      0.500  (n=2)
+oolong_temporal: 0.510  (grounded 0.510 | 5 rollouts | no_answer=1/5 | mean_tree=15.0)
+    dataset agnews         0.562  (n=1)
+    dataset imdb           0.750  (n=1)
+    dataset negation       0.237  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   most_common_label  0.375  (n=2)
+    qtype   relative_freq      0.781  (n=2)
+    qtype   represented_n_times 0.237  (n=1)
+oolong_user: 0.600  (grounded 0.600 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset agnews         1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   least_common_label 0.000  (n=1)
+    qtype   most_common_label  0.500  (n=2)
+    qtype   numeric_one_class  1.000  (n=1)
+    qtype   relative_freq      1.000  (n=1)
+qa_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset squad          1.000  (n=5)
+qa_2: 0.800  (grounded 0.800 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset hotpotqa       0.800  (n=5)
+realdoc_count: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=31.0)
+rule_label: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=24.0)
+synth_2d: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=26.0)
+synth_mode: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=16.0)
+synth_peak: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=10.0)
+synth_sum: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=17.0)
+synth_topk: 0.938  (grounded 0.938 | 2 rollouts | no_answer=0/2 | mean_tree=22.0)
+vt: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=10.6)
+vt_novel: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=11.0)
+
+OVERALL: 0.904  (grounded 0.904 | 104 rollouts)
+SCORE (held-out ['cwe', 'fwe', 'niah_multikey_1', 'niah_multiquery', 'niah_single_1', 'oolong_counting', 'oolong_temporal', 'oolong_user', 'vt']): 0.829  (45 rollouts)
+DIAGNOSTIC (in-dist): 0.961  (59 rollouts)
+All 104 rollouts saved -> /tmp/eval_general20w.jsonl + /tmp/eval_general20w.txt
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
+===== ALL DONE 23:56:37 =====

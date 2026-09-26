@@ -131,10 +131,12 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 \section{Experiments}
 \label{experiments}
 
+We test our finetune on RULER~\citep{hsieh2024ruler}, the standard long context eval, and OOLONG-synth~\citep{bertsch2025oolong}, a newer long context benchmark frontier models have not yet saturated, also used in Recursive Language Models~\citep{zhang2025rlm}, Recursive Agent Optimization~\citep{gandhi2026rao}, and Recursive Agent Harnesses~\citep{lumer2026rah}.
+
 \section{Conclusion}
 \label{conclude}
 
-In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compaction.
+In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compaction. As a side effect we also show the power of synthetic oracle SFT data written by powerful frontier models (Opus 4.8, 5, 5.5, and Fable 5 and 5.1, in this case).
 
 The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. The methods of this paper can be incorporated into frontier model development, so such models exhibit improved agentic performance under context pressure, without wasting tokens. This is in contrast to an external harness which must be applied at runtime.
 

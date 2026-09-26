@@ -668,5 +668,90 @@
 "correct": 1,
 "reason": "The candidate's answer includes the reference answer (\"Hospital pharmacies usually stock a larger range of medications, including more specialized medications\") along with extensive additional detail that is consistent with the reference. It correctly identifies the key advantage mentioned in the reference.\n\nVERDICT: CORRECT",
 "parsed": true
+},
+"28472a508063004c7fe895dd0536a67454dd2a31": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly in meaning, with only a minor formatting difference (hyphen in \"high-risk\").\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"e1de5f41deed204dee9f42217c03c8f9e034d08e": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"can stock a wider range of medications, including specialized drugs,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\" The additional details provided are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"8d7ccc0f1f6c659e95c88ec9132caa89066775a7": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer \"high cost of medications.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"9c9a5c3ccdbfb67598e2ec0d069f6cf593f38ef7": {
+"correct": 1,
+"reason": "The candidate mentions stocking a wider range of medicines including specialized drugs, which matches the reference answer about stocking a larger range of medications including more specialized medications. The additional details about unit-dose medications and compounding sterile IV products are extra but consistent.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"07d528e15254aa5af34af09db7db6aa34ddb870e": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"eaf937877d7961a2d75163823a07934d1eec2a78": {
+"correct": 1,
+"reason": "The candidate mentions \"stock a larger range of medications, including specialized drugs,\" which matches the reference answer. The additional details provided are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"0caca4f919606595068f1d5a9851a7391801b179": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answers exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"4058290580cff820dcaef28dd6b309a73e1184d1": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"can stock a larger and more specialized range of medications,\" which matches the reference answer. The additional details about unit-dose medicines and sterile products are extra but consistent information.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"0d62ab2373605a2b56229a0abfcd42572e98bdec": {
+"correct": 1,
+"reason": "The candidate answer \"Growing quickly\" matches the reference answer \"growing quickly.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"caea3666b790b59688bcf9510cf0e4afe9db5640": {
+"correct": 0,
+"reason": "The reference answer states Chris Gould is younger, but the candidate says Robbie Gould.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"ab24310497c357311775bca2e88f106d7a0df002": {
+"correct": 0,
+"reason": "The question asks about a portrait that hangs in the Smithsonian Institute alongside what is known as the founder of nursing. The reference answer is \"Sister Anthony, S.C.\" \u2014 meaning Sister Anthony's portrait hangs there along with Florence Nightingale's (the founder of nursing). The question is asking for the identity of the portrait (Sister Anthony), not the founder of nursing herself. The candi",
+"parsed": true
+},
+"6216afc3ede5b0720a528759a9c236afc049813e": {
+"correct": 0,
+"reason": "The reference answer is \"Ernst & Young,\" while the candidate answered \"KPMG.\" These are two different firms among the Big Four accounting firms.\n\nVERDICT: INCORRECT",
+"parsed": true
+},
+"901b935569180895b7a8f0e76ffb2b4229e4d07e": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies stock a larger range of medications, including specialized medications, which matches the reference answer. The additional detail about compounding sterile products is consistent and does not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"26a729bbf266986c31627ca7762a29236acc276c": {
+"correct": 1,
+"reason": "The candidate includes the reference answer about stocking a larger range of medications including more specialized medications, and adds an extra detail about compounding sterile products, which is consistent and not contradictory.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"b3cc36788f77555b0ad4e6969035d8ed595b6aad": {
+"correct": 1,
+"reason": "The candidate answer matches the reference answer exactly.\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"dc46e0d9979ab58b3f1b6f043af7d759ebd48b14": {
+"correct": 1,
+"reason": "The candidate answer matches the reference by stating \"high-risk preparations and other compounding functions,\" which is essentially the same as \"high risk preparations and some other compounding functions.\"\n\nVERDICT: CORRECT",
+"parsed": true
+},
+"790d27a9bcd700a7e7afa665f172591d4bf94abf": {
+"correct": 1,
+"reason": "The candidate mentions that hospital pharmacies \"can stock a wider range of medicines, including specialized drugs,\" which matches the reference answer about stocking \"a larger range of medications, including more specialized medications.\" The additional details about compounding are consistent and do not contradict the reference.\n\nVERDICT: CORRECT",
+"parsed": true
 }
 }

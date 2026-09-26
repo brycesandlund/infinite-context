@@ -1,0 +1,17 @@
+[92m23:21:47 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m23:21:47 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+== eval_results/raw/sft_general18b.jsonl
+   narrativeqa  string 1.00 | LLM-judged 1.00  (n=2)
+   qa_1         string 0.80 | LLM-judged 0.80  (n=5)
+   qa_2         string 0.40 | LLM-judged 0.60  (n=5)
+     [qa_2 2031003] string=0 judge=1 gold=['500-room'] answer='500'
+== eval_results/raw/sft_general18b_R18b_10k_b8k.jsonl
+   qa_1         string 0.80 | LLM-judged 1.00  (n=5)
+   qa_2         string 0.60 | LLM-judged 0.80  (n=5)
+     [qa_1 3014004] string=0 judge=1 gold=['Hospital pharmacies usually stock a larger range of medications, including more specialized medications', 'more specialized medications'] answer='Hospital pharmacies stock a larger range of medications, including spe'
+     [qa_2 3015002] string=0 judge=1 gold=['35 people'] answer='35'
+== eval_results/raw/sft_general18b_R18b_40k_b8k.jsonl
+   qa_1         string 1.00 | LLM-judged 1.00  (n=5)
+   qa_2         string 0.80 | LLM-judged 0.80  (n=5)
+     [qa_2 3015001] string=1 judge=0 gold=['Ernst & Young'] answer='KPMG and Ernst & Young'
+     [qa_2 3015002] string=0 judge=1 gold=['35 people'] answer='35'
