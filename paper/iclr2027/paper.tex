@@ -73,7 +73,7 @@ Unmodified long-context prompts are provided to the model over a document access
 We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness and achieve the following results:
 \begin{enumerate}
   \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 80K tokens.
-  \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model holds score $>85\%$ on document size from 10K to 320K tokens.
+  \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model scores $\geq85\%$ on document size from 10K to 320K tokens.
 \end{enumerate}
 
 \subsection{Paper Organization}
@@ -97,7 +97,7 @@ An alternative to native long context, and an inevitability when such native con
 
 As long as LLMs have proven useful, an evolving line of work has focused on how to expand their capabilities without touching model internals. The first efforts were known as prompt engineering~\citep{phoenix2024promptengineering,berryman2024promptengineering}, which, though necessary on pre-trained base models~\citep{brown2020gpt3}, became internalized through instruction-tuning and reasoning RL~\citep{ouyang2022instructgpt,guo2025deepseekr1}. Function-calling has lead to a new wave of such efforts, where domain-specific knowledge, tools, and multi-agent systems live on a scaffold that interacts with powerful LLMs known as a ``harness"~\citep{lopopolo2026harnessengineering,barbaste2026harnessengineering}. 
 
-Long-context harnesses originate with systems like MemGPT~\citep{packer2023memgpt}, RAPTOR~\citep{sarthi2024raptor}, and Chain of Agents~\citep{zhang2024coa}, where the overall goal is to engineer systems that decompose documents into contexts independent LLM calls can read and aggregate. Recursive Language Models is a popular recent example that allows for single-level recursive LLM calls via a programmatic environment~\citep{zhang2025rlm}. Follow-up work expands subagent capabilities~\citep{lumer2026rah}, trains shared parent/child policies~\citep{kim2026reinforcingrlm}, and incorporates self-reflection~\citep{alizadeh2026srlm}.
+Long-context harnesses originate with systems like MemGPT~\citep{packer2023memgpt}, RAPTOR~\citep{sarthi2024raptor}, and Chain of Agents~\citep{zhang2024coa}, where the overall goal is to engineer workflows that decompose documents into contexts independent LLM calls can read and aggregate. Recursive Language Models is a popular recent example that allows for single-level recursive LLM calls via a programmatic environment~\citep{zhang2025rlm}. Follow-up work expands subagent capabilities~\citep{lumer2026rah}, trains shared parent/child policies~\citep{kim2026reinforcingrlm}, and incorporates self-reflection~\citep{alizadeh2026srlm}.
 
 Memagent~\citep{yu2025memagent} trains a harness that walks linearly through context, using RL and a harness prompt to determine what to carry from node-to-node. Similarly to our work, they also use a small (8K token) context while processing long (as much as 3.5M token) documents. However, they test primarily on the distribution they train, compare only against other small models, and hardcode execution path and prompts in the harness.
 
@@ -155,7 +155,7 @@ baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems
 
 For RULER, we fix a sample of 5 questions per problem type, for a total of 65 problems per document length. For OOLONG-synth, we fix a sample of a 10 questions per family: counting, user, and temporal, each sampled from a different underlying classification dataset. We vendor generators for both benchmarks and generate our problems from scratch.
 
-On RULER, our finetune performs worse than GPT-5.4, while remaining above 85\%. On OOLONG-synth, our model starts worse than GPT-5.4, then matches its performance when document size exceeds 80K. It is at these lengths that native context performance begins to degrade, and a single model can be overwhelmed with the number of items requiring tracking within its context. On the other hand, agents in our harness operate in 8K token budgets, executing small pieces of an overall decomposition strategy, which scales gracefully to arbitrary lengths.
+On RULER, our finetune performs worse than GPT-5.4, while remaining above 85\%. On OOLONG-synth, our model starts worse than GPT-5.4, then matches its performance when document size exceeds 80K. At this length, native context performance begins to degrade, and a single model can be overwhelmed with the number of items requiring tracking within its context. On the other hand, agents in our harness operate in 8K token budgets, executing small pieces of an overall decomposition strategy, which scales gracefully to arbitrary lengths.
 
 Per problem-family results are given in Table~\ref{tab:family-results}.
 
@@ -164,11 +164,11 @@ Per problem-family results are given in Table~\ref{tab:family-results}.
 \section{Conclusion}
 \label{conclude}
 
-In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to outperform a frontier model with unlimited context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compaction. As a side effect we also show the power of synthetic oracle SFT data written by powerful frontier models (Opus 4.8, 5, 5.5, and Fable 5 and 5.1, in this case).
+In this paper we show training on a bare bones agentic harness is sufficient for a small model with small context to perform as well as a frontier model with 1M token context on long-context evals. While we do not claim full generalization of our finetune, we also do not train on our evaluation distributions. The point of this paper is to show the power of agentic training in contrast to harness engineering, excessive native long context, and lossy compaction. As a side effect we also show the power of synthetic oracle SFT data generated by powerful frontier models (Opus 4.8, 5, 5.5, and Fable 5 and 5.1, in this case).
 
 The thesis of the last decade of AI development is that specific model capability can be incorporated into fully-general models by training on a wider distribution. The methods of this paper can be incorporated into frontier model development, so such models exhibit improved agentic performance under context pressure, without wasting tokens. This is in contrast to an external harness which must be applied at runtime.
 
-To develop our curriculum into a fully-general product, the training distribution would need to be widened and a reinforcement learning stage would likely prove fruitful in supercharging agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
+To develop our curriculum into a production recipe, the training distribution would need to be widened and a reinforcement learning stage would likely prove fruitful in supercharging agentic capabilities. We leave this as important future work, outside the scope of this paper or a small research project more generally.
 
 \subsection*{AI use statement}
 
@@ -217,6 +217,6 @@ We upweight root gradient mass 4x and positive \texttt{narrativeqa} leaves 2x, d
 \section{Training details}
 \label{app:train}
 
-Our training runs used rank 32 LoRA on Qwen3.6-35B-A3B, chat renderer \verb|qwen3_5_disable_thinking|, cross-entropy loss on assistant tokens only. Small batch training of batch 8-64 (you pay per token on Tinker, and small batch training is generally better-behaved per token, particularly on LoRAs~\citep{marek2025smallbatch,schulman2025lora,masters2018small,keskar2017largebatch}). We used pure Adam optimizer, $\beta_1 = 0.9$, $\beta_2 = 0.95$, with constant learnings between 5e-6 and 1e-5, single epoch training.
+Our training runs used rank 32 LoRA on Qwen3.6-35B-A3B, chat renderer \verb|qwen3_5_disable_thinking|, cross-entropy loss on assistant tokens only. Small batch training of size 8-64 (you pay per token on Tinker, and small batch training is generally better-behaved per token, particularly on LoRAs~\citep{marek2025smallbatch,schulman2025lora,masters2018small,keskar2017largebatch}). We used pure Adam optimizer, $\beta_1 = 0.9$, $\beta_2 = 0.95$, with constant learning rate between 5e-6 and 1e-5, single epoch training.
 
 \end{document}
