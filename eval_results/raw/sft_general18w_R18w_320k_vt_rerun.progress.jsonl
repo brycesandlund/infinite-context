@@ -1,0 +1,2 @@
+{"task": "vt", "seed": 3011001, "score": 0.4, "answer": "COPMW, QXJHA", "gold": ["COPMW", "QXJHA", "LHDWH", "IVFLP", "BZYLB"], "nodes": 453, "dataset": null}
+{"task": "vt", "seed": 3011000, "score": 0.8, "answer": "EPTEE, KXZGO, LEZQV, TDBLJ", "gold": ["EPTEE", "LEZQV", "TDBLJ", "KXZGO", "FXGKK"], "nodes": 685, "dataset": null}

@@ -1,0 +1,22 @@
+Backend: tinker | mode: decompose | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal', 'niah_single_1', 'niah_single_2', 'niah_single_3', 'niah_multikey_1', 'niah_multikey_2', 'niah_multikey_3', 'niah_multivalue', 'niah_multiquery', 'vt', 'cwe', 'fwe', 'qa_1', 'qa_2'] | n/task: 5 | budget: 8000 | doc: 320000 | depth: None
+Loading + tokenizing PG-essay corpus...
+Loading checkpoint: tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+temp=0.2 | out=/tmp/eval_R18w_320k_vt_rerun.{jsonl,txt}
+Token indices sequence length is longer than the specified maximum sequence length for this model (333430 > 262144). Running this sequence through the model will result in indexing errors
+[progress] 1/2 done | vt seed 3011001 score 0.40 | 453 nodes | 33.9 min
+[progress] 2/2 done | vt seed 3011000 score 0.80 | 685 nodes | 51.7 min
+
+========================================================================
+EVAL: backend=tinker ckpt=tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+========================================================================
+# task=vt seed=3011000 dataset=None gold=['EPTEE', 'LEZQV', 'TDBLJ', 'KXZGO', 'FXGKK'] nodes=685 answer='EPTEE, KXZGO, LEZQV, TDBLJ' term=answered score=0.800
+# task=vt seed=3011001 dataset=None gold=['COPMW', 'QXJHA', 'LHDWH', 'IVFLP', 'BZYLB'] nodes=453 answer='COPMW, QXJHA' term=answered score=0.400
+
+------------------------------------------------------------------------
+vt: 0.600  (grounded 0.600 | 2 rollouts | no_answer=0/2 | mean_tree=569.0)
+
+OVERALL: 0.600  (grounded 0.600 | 2 rollouts)
+SCORE (held-out ['vt']): 0.600  (2 rollouts)
+All 2 rollouts saved -> /tmp/eval_R18w_320k_vt_rerun.jsonl + /tmp/eval_R18w_320k_vt_rerun.txt
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>
