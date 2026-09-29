@@ -1,199 +1,126 @@
-# infinite-context
+# Trained Agentic Context Management
 
-Teaching a **small-context** language model to solve **long-context** problems by
-**calling itself recursively**. The model has a fixed ~8K-token budget and never
-receives the document in its prompt — it reaches the text only through a
-`read_chunk(start, end)` tool, and delegates sub-ranges to fresh-context copies
-of itself via `spawn_subagent(subtask)`. A document larger than the budget
-*cannot* be answered by one agent; it must be split, delegated, and the partial
-results combined — a binary divide-and-conquer over the prompt.
+Code for the paper **Trained Agentic Context Management** (Bryce Sandlund, 2026; arXiv link forthcoming).
 
-Policy: **Qwen3.6-35B-A3B** (LoRA r32) on [Tinker](https://tinker.thinkingmachines.ai/).
-Primary testbed: **OOLONG-synth** aggregation tasks (counting / user / temporal);
-**RULER** (NVIDIA's long-context suite) is used for cross-task transfer. Both are
-vendored faithfully.
+Instead of training long context natively or engineering a long-context harness, we fine-tune a model to use
+the simplest possible harness — two tools:
 
-## The idea
+- `read_chunk(start, end)`: read tokens `[start, end)` of a document the model never sees in its prompt;
+- `spawn_subagent(subtask)`: delegate `subtask` to a fresh-context copy of itself, which returns its `\boxed{}` answer.
 
-A model with an 8K context cannot read a 40K–∞ token document. Two ways out:
-1. **Bigger context** (what frontier models do) — but there is always a document
-   bigger than the window, and single-pass aggregation over hundreds of in-context
-   items degrades even when the text *fits* (see results).
-2. **Decompose**: read a small chunk, or spawn a subagent to read a range and
-   report back, then aggregate the reports. This is what we train.
+Every agent has a small fixed context budget (8K tokens at evaluation), so a long document can only be answered by
+decomposing it. We supervise fine-tune **Qwen3.6-35B-A3B** (LoRA rank 32, on [Tinker](https://thinkingmachines.ai/tinker/))
+on synthetic demonstrations from scripted oracles that teach three strategies: **tree reduce** for
+order-independent questions, **sequential fold** for order-dependent ones, and reading past a range boundary to
+finish a record. Nothing about the decomposition is hard-coded in the harness. All code used for the project is contained
+in this repo and most artifacts are also present, except large trace files.
 
-Every agent in the tree (root + all subagents) shares the same policy weights, the
-same fixed per-agent budget (`AGENT_CONTEXT`, default 8K), the same two tools, and
-one read-only view of the document (token positions are a shared coordinate system;
-each agent has its own budget). Because every tool result stays in an agent's
-context, a single agent cannot scan a document larger than its budget — it must
-delegate. Learning to decompose *finely and correctly* (not over-read into context
-overflow) is the capability being trained.
+## Results
 
-### Why some tasks scale and others hit a wall — combine-state complexity
+Fine-tuned Qwen3.6-35B-A3B in the harness (8K tokens per agent) vs GPT-5.4 (medium reasoning) and base
+Qwen3.6-35B-A3B given the whole document in one call. Training documents are at most 14K tokens.
 
-The decisive variable is the **size of the state passed up the tree** (the
-"combine"):
+| OOLONG-synth (30 problems / length) | 10K | 20K | 40K | 80K | 160K | 320K |
+|---|---|---|---|---|---|---|
+| **Ours** (8K / agent) | 0.606 | 0.540 | 0.535 | 0.561 | 0.464 | 0.470 |
+| GPT-5.4 (full document) | 0.718 | 0.666 | 0.600 | 0.539 | 0.556 | 0.479 |
+| Qwen3.6-35B-A3B (full document, 64K window) | 0.536 | 0.558 | 0.388 | — | — | — |
+| Random baseline (OOLONG §2.3) | 0.226 | 0.225 | 0.184 | 0.181 | 0.191 | 0.161 |
 
-- **Bounded / associative combine** → scales gracefully. Counting reduces over a
-  fixed ≤6-label count vector (O(1) in document length), so a parent summing its
-  children's tallies is always ~30 tokens. Counting holds its score from 10K to 80K.
-- **Irreducible O(distinct-keys) combine** → hits a working-memory wall. User and
-  temporal carry per-user / per-month×label / per-date tallies whose key count
-  *grows with the document*. Up the tree these unions exceed the agent budget, the
-  node truncates mid-tally (no `\boxed{}` → overflow), and the overflow triggers a
-  re-split/re-spawn cascade that bloats the tree. This is the *only* place our
-  method bends, and it's diagnosable, not a method flaw (see results §1/§8).
+| RULER-13 (65 problems / length) | 10K | 20K | 40K | 80K | 160K | 320K |
+|---|---|---|---|---|---|---|
+| **Ours** (8K / agent) | 0.949 | 0.949 | 0.929 | 0.885 | 0.868 | 0.858 |
+| GPT-5.4 (full document) | 0.954 | 0.938 | 0.954 | 0.954 | 0.929 | 0.954 |
+| Qwen3.6-35B-A3B (full document, 64K window) | 0.923 | 0.938 | 0.938 | — | — | — |
 
-The fix space for the irreducible case: bigger budget (pushes the wall out),
-a non-growing/streaming combine (thresholded/top-k sketches), or a **sequential
-left-fold** that threads one running tally instead of unioning pairwise.
+Per-family breakdowns, protocols and every run's history are in [`training_runs.md`](training_runs.md) (fine-tunes)
+and [`competitor_evals.md`](competitor_evals.md) (GPT-5.4, base Qwen). Raw rollouts are in `eval_results/`.
 
-## Training pipeline
-
-```
-OolongOracle  ──►  sft.py (SFT warm-start)  ──►  rl.py (GRPO RL)
-scripted-optimal     the currently EVALUATED        token-level reward
-delegation traces    checkpoint (sft_oolong)        propagation, next stage
-```
-
-1. **Scripted oracle** (`eval/backends.py :: OolongOracle`, `OracleBackend`): plays
-   the canonical binary decomposition through `run_agent`, emitting clean
-   "show-your-work" traces — a leaf reads a small range, enumerates each example
-   with its classified label, and reports a compact tally; parents sum tallies; the
-   root derives the answer. Subagents report *extractable evidence*, never
-   gold-derived answers, so the skill is learnable and transfers.
-2. **SFT warm-start** (`sft.py`): base Qwen sits in the 0-reward regime on this
-   harness (handed the tools untrained, it never even calls `read_chunk`). SFT on
-   the oracle traces teaches the *protocol*. The evaluated checkpoint is SFT-only.
-3. **GRPO RL** (`rl.py`): token-level recursive-agent RL where **every node in a
-   tree inherits the root's advantage** (reward propagation), with an LLM judge
-   (`eval/judge.py`) scoring open-ended subagent subtasks. This is the infra for the
-   next stage beyond SFT.
-
-## Results (preliminary)
-
-Full numbers, methodology, and raw files: **[`eval_results/RESULTS.md`](eval_results/RESULTS.md)**.
-Headlines, all on held-out problems with OOLONG-official grading:
-
-**Graceful degradation vs frontier collapse — the crossover.** OOLONG OVERALL across
-document length (our SFT model @8K budget vs gpt-5.4 single-shot, native 1M window,
-identical problems):
-
-| OVERALL | 10K | 20K | 40K | 80K |
-|---|---|---|---|---|
-| **ours** (8K budget, decompose) | 0.532 | 0.514 | **0.562** | **0.429** |
-| gpt-5.4 (1M, single-shot) | 0.561 | 0.583 | 0.338 | 0.327 |
-
-Frontier is ahead at 10K–20K, then **collapses at 40K** (single-pass aggregation over
-~600+ items fails); our decomposition stays flat and crosses above.
-
-**SFT's entire value is the protocol** (OOLONG counting @10K): same base weights score
-**0.000 with the harness** (never reads) → **0.519 after SFT**, which even beats
-*gpt-5.4 operating the same harness* (0.376 — it decomposes shallowly, ~3 nodes, vs our
-~40). But at 10K **single-shot wins overall** (base Qwen single-shot 0.681) — forced
-decomposition is pure added error when the doc fits native context. The harness earns
-its keep only past that point.
-
-**The 80K dip is the working-memory wall, confirmed by a budget sweep.** Raising the
-budget 8K → 12K at 80K recovers the irreducible-combine families and leaves counting
-flat (temporal +0.08, OVERALL 0.429 → 0.473); the worst overflow cascade collapses from
-**4293 nodes → 497** once a node can hold its merged tally. The combine is *pushed out,
-not solved* — temporal still overflows at the widest tallies.
-
-**RULER cross-task transfer is leaf-op-gated** (zero-shot, SFT was OOLONG-only): transfers
-where the leaf-op matches training (`cwe` = counting → 1.0) and fails on untrained
-leaf-ops (needle/track/QA). The scaffold is task-general; the leaf-op must be taught.
-
-## Project structure
-
-```
-harness.py            Shared agent primitives (single source of truth)
-sft.py                SFT warm-start from oracle traces (-> sft_oolong checkpoint)
-rl.py                 Recursive-agent RL (token-level, GRPO, Tinker)
-metrics.py            Optional W&B logging (no-op unless WANDB=1)
-debug.py              Rollout-tree inspection helpers
-calibrate_judge.py    One-off: calibrate the LLM judge vs gold on OOLONG counting
-frontier_released.py  Frontier single-shot on the OFFICIAL released oolong-synth (paper sanity)
-
-tasks/                Problem generation
-  base.py             Problem schema + graders (exact/set/numeric/ruler_*)
-  corpus.py           Paul Graham essays + noise-sentence haystacks
-  registry.py         Task dispatch + train/eval grader-mode tables
-  oolong/             OOLONG-synth (counting / user / temporal aggregation)
-    generators.py     Thin wrapper over the vendored OOLONG generation code
-    vendored_synth/   Vendored OOLONG task constructors
-  ruler/              Vendored NVIDIA/RULER generators (Apache-2.0)
-    constants.py      RULER templates + the 13-task config (synthetic.yaml)
-    generators.py     NIAH / VT / CWE / FWE -> Problem
-    qa_data.py        SQuAD / HotpotQA loaders (qa_1, qa_2)
-    _common.py        wonderwords vocab, nltk insertion, {context} adapter
-
-eval/                 Multi-backend eval (one path for Qwen / base / Claude / GPT)
-  backends.py         ModelBackend ABC + TinkerBackend + APIBackend + the oracles
-  agent.py            Backend-agnostic loops: run_agent (decompose) + run_single_shot
-  run.py              Eval entry point: backend × mode × tasks × N -> scores
-  judge.py            LLM-as-a-judge (scores open-ended subagent subtasks, for RL)
-  render.py           Shared rollout-tree printing (eval + sft + train)
-
-eval_results/         RESULTS.md (findings) + raw/ rollouts + plotting scripts
-```
-
-### `harness.py` — the shared seam
-
-Holds the parts that **must be identical** between training, SFT, and eval so a
-Qwen-vs-base-vs-GPT comparison isn't confounded: `make_system_prompt`,
-`make_single_shot_prompt`, `read_chunk_impl` (token-slice/decode/cap semantics),
-`extract_boxed`, and the canonical tool descriptions / `openai_tool_specs()`.
-`rl.py` asserts at import that its cookbook `@tool` docstrings equal the harness
-constants, so the two can't silently drift.
-
-### `eval/` — one eval path, two modes
-
-A single entry point (`eval/run.py`) drives any backend through the `ModelBackend`
-seam, over identical problems and graders, in either of two modes:
-
-- **`MODE=decompose`** (default): the recursive 8K-budget harness — the model must
-  `read_chunk` / `spawn_subagent` (`run_agent`).
-- **`MODE=single`**: the whole document is placed in context and the model answers in
-  one tool-free call (`run_single_shot`) — the raw-ability ceiling (frontier
-  single-shot, or an un-finetuned base model). Same problem construction, same grading.
-
-`TinkerBackend` drives the Qwen policy through the **same renderer + exact tool specs
-rl.py uses** (eval faithful to training); `APIBackend` covers any LiteLLM model.
-Budget/recursion/data constants are imported from `rl.py` so eval and training
-can't diverge.
-
-## Setup & running
+## Setup
 
 ```bash
 uv sync
-export TINKER_API_KEY=...        # training + the Tinker eval backend
-export OPENAI_API_KEY=...        # BACKEND=gpt-5.4 etc.
-export ANTHROPIC_API_KEY=...     # BACKEND=anthropic/...
-
-# Eval the SFT model through the harness on OOLONG @10K
-CKPT=$(cat ~/.cache/infinite-context/last_sft_checkpoint.txt) \
-  EVAL_TASKS=oolong_counting,oolong_user,oolong_temporal uv run python -m eval.run
-
-# Single-shot ceilings (same problems, no decomposition):
-BACKEND=gpt-5.4 MODE=single EVAL_TASKS=oolong_counting uv run python -m eval.run   # frontier
-BACKEND=tinker  MODE=single EVAL_TASKS=oolong_counting uv run python -m eval.run   # base Qwen (no CKPT)
-
-# Key env knobs: BACKEND, MODE, CKPT, DOC_SIZE_TOKENS, AGENT_CONTEXT, EVAL_TASKS, N_PER_TASK, TEMP
+export TINKER_API_KEY=...        # training and the Tinker eval backend
+export OPENAI_API_KEY=...        # GPT baselines (LiteLLM)
+export ANTHROPIC_API_KEY=...     # Claude baselines, and the model-executed leaf for narrativeqa traces
 ```
 
-Dependencies of note: `tinker` + `tinker-cookbook` (RL + rollouts), `wonderwords` +
-`nltk` (RULER's exact vocab + sentence-boundary insertion), `litellm` (multi-provider
-eval), `datasets` (released OOLONG sanity).
+`pyproject.toml` pins `tinker` to a local editable checkout (`[tool.uv.sources]`); remove that entry to install the
+published `tinker` package instead.
 
-## Status / roadmap
+## Training
 
-- ✅ OOLONG-synth (3 families) + RULER (13 configs) generating; SFT warm-start trained
-  and evaluated; multi-backend + single-shot eval unified in `eval/run.py`.
-- ✅ Characterized the method: graceful-degradation-vs-collapse crossover (40K), the
-  combine-state-complexity wall (80K), SFT-teaches-the-protocol, RULER leaf-op transfer.
-- ⏭ **GRPO RL** on top of the SFT warm-start (`rl.py` infra ready).
-- ⏭ A **non-growing / sequential-fold combine** to break the irreducible-combine wall
-  on user/temporal at scale.
-- ⏭ Teach additional leaf-ops (needle/track/QA) to broaden zero-shot RULER transfer.
+Training traces are generated on CPU by scripted oracles (`oracle/`) over procedurally generated tasks (`tasks/`),
+then used for supervised fine-tuning with `sft.py` (Tinker). One run script per training run lives in `scripts/`:
+
+```bash
+# from base (the first stage of the reported model)
+nohup bash scripts/run_sft13_base.sh > /tmp/sft13.log 2>&1 &
+# warm-start stages take the previous checkpoint
+INIT_CHECKPOINT=tinker://... nohup bash scripts/run_sft18_warm.sh > /tmp/sft18.log 2>&1 &
+# dry run: build and print traces without training
+INIT_CHECKPOINT=x TRAIN=0 PRINT_TRACES=1 bash scripts/run_sft18_warm.sh
+```
+
+The reported model (`sft_general18w`) is run 13 (from base), followed by warm-start runs 14w and 18w. Key knobs in
+`sft.py`: `SFT_TASKS`, `N_PER_TASK` / `N_PER_TASK_OVERRIDE`, `BUDGET_MIX` (per-agent budgets and document lengths),
+`LR`, `SFT_BATCH_SIZE`, `ROOT_DUP`, `CONTEXT_DROP`.
+
+## Evaluation
+
+One entry point, `eval/run.py`, drives any backend over identical problems and graders, in two modes:
+`MODE=decompose` (the harness) and `MODE=single` (the whole document in one tool-free call).
+
+```bash
+# fine-tune, harness, RULER-13 + OOLONG-synth at a given document length and per-agent budget
+scripts/eval_long.sh <tag> <tinker://checkpoint> <doc_tokens> <budget> [ruler_n] [oolong_n]
+# fine-tune, harness, the OOLONG-synth problems plotted in the paper (8K budget)
+scripts/eval_oolong_chart.sh <tag> <tinker://checkpoint> <doc_tokens>
+# single-shot baselines on the same problems
+REASONING_EFFORT=medium TEMP=none OUT_TOKENS=0 scripts/competitor_oolong_chart.sh openai/gpt-5.4-2026-03-05 gpt5_4 10000 20000 40000
+REASONING_EFFORT=medium TEMP=none OUT_TOKENS=0 scripts/competitor_ruler.sh openai/gpt-5.4-2026-03-05 gpt5_4 10000 40000
+```
+
+Common environment knobs: `BACKEND`, `MODE`, `CKPT`, `DOC_SIZE_TOKENS`, `AGENT_CONTEXT`, `EVAL_TASKS`, `N_PER_TASK`,
+`TEMP`, `MAX_NODES`. API runs can be expensive at long lengths; `competitor_evals.md` records the cost of each.
+
+## Repository layout
+
+```
+harness.py         system prompt, tool definitions, read_chunk semantics, \boxed{} extraction (shared by train and eval)
+sft.py             SFT: builds oracle traces, trains on Tinker
+rl.py              recursive-agent RL experiment (GRPO); not used for the reported model
+oracle/            scripted oracles that play tree reduce / sequential fold / boundary reads
+tasks/             task generators: synthetic records, labelled text, prose haystacks, word lists, RULER, OOLONG
+eval/              backends (Tinker, LiteLLM), agent loops (decompose / single), eval runner, rendering
+scripts/           run scripts for every training run and eval
+paper/             paper source (LaTeX) and literature notes
+eval_results/      raw rollouts and analysis
+trace_snippets/    example training traces
+```
+
+## Third-party code and data
+
+- `tasks/ruler/` vendors task generators from [NVIDIA RULER](https://github.com/NVIDIA/RULER) (Apache-2.0); see
+  `tasks/ruler/LICENSE` and `tasks/ruler/NOTICE` for the license and our modifications.
+- `tasks/oolong/vendored_synth/` and `tasks/oolong_real/` use code from [OOLONG](https://github.com/abertsch72/oolong)
+  (MIT); see the `LICENSE` files in those directories.
+- Datasets are downloaded at run time and keep their own licenses (Project Gutenberg texts, Paul Graham essays,
+  NarrativeQA, SQuAD, HotpotQA, Yelp polarity, DBpedia-14, dair-ai/emotion, SNLI, PAWS, Stanford politeness, and the
+  OOLONG datasets). Eval logs and trace snippets in this repository contain excerpts of these datasets; the MIT
+  license below does not apply to that third-party content.
+
+## License
+
+MIT (see [`LICENSE`](LICENSE)), except for third-party code and data as noted above.
+
+## Citation
+
+```bibtex
+@misc{sandlund2026trained,
+  title  = {Trained Agentic Context Management},
+  author = {Sandlund, Bryce},
+  year   = {2026},
+  note   = {arXiv preprint, forthcoming}
+}
+```

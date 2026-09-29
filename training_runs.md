@@ -1918,14 +1918,14 @@ to eval/run.py (`[progress]` lines + `{OUT}.progress.jsonl`); `scripts/eval_stat
 
 ### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.858** (320K final: cwe rerun on the fixed generator + missing vt seed rerun)
 
-| 18w RULER-13 | 10K | 40K | 80K | 160K | 320K (partial, 64/65) |
-|---|---|---|---|---|---|
-| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.858** (final: cwe + vt reruns) |
-| niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| vt | 1.00 | 1.00 | 0.92 | 0.84 | 0.64 (5th seed rerun: 0.40) |
-| cwe | 1.00 | 0.74 | 0.58 | **0.24** | **0.18** (fixed generator; 0.02 on the broken one) |
-| fwe | 0.93 | 0.93 | 1.00 | 1.00 | 0.93 |
-| qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 | 0.60 / 0.80 |
+| 18w RULER-13 | 10K | 20K | 40K | 80K | 160K | 320K |
+|---|---|---|---|---|---|---|
+| mean | 0.949 | **0.949** | 0.929 | 0.885 | **0.868** | **0.858** (final: cwe + vt reruns) |
+| niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
+| vt | 1.00 | 1.00 | 1.00 | 0.92 | 0.84 | 0.64 (5th seed rerun: 0.40) |
+| cwe | 1.00 | 0.94 | 0.74 | 0.58 | **0.24** | **0.18** (fixed generator; 0.02 on the broken one) |
+| fwe | 0.93 | 1.00 | 0.93 | 1.00 | 1.00 | 0.93 |
+| qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 | 0.60 / 0.80 |
 
 Nearly all of the decline is cwe — 18w predates the v16 top-K tally fix, and the old "2+ times, at most 10" leaves lose the
 common words as they thin out per leaf (19w/20w with v16: cwe 0.90-1.00 @40K, 0.86 @80K). Without cwe the 160K mean is
@@ -1962,3 +1962,5 @@ in 34 min, 453 nodes, score **0.40**; run with MAX_NODES=1600 (~2x a 320K fold c
 too loose for folds). Seed 3011000 rerun alongside as a check: 0.80, 685 nodes, 52 min. vt @320K = (4 x 0.70 + 0.40)/5 =
 0.64. **Final 18w RULER-13 @320K = (8 niah x 1.00 + vt 0.64 + cwe 0.18 + fwe 0.93 + qa_1 0.60 + qa_2 0.80)/13 = 0.858.**
 Raw: `eval_results/raw/sft_general18w_R18w_320k_vt_rerun.*`.
+
+**18w RULER-13 @20K (added 2026-09-29): 0.949** — niah/vt/fwe 1.00, cwe 0.94, qa_1 / qa_2 0.60 / 0.80 (string). Raw: `eval_results/raw/sft_general18w_R18w_20k_b8k.*`.

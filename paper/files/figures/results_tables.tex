@@ -2,25 +2,25 @@
 % 18w (sft_general18w), harness, 8K per-agent budget, t=0.2. Recomputed from eval_results/raw/sft_general18w_{R18w_*_b8k,C18w_*}.
 % RULER 320K final: cwe from the fixed generator (0.18), vt seed 3011001 rerun (0.40 -> vt 0.64).
 \begin{table}[H]
-\centering\footnotesize\setlength{\tabcolsep}{4pt}
-\begin{minipage}[c]{0.51\linewidth}\centering
-\begin{tabular}{@{}l@{\hspace{5pt}}ccccc@{}}
+\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\begin{minipage}[c]{0.535\linewidth}\centering
+\begin{tabular}{@{}l@{\hspace{4pt}}cccccc@{}}
 \toprule
-RULER & 10K & 40K & 80K & 160K & 320K \\
+RULER & 10K & 20K & 40K & 80K & 160K & 320K \\
 \midrule
-NIAH (8 tasks) & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
-VT             & 1.00 & 1.00 & 0.92 & 0.84 & 0.64 \\
-CWE            & 1.00 & 0.74 & 0.58 & 0.24 & 0.18 \\
-FWE            & 0.93 & 0.93 & 1.00 & 1.00 & 0.93 \\
-QA-1           & 0.60 & 0.80 & 0.60 & 0.60 & 0.60 \\
-QA-2           & 0.80 & 0.60 & 0.40 & 0.60 & 0.80 \\
+NIAH (8) & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 & 1.00 \\
+VT             & 1.00 & 1.00 & 1.00 & 0.92 & 0.84 & 0.64 \\
+CWE            & 1.00 & 0.94 & 0.74 & 0.58 & 0.24 & 0.18 \\
+FWE            & 0.93 & 1.00 & 0.93 & 1.00 & 1.00 & 0.93 \\
+QA-1           & 0.60 & 0.60 & 0.80 & 0.60 & 0.60 & 0.60 \\
+QA-2           & 0.80 & 0.80 & 0.60 & 0.40 & 0.60 & 0.80 \\
 \midrule
-Mean (13 tasks) & 0.949 & 0.929 & 0.885 & 0.868 & 0.858 \\
+Mean (13) & 0.949 & 0.949 & 0.929 & 0.885 & 0.868 & 0.858 \\
 \bottomrule
 \end{tabular}
 \end{minipage}\hfill
-\begin{minipage}[c]{0.475\linewidth}\centering
-\begin{tabular}{@{}l@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{\hspace{4pt}}c@{}}
+\begin{minipage}[c]{0.455\linewidth}\centering
+\begin{tabular}{@{}l@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{}}
 \toprule
 OOLONG & 10K & 20K & 40K & 80K & 160K & 320K \\
 \midrule

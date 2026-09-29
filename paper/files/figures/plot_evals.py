@@ -21,7 +21,7 @@ DATA = {
     "ruler": {  # RULER-13 mean, string match, same 65 problems per length
         "gpt": {10: 0.954, 20: 0.938, 40: 0.954, 80: 0.954, 160: 0.929, 320: 0.954},  # 320K: cwe rerun on the fixed generator (1.00)
         "base": {10: 0.923, 20: 0.938, 40: 0.938},            # 64K Tinker serving window: >=80K does not fit
-        "ours": {10: 0.949, 40: 0.929, 80: 0.885, 160: 0.868, 320: 0.858},  # 18w (t=0.2); 20K not run; 320K final (cwe fixed generator 0.18, vt 0.64)
+        "ours": {10: 0.949, 20: 0.949, 40: 0.929, 80: 0.885, 160: 0.868, 320: 0.858},  # 18w (t=0.2); 320K final (cwe fixed generator 0.18, vt 0.64)
     },
     "oolong": {  # OOLONG-synth chart problems, mean of counting / user / temporal, 30 problems per length
         "gpt": {10: 0.718, 20: 0.666, 40: 0.600, 80: 0.539, 160: 0.556, 320: 0.479},
