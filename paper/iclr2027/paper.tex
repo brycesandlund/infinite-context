@@ -147,9 +147,6 @@ We compare against base Qwen3.6-35B-A3B\footnote{While Qwen3.6-35B-A3B was train
 \caption[Results on RULER and OOLONG-synth]{\textbf{Results} on RULER and OOLONG-synth. Our finetune runs in our harness with an 8K token
 per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
 baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
-%\caption{\textbf{Score vs.\ document length} on RULER (mean of 13 tasks, 65 problems per length) and OOLONG-synth (mean
-%of counting, user, and temporal families, 30 questions per length). Our fine-tune runs in our harness with an 8K token
-%per-agent context budget. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for precise details). Base Qwen and GPT-5.4 are served with a 64K and 1M token context limits, respectively.}
 \label{fig:length-sweep}
 \end{figure}
 
@@ -174,17 +171,6 @@ To develop our curriculum into a production recipe, the training distribution wo
 
 In this work, we used generative AI tools to write all our code, administer experiments, create figures, search and analyze relevant literature, format references, generate synthetic data sets, propose or refine hypotheses/brainstorming, design or provide feedback on research methodology/experiments, clean and reformat data, support qualitative and thematic data analysis, and interpret results. We have not used generative AI tools to draft parts of this research paper, and the following topics are not applicable to this work: help develop theoretical models or conceptual frameworks, formulate mathematical claims, provide critical ingredients for proving mathematical claims, assist in the writing of proofs, and assist with translation. We have reviewed our AI-assisted work, for example, by reviewing AI code and conducting manual audits of synthetic data. We take responsibility for the final content of this work,
 including text, claims or artifacts produced with the aid of generative AI.
-
-%
-%We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, with two tools:
-%\begin{enumerate}
-%  \item \verb|read_chunk(start, end)|: Read a slice of the document and return the decoded text of tokens [\verb|start|, \verb|end|).
-%  \item \verb|spawn_subagent(subtask)|: Spawn a fresh-context copy of yourself to solve \verb|subtask|; returns the child's \verb|\boxed{}| answer.
-%\end{enumerate}
-%We train a model on this harness to answer unmodified long-context prompts over a document accessed via the above harness.
-%
-%We propagate the system prompt to subagents, which 
-
 
 
 
