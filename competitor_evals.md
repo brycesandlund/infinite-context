@@ -155,9 +155,9 @@ per-process Python hash, so its layout reshuffles between ANY two runs (fine-tun
 
 | | 10K | 20K | 40K | 80K | 160K | 320K | 640K |
 |---|---|---|---|---|---|---|---|
-| **RULER-13 mean (string)** | **0.954** | **0.938** | **0.954** | **0.954** | **0.929** | **0.920** | **0.866** |
-| RULER-13 mean, qa LLM-judged | 1.000 | 1.000 | 1.000 | 1.000 | 0.991 | 0.966 | 0.912 |
-| tasks below 1.00 (string) | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.60 | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.80 | multivalue 0.95, fwe 0.93, qa_1 0.60, qa_2 0.60 | cwe 0.56, qa_1 0.60, qa_2 0.80 | cwe 0.26, multikey_3 0.80, multivalue 0.80, qa_1 0.60, qa_2 0.80 |
+| **RULER-13 mean (string)** | **0.954** | **0.938** | **0.954** | **0.954** | **0.929** | **0.954** | **0.866** |
+| RULER-13 mean, qa LLM-judged | 1.000 | 1.000 | 1.000 | 1.000 | 0.991 | 1.000 | 0.912 |
+| tasks below 1.00 (string) | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.60 | qa_1 0.60, qa_2 0.80 | qa_1 0.60, qa_2 0.80 | multivalue 0.95, fwe 0.93, qa_1 0.60, qa_2 0.60 | qa_1 0.60, qa_2 0.80 (cwe 1.00 after the generator fix; was 0.56) | cwe 0.26, multikey_3 0.80, multivalue 0.80, qa_1 0.60, qa_2 0.80 |
 | cost (est., standard rate) | ~$1.7 | ~$2.8 | ~$5.1 | ~$10 | ~$18 | ~$36 | ~$71 |
 
 Every qa string miss is judged correct (surface forms: `High-risk` hyphenation, `EY` for "Ernst & Young", `35` for
@@ -291,6 +291,10 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
 - 2026-09-25: gpt-5.4 medium RULER-13 @320K = 0.920 (cwe 0.56; qa judged 1.00); ~$36.
 - 2026-09-25: gpt-5.4 medium RULER-13 @10/20/40/160K = 0.954 / 0.938 / 0.954 / 0.929; ~$28.
+- 2026-09-29: cwe generator fixed (>=320K docs sampled words WITH replacement past the 8,166-word pool, so "uncommon"
+  words repeated up to ~27x). gpt-5.4 cwe @320K rerun on the fixed generator (current source, inlined prompt): 0.56 -> 1.00;
+  RULER-13 @320K 0.920 -> 0.954 (judged 0.966 -> 1.000). Raw: `eval_results/competitor/gpt5_4_rmed_nocap_cwe_fixed_320k.*`.
+  640K cwe (0.26) is from the OLD generator and not rerun.
 - 2026-09-25: gpt-5.4 medium RULER-13 @640K = 0.866 (judged 0.912); ~$71 at standard rate. Row complete 10K-640K.
 - 2026-09-25: gpt-5.4 medium reasoning @640K, uncapped = 0.419 (rerun at CONCURRENCY=2 after a 429 crash).
   `eval/run.py` `CONCURRENCY` env; `APIBackend` retries 429s with backoff.
