@@ -32,6 +32,7 @@ import uuid
 
 from tasks.base import Problem
 from tasks.ruler._common import (
+    cwe_extra_words,
     cwe_word_pool,
     ensure_punkt,
     essay_words,
@@ -298,9 +299,11 @@ def _cwe_make_context(
     if num_words <= len(pool):
         word_list_full = rng.sample(pool, num_words)
     else:
-        # RULER falls back to a 466K-word "randle" wordlist; we don't ship that
-        # but we can sample with replacement to fill the requested length.
-        word_list_full = [rng.choice(pool) for _ in range(num_words)]
+        # RULER falls back to a 466K-word "randle" wordlist. We used to sample WITH replacement here, which let
+        # "uncommon" words repeat (freq_ucw x k) — at 320K up to 27 vs the common words' 30. Now: sample WITHOUT
+        # replacement from pool + the vendored extra words (cwe_extra_words), so every uncommon word appears exactly
+        # freq_ucw times, as in RULER. Docs within the pool (<= ~160K) take the branch above and are unchanged.
+        word_list_full = rng.sample(pool + cwe_extra_words(), num_words)
     common, uncommon = word_list_full[:num_cw], word_list_full[num_cw:]
     word_list = common * freq_cw + uncommon * freq_ucw
     rng.shuffle(word_list)

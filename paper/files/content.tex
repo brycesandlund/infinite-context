@@ -1,46 +1,5 @@
-% !TEX TS-program = pdflatexmk
-\documentclass{article} % For LaTeX2e
-\usepackage{iclr2027_conference,times}
-\usepackage{float}
-
-% Optional math commands from https://github.com/goodfeli/dlbook_notation.
-\input{math_commands.tex}
-
-\usepackage{hyperref}
-\usepackage{url}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,decorations.pathreplacing,calc}
-
-
-\title{Trained Agentic Context Management}
-
-% Authors must not appear in the submitted version. They should be hidden
-% as long as the \iclrfinalcopy macro remains commented out below.
-% Non-anonymous submissions will be rejected without review.
-
-\author{Bryce Sandlund \thanks{https://brycesandlund.com/)---\emph{not} for acknowledging
-funding agencies.  Funding acknowledgements go at the end of the paper.} \\
-}
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to \LaTeX{} to determine where to break
-% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
-% puts 3 of 4 authors names on the first line, and the last on the second
-% line, try using \AND instead of \And before the third author name.
-
-\newcommand{\fix}{\marginpar{FIX}}
-\newcommand{\new}{\marginpar{NEW}}
-
-%\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
-\begin{document}
-
-
-\maketitle
-
+% !TEX root = paper.tex
+% Shared body (abstract through appendices) for paper.tex and paper_arxiv.tex.
 \begin{abstract}
 We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness. With only 8,000 tokens of context, our small model is as strong as GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens.
 \end{abstract}
@@ -72,7 +31,7 @@ Unmodified long-context prompts are provided to the model over a document access
 
 We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness and achieve the following results:
 \begin{enumerate}
-  \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 80K tokens.
+  \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 40K tokens.
   \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model scores $\geq85\%$ on document size from 10K to 320K tokens.
 \end{enumerate}
 
@@ -204,5 +163,3 @@ We upweight root gradient mass 4x and positive \texttt{narrativeqa} leaves 2x, d
 \label{app:train}
 
 Our training runs used rank 32 LoRA on Qwen3.6-35B-A3B, chat renderer \verb|qwen3_5_disable_thinking|, cross-entropy loss on assistant tokens only. Small batch training of size 8-64 (you pay per token on Tinker, and small batch training is generally better-behaved per token, particularly on LoRAs~\citep{marek2025smallbatch,schulman2025lora,masters2018small,keskar2017largebatch}). We used pure Adam optimizer, $\beta_1 = 0.9$, $\beta_2 = 0.95$, with constant learning rate between 5e-6 and 1e-5, single epoch training.
-
-\end{document}

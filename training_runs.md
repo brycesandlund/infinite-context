@@ -1916,14 +1916,14 @@ losing much of the document under skewed labels (counting was already ~0.40 at e
 curve hides a failing tree: footnote it on the chart. Raw: `eval_results/raw/sft_general18w_C18w_160k.*`. Eval progress logging added
 to eval/run.py (`[progress]` lines + `{OUT}.progress.jsonl`); `scripts/eval_status.sh <tags…>` reads them.
 
-### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.850** (320K partial)
+### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.862** (320K: vt n=4, cwe rerun on the fixed generator)
 
 | 18w RULER-13 | 10K | 40K | 80K | 160K | 320K (partial, 64/65) |
 |---|---|---|---|---|---|
-| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.850** |
+| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.862** (cwe rerun; was 0.850) |
 | niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
 | vt | 1.00 | 1.00 | 0.92 | 0.84 | 0.70 (n=4) |
-| cwe | 1.00 | 0.74 | 0.58 | **0.24** | **0.02** |
+| cwe | 1.00 | 0.74 | 0.58 | **0.24** | **0.18** (fixed generator; 0.02 on the broken one) |
 | fwe | 0.93 | 0.93 | 1.00 | 1.00 | 0.93 |
 | qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 | 0.60 / 0.80 |
 
@@ -1938,3 +1938,21 @@ read-instead-of-split failure as the 320K chart (cwe trees ~215 nodes vs nominal
 words survive, 0.93); search tasks (niah, qa) build full trees and hold.
 Raw: `eval_results/raw/sft_general18w_R18w_160k_b8k.*`; 320K partial rollouts
 `eval_results/raw/sft_general18w_R18w_320k_b8k.partial_progress.jsonl` (no trees). qa not yet LLM-judged.
+
+### RULER cwe generator bug at >=320K — found and fixed 2026-09-29
+
+Our vendored `_cwe_make_context` sampled words WITH replacement once a doc needed more distinct words than the
+8,166-word wonderwords pool (RULER falls back to a 466K-word list there). 80K/160K use ~3.5K/6.7K words (within the pool,
+faithful); 320K needs ~13K and 640K ~25.7K, so "uncommon" words (freq 3) repeated: at 320K the largest non-gold count was
+21-27 against the common words' 30. The gold stayed on top, but the task was no longer RULER's (30 vs 3).
+**=> 18w RULER-13 @320K cwe (0.02) is NOT a valid RULER score; the 320K mean without cwe is 0.919 over 12 tasks
+(0.850 with it).** 160K (0.868) and below are unaffected.
+Fix: `tasks/ruler/cwe_extra_words.txt` — 40,000 lowercase 4-10 letter words from web2, excluding the pool, fixed shuffle,
+vendored; `_cwe_make_context` samples WITHOUT replacement from pool + extras when the pool is too small. Verified: 80K and
+160K problems byte-for-byte unchanged (regenerated gold = evaluated gold, 5/5 seeds each); at 320K and 640K every uncommon
+word appears exactly 3x (one word per doc counts 6 — a surface duplicate between the two lists; 6 vs 30 is harmless).
+
+**cwe @320K rerun on the fixed generator (2026-09-29): 0.18** (5 rollouts, same seeds; per-seed 0.10/0.30/0.30/0.00/0.20;
+trees 205-281 nodes vs nominal ~2,560 — the read-instead-of-split collapse persists, so 0.18 is 18w's real 320K cwe).
+Corrected RULER-13 @320K = (8 niah x 1.00 + vt 0.70 + cwe 0.18 + fwe 0.93 + qa_1 0.60 + qa_2 0.80) / 13 = **0.862**
+(vt n=4 from the killed run). Raw: `eval_results/raw/sft_general18w_R18w_320k_cwe_fixed.*`.

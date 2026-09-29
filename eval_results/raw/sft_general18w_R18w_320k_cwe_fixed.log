@@ -1,0 +1,28 @@
+Backend: tinker | mode: decompose | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal', 'niah_single_1', 'niah_single_2', 'niah_single_3', 'niah_multikey_1', 'niah_multikey_2', 'niah_multikey_3', 'niah_multivalue', 'niah_multiquery', 'vt', 'cwe', 'fwe', 'qa_1', 'qa_2'] | n/task: 5 | budget: 8000 | doc: 320000 | depth: None
+Loading + tokenizing PG-essay corpus...
+Loading checkpoint: tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+temp=0.2 | out=/tmp/eval_R18w_320k_cwe_fixed.{jsonl,txt}
+Token indices sequence length is longer than the specified maximum sequence length for this model (359459 > 262144). Running this sequence through the model will result in indexing errors
+[progress] 1/5 done | cwe seed 3012000 score 0.10 | 209 nodes | 1.2 min
+[progress] 2/5 done | cwe seed 3012003 score 0.30 | 205 nodes | 1.2 min
+[progress] 3/5 done | cwe seed 3012002 score 0.30 | 243 nodes | 1.2 min
+[progress] 4/5 done | cwe seed 3012001 score 0.00 | 227 nodes | 1.3 min
+[progress] 5/5 done | cwe seed 3012004 score 0.20 | 281 nodes | 1.3 min
+
+========================================================================
+EVAL: backend=tinker ckpt=tinker://85b93811-f926-5129-89e3-5a65c95707f1:train:0/weights/sft_general18w
+========================================================================
+# task=cwe seed=3012000 dataset=None gold=['truer', 'naometry', 'pneumonic', 'rattlejack', 'mantelet', 'cabalic', 'unrest', 'semilatus', 'erotopath', 'killcu'] nodes=209 answer='none:34|anciently:15|suddy:10|untrounced:11|nicotia:10|pneumonic:10|shipwright:10|angolar:9|humulone:9|jaspis:9' term=answered score=0.100
+# task=cwe seed=3012001 dataset=None gold=['cicatrizer', 'perfuse', 'opencast', 'barnacle', 'unweened', 'outswagger', 'summarizer', 'moustache', 'sashery', 'autodidact'] nodes=227 answer='format:22|afflation:14|beingless:14|caustical:14|eulogium:13|fallage:13|springlet:13|dacker:8|gadded:8|huiscoyol:8' term=answered score=0.000
+# task=cwe seed=3012002 dataset=None gold=['timing', 'galvanical', 'dud', 'planning', 'penumbrae', 'smelly', 'glover', 'stealthy', 'chorally', 'pumpernickel'] nodes=243 answer='penumbrae, eelware, abominably, chorally, cultus, downforce, episodic, savagism, albatross, smelly' term=answered score=0.300
+# task=cwe seed=3012003 dataset=None gold=['repulsion', 'ordinant', 'reburden', 'cricketer', 'flurriedly', 'apyrotype', 'pachymenic', 'lyingly', 'bervie', 'ubiquit'] nodes=205 answer='reburden, betusked, jument, fadmongery, imide, cricketer, invitation, repulsion, beflower, brandreth' term=answered score=0.300
+# task=cwe seed=3012004 dataset=None gold=['peridinid', 'splenocyte', 'kite', 'monolith', 'decylenic', 'unnibbed', 'vagary', 'meliorate', 'lakeward', 'ghostified'] nodes=281 answer='shabby, curtilage, factor, kite, plasmodial, wriggle, peridinid, ashlaring, bobbin, nasoseptal' term=answered score=0.200
+
+------------------------------------------------------------------------
+cwe: 0.180  (grounded 0.180 | 5 rollouts | no_answer=0/5 | mean_tree=233.0)
+
+OVERALL: 0.180  (grounded 0.180 | 5 rollouts)
+SCORE (held-out ['cwe']): 0.180  (5 rollouts)
+All 5 rollouts saved -> /tmp/eval_R18w_320k_cwe_fixed.jsonl + /tmp/eval_R18w_320k_cwe_fixed.txt
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>

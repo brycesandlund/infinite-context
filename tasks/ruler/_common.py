@@ -63,6 +63,17 @@ def niah_key_words() -> list[str]:
 
 
 @lru_cache(maxsize=1)
+def cwe_extra_words() -> list[str]:
+    """Distinct extra words for CWE docs that need more than cwe_word_pool() (~8.2K) words: 40K lowercase alphabetic
+    4-10 letter words from the system dictionary (web2), excluding the pool, fixed shuffle — vendored in
+    cwe_extra_words.txt so every machine builds the same problems. RULER itself falls back to a 466K-word list here;
+    WITHOUT a fallback our generator sampled WITH replacement, and at 320K "uncommon" words (freq 3) repeated up to 27x
+    against the common words' 30 (2026-09-29)."""
+    import os
+    with open(os.path.join(os.path.dirname(__file__), "cwe_extra_words.txt")) as f:
+        return [w.strip() for w in f if w.strip()]
+
+
 def cwe_word_pool() -> list[str]:
     """RULER's CWE uses nouns + adjs + verbs unioned."""
     from wonderwords import random_word

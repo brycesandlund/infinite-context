@@ -1,0 +1,28 @@
+% !TEX TS-program = pdflatexmk
+% arXiv preprint build: named author, no line numbers, no ICLR header. Shares preamble.tex and content.tex
+% with paper.tex (the ICLR submission).
+\documentclass{article}
+\usepackage{iclr2027_conference,times}
+\input{preamble}
+
+\author{Bryce Sandlund \\
+\url{https://brycesandlund.com}
+}
+
+\iclrfinalcopy   % final-copy mode: shows the author block, turns off the line-number ruler
+% Title block for the preprint: the style's final-copy \@maketitle with the title and author block centered and a
+% "Preprint" header instead of "Published as a conference paper at ICLR 2027".
+\makeatletter
+\def\@maketitle{\vbox{\hsize\textwidth
+{\centering\LARGE\sc \@title\par}
+\lhead{Preprint}
+{\centering\begin{tabular}[t]{c}\bf\rule{\z@}{24pt}\@author\end{tabular}\par}
+\vskip 0.3in minus 0.1in}}
+\makeatother
+\begin{document}
+
+\maketitle
+
+\input{content}
+
+\end{document}
