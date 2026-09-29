@@ -1916,13 +1916,13 @@ losing much of the document under skewed labels (counting was already ~0.40 at e
 curve hides a failing tree: footnote it on the chart. Raw: `eval_results/raw/sft_general18w_C18w_160k.*`. Eval progress logging added
 to eval/run.py (`[progress]` lines + `{OUT}.progress.jsonl`); `scripts/eval_status.sh <tags…>` reads them.
 
-### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.862** (320K: vt n=4, cwe rerun on the fixed generator)
+### 18w RULER-13 @160K / 320K (8K budget) — 2026-09-26 — **0.868** / **0.858** (320K final: cwe rerun on the fixed generator + missing vt seed rerun)
 
 | 18w RULER-13 | 10K | 40K | 80K | 160K | 320K (partial, 64/65) |
 |---|---|---|---|---|---|
-| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.862** (cwe rerun; was 0.850) |
+| mean | 0.949 | 0.929 | 0.885 | **0.868** | **0.858** (final: cwe + vt reruns) |
 | niah (all 8 variants) | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 |
-| vt | 1.00 | 1.00 | 0.92 | 0.84 | 0.70 (n=4) |
+| vt | 1.00 | 1.00 | 0.92 | 0.84 | 0.64 (5th seed rerun: 0.40) |
 | cwe | 1.00 | 0.74 | 0.58 | **0.24** | **0.18** (fixed generator; 0.02 on the broken one) |
 | fwe | 0.93 | 0.93 | 1.00 | 1.00 | 0.93 |
 | qa_1 / qa_2 (string) | 0.60 / 0.80 | 0.80 / 0.60 | 0.60 / 0.40 | 0.60 / 0.60 | 0.60 / 0.80 |
@@ -1956,3 +1956,9 @@ word appears exactly 3x (one word per doc counts 6 — a surface duplicate betwe
 trees 205-281 nodes vs nominal ~2,560 — the read-instead-of-split collapse persists, so 0.18 is 18w's real 320K cwe).
 Corrected RULER-13 @320K = (8 niah x 1.00 + vt 0.70 + cwe 0.18 + fwe 0.93 + qa_1 0.60 + qa_2 0.80) / 13 = **0.862**
 (vt n=4 from the killed run). Raw: `eval_results/raw/sft_general18w_R18w_320k_cwe_fixed.*`.
+
+**vt @320K missing seed rerun (2026-09-29):** seed 3011001 (killed after ~110 min in the original run) finished normally
+in 34 min, 453 nodes, score **0.40**; run with MAX_NODES=1600 (~2x a 320K fold chain; the binary-tree formula's 8,188 is far
+too loose for folds). Seed 3011000 rerun alongside as a check: 0.80, 685 nodes, 52 min. vt @320K = (4 x 0.70 + 0.40)/5 =
+0.64. **Final 18w RULER-13 @320K = (8 niah x 1.00 + vt 0.64 + cwe 0.18 + fwe 0.93 + qa_1 0.60 + qa_2 0.80)/13 = 0.858.**
+Raw: `eval_results/raw/sft_general18w_R18w_320k_vt_rerun.*`.
