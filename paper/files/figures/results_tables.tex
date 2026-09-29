@@ -2,9 +2,9 @@
 % 18w (sft_general18w), harness, 8K per-agent budget, t=0.2. Recomputed from eval_results/raw/sft_general18w_{R18w_*_b8k,C18w_*}.
 % RULER 320K final: cwe from the fixed generator (0.18), vt seed 3011001 rerun (0.40 -> vt 0.64).
 \begin{table}[H]
-\centering\footnotesize\setlength{\tabcolsep}{3pt}
+\centering\footnotesize\setlength{\tabcolsep}{3.5pt}
 \begin{minipage}[c]{0.535\linewidth}\centering
-\begin{tabular}{@{}l@{\hspace{4pt}}cccccc@{}}
+\begin{tabular}{@{}l@{\hspace{3.5pt}}cccccc@{}}
 \toprule
 RULER & 10K & 20K & 40K & 80K & 160K & 320K \\
 \midrule
@@ -20,7 +20,7 @@ Mean (13) & 0.949 & 0.949 & 0.929 & 0.885 & 0.868 & 0.858 \\
 \end{tabular}
 \end{minipage}\hfill
 \begin{minipage}[c]{0.455\linewidth}\centering
-\begin{tabular}{@{}l@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{\hspace{3pt}}c@{}}
+\begin{tabular}{@{}l@{\hspace{3.5pt}}c@{\hspace{3.5pt}}c@{\hspace{3.5pt}}c@{\hspace{3.5pt}}c@{\hspace{3.5pt}}c@{\hspace{3.5pt}}c@{}}
 \toprule
 OOLONG & 10K & 20K & 40K & 80K & 160K & 320K \\
 \midrule
@@ -32,6 +32,6 @@ Mean     & 0.606 & 0.540 & 0.535 & 0.561 & 0.464 & 0.470 \\
 \bottomrule
 \end{tabular}
 \end{minipage}
-\caption{\textbf{Results by task family}. \textbf{Left:} On RULER, our model chooses a lossy aggregation strategy for the common words ``CWE" problem type, which degrades when common words are diluted by fillers as document length grows. GPT-5.4 scores 1.00 on CWE at doc size 320K. \textbf{Right:} On OOLONG-synth, leaf classification and merge errors compound at length. Distribution mismatch also arises at 160K+ document length (it sees $\leq 14K$ doc size in training).}
+\caption{\textbf{Results by task family}. \textbf{Left:} On RULER, our model chooses a lossy aggregation strategy for the common words ``CWE" problem type, which degrades when common words are diluted by fillers as document length grows. \textbf{Right:} On OOLONG-synth, leaf classification and merge errors compound at length. Distribution mismatch also arises at 160K+ document length (it sees $\leq $14K doc size in training).}
 \label{tab:family-results}
 \end{table}
