@@ -1,0 +1,25 @@
+[92m09:25:33 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m09:25:33 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+Backend: openai/gpt-5.4-2026-03-05 | mode: decompose | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 1 | budget: 1000000 | doc: 10000 | depth: None
+Loading + tokenizing PG-essay corpus...
+temp=None | out=eval_results/competitor/gpt5_4_rmed_harness_nobudget_trial_10k.{jsonl,txt}
+[progress] 1/2 done | oolong_user seed 2100000 score 1.00 | 3 nodes | 0.9 min
+[progress] 2/2 done | oolong_counting seed 2000000 score 0.03 | 40 nodes | 37.4 min
+
+========================================================================
+EVAL: backend=openai/gpt-5.4-2026-03-05 ckpt=BASE
+========================================================================
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['38'] nodes=40 answer='Answer: 50' term=answered score=0.032
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['entity'] nodes=3 answer='Label: entity' term=answered score=1.000
+
+------------------------------------------------------------------------
+oolong_counting: 0.032  (grounded 0.032 | 1 rollouts | no_answer=0/1 | mean_tree=40.0)
+    dataset trec_coarse    0.032  (n=1)
+    qtype   numeric_one_class  0.032  (n=1)
+oolong_user: 1.000  (grounded 1.000 | 1 rollouts | no_answer=0/1 | mean_tree=3.0)
+    dataset trec_coarse    1.000  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+
+OVERALL: 0.516  (grounded 0.516 | 2 rollouts)
+SCORE (held-out ['oolong_counting', 'oolong_user']): 0.516  (2 rollouts)
+All 2 rollouts saved -> eval_results/competitor/gpt5_4_rmed_harness_nobudget_trial_10k.jsonl + eval_results/competitor/gpt5_4_rmed_harness_nobudget_trial_10k.txt

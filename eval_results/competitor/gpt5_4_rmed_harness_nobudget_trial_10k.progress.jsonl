@@ -1,0 +1,2 @@
+{"task": "oolong_user", "seed": 2100000, "score": 1.0, "answer": "Label: entity", "gold": ["entity"], "nodes": 3, "dataset": "trec_coarse"}
+{"task": "oolong_counting", "seed": 2000000, "score": 0.03167635202407837, "answer": "Answer: 50", "gold": ["38"], "nodes": 40, "dataset": "trec_coarse"}

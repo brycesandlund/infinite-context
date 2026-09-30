@@ -132,6 +132,28 @@ Raw: `eval_results/competitor/base_qwen_think_t0_ctx64k_single_chart_20k.*`.
   not temperature, drives most of the 40K gap (e.g. t0.2 counting 0.102).
 - At 40K: base Qwen single-shot 0.33-0.39 ≈ gpt-5.4 single-shot 0.399 < 18w harness 0.535.
 
+## gpt-5.4 on OUR harness with no token budget — trial (2026-09-30)
+
+`MODE=decompose`, `AGENT_CONTEXT=1000000` (effectively unlimited per-agent budget), `MAX_CHUNK_TOKENS=200000`,
+`MAX_DEPTH=none`, **`MAX_NODES=40`** (cost guard), medium reasoning, temp omitted, `OUT_TOKENS=0`; 10K chart, first
+counting + first user problem.
+
+| problem (10K, trec) | agents | depth | time | output tokens | answer | score |
+|---|---|---|---|---|---|---|
+| user — most common label for a user set | 3 | 2 | 0.9 min | 2.5K | `entity` (gold entity) | 1.00 |
+| counting — how many are 'entity' | **40 (cap)** | 6 | **37.4 min** | **134K** | 50 (gold 38) | 0.03 |
+
+- With no budget the root read the whole document itself (1,200-token `read_chunk`s) — nothing forces splitting.
+- It delegated JUDGMENTS, not document ranges: subtasks like "Classify these TREC coarse labels and return only
+  mapping", "Independently classify ...", "classify only question 65: ...", with the questions pasted into the subtask;
+  subagents in turn spawned second-opinion subagents 6 levels deep until the node cap; several ended without an answer.
+- Counting answer 50 is no better than single-shot medium on the same problem (49, one call).
+- Cost ≈ $3-4 for the one counting question (134K output + input across 40 agents); uncapped it would have kept going.
+- **Not run on the full chart**: ~hours and ~$50+ for 30 problems, and on hard questions it mostly measures the node
+  cap. An unlimited budget removes the pressure that makes the harness decompose; a fair "frontier model on our
+  harness" comparison needs a fixed per-agent budget (e.g. the 8K our models get, as in June: 0.376 counting @10K,
+  no reasoning, ~3.3 agents). Raw: `eval_results/competitor/gpt5_4_rmed_harness_nobudget_trial_10k.*`.
+
 ## Results — RULER-13, single-shot (same problems as the fine-tune `eval_long.sh` runs)
 
 Runner `scripts/competitor_ruler.sh`: `eval_long.sh`'s exact 16-task order with the three OOLONG tasks at 0 problems
@@ -299,6 +321,8 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
 - 2026-09-25: gpt-5.4 medium RULER-13 @320K = 0.920 (cwe 0.56; qa judged 1.00); ~$36.
 - 2026-09-25: gpt-5.4 medium RULER-13 @10/20/40/160K = 0.954 / 0.938 / 0.954 / 0.929; ~$28.
+- 2026-09-30: gpt-5.4 medium on our harness with no token budget, 2-problem 10K trial: user 1.00 (3 agents), counting
+  0.03 (40-agent cap, 37 min, 134K output tokens). Full chart not run (see section).
 - 2026-09-30: base Qwen with thinking ENABLED (`qwen3_5` renderer), 20K chart, temp 0 = 0.518 (disabled: 0.558).
 - 2026-09-29: cwe generator fixed (>=320K docs sampled words WITH replacement past the 8,166-word pool, so "uncommon"
   words repeated up to ~27x). gpt-5.4 cwe @320K rerun on the fixed generator (current source, inlined prompt): 0.56 -> 1.00;
