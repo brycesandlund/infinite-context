@@ -34,7 +34,7 @@ DATA = {
 }
 
 SERIES = {  # fixed categorical order (dataviz reference palette, validated): ours = slot 1
-    "ours": dict(label="Ours (Qwen3.6-35B-A3B + SFT, harness)", color="#2a78d6", marker="o", ls="-"),
+    "ours": dict(label="Finetuned Qwen3.6-35B-A3B", color="#2a78d6", marker="o", ls="-"),
     "gpt": dict(label="GPT-5.4", color="#eb6834", marker="s", ls="--"),
     "base": dict(label="Qwen3.6-35B-A3B", color="#1baf7a", marker="^", ls=":"),
 }
