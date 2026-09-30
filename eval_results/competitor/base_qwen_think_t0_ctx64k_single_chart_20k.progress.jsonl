@@ -1,0 +1,30 @@
+{"task": "oolong_counting", "seed": 2000001, "score": 1.0, "answer": "Answer: negative is more common than positive", "gold": ["more common than"], "nodes": 1, "dataset": "imdb"}
+{"task": "oolong_counting", "seed": 2000002, "score": 1.0, "answer": "94", "gold": ["94"], "nodes": 1, "dataset": "agnews"}
+{"task": "oolong_counting", "seed": 2000004, "score": 1.0, "answer": "Answer: Computers & Internet is less common than Politics & Government", "gold": ["less common than"], "nodes": 1, "dataset": "yahoo"}
+{"task": "oolong_counting", "seed": 2000000, "score": 0.13348388671875, "answer": "84", "gold": ["77"], "nodes": 1, "dataset": "trec_coarse"}
+{"task": "oolong_counting", "seed": 2000005, "score": 1.0, "answer": "Answer: formal is more common than informal", "gold": ["more common than"], "nodes": 1, "dataset": "formality"}
+{"task": "oolong_counting", "seed": 2000003, "score": 0.0, "answer": null, "gold": ["129"], "nodes": 1, "dataset": "negation"}
+{"task": "oolong_counting", "seed": 2000008, "score": 0.177978515625, "answer": "177", "gold": ["183"], "nodes": 1, "dataset": "metaphors"}
+{"task": "oolong_user", "seed": 2100000, "score": 1.0, "answer": "Label: location", "gold": ["location"], "nodes": 1, "dataset": "trec_coarse"}
+{"task": "oolong_counting", "seed": 2000007, "score": 0.07508468627929688, "answer": "114", "gold": ["123"], "nodes": 1, "dataset": "multinli"}
+{"task": "oolong_user", "seed": 2100001, "score": 0.0, "answer": "Label: negative", "gold": ["positive"], "nodes": 1, "dataset": "imdb"}
+{"task": "oolong_counting", "seed": 2000006, "score": 0.0, "answer": null, "gold": ["spam", "ham"], "nodes": 1, "dataset": "spam"}
+{"task": "oolong_counting", "seed": 2000009, "score": 0.056313514709472656, "answer": "202", "gold": ["212"], "nodes": 1, "dataset": "app_reviews"}
+{"task": "oolong_user", "seed": 2100005, "score": 0.75, "answer": "4", "gold": ["5"], "nodes": 1, "dataset": "formality"}
+{"task": "oolong_user", "seed": 2100004, "score": 1.0, "answer": "User: 81013", "gold": ["81013"], "nodes": 1, "dataset": "yahoo"}
+{"task": "oolong_user", "seed": 2100006, "score": 1.0, "answer": "Label: ham", "gold": ["ham"], "nodes": 1, "dataset": "spam"}
+{"task": "oolong_user", "seed": 2100008, "score": 0.0, "answer": "User: 33994", "gold": ["63232"], "nodes": 1, "dataset": "metaphors"}
+{"task": "oolong_user", "seed": 2100003, "score": 0.0, "answer": null, "gold": ["25023"], "nodes": 1, "dataset": "negation"}
+{"task": "oolong_user", "seed": 2100002, "score": 0.0, "answer": null, "gold": ["42334"], "nodes": 1, "dataset": "agnews"}
+{"task": "oolong_user", "seed": 2100007, "score": 1.0, "answer": "User: 84252", "gold": ["84252"], "nodes": 1, "dataset": "multinli"}
+{"task": "oolong_user", "seed": 2100009, "score": 1.0, "answer": "User: 21200", "gold": ["21200"], "nodes": 1, "dataset": "app_reviews"}
+{"task": "oolong_temporal", "seed": 2200001, "score": 1.0, "answer": "negative", "gold": ["negative"], "nodes": 1, "dataset": "imdb"}
+{"task": "oolong_temporal", "seed": 2200002, "score": 0.1001129150390625, "answer": "2", "gold": ["10"], "nodes": 1, "dataset": "agnews"}
+{"task": "oolong_temporal", "seed": 2200000, "score": 1.0, "answer": "3", "gold": ["3"], "nodes": 1, "dataset": "trec_coarse"}
+{"task": "oolong_temporal", "seed": 2200004, "score": 0.31640625, "answer": "10", "gold": ["14"], "nodes": 1, "dataset": "yahoo"}
+{"task": "oolong_temporal", "seed": 2200003, "score": 0.75, "answer": "5", "gold": ["4"], "nodes": 1, "dataset": "negation"}
+{"task": "oolong_temporal", "seed": 2200006, "score": 1.0, "answer": "Answer: spam is less common than ham", "gold": ["less common than"], "nodes": 1, "dataset": "spam"}
+{"task": "oolong_temporal", "seed": 2200008, "score": 5.650448946785623e-05, "answer": "24", "gold": ["58"], "nodes": 1, "dataset": "metaphors"}
+{"task": "oolong_temporal", "seed": 2200007, "score": 0.177978515625, "answer": "13", "gold": ["7"], "nodes": 1, "dataset": "multinli"}
+{"task": "oolong_temporal", "seed": 2200005, "score": 0.0, "answer": null, "gold": ["43"], "nodes": 1, "dataset": "formality"}
+{"task": "oolong_temporal", "seed": 2200009, "score": 1.0, "answer": "Answer: positive is more common than negative", "gold": ["more common than"], "nodes": 1, "dataset": "app_reviews"}

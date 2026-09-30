@@ -109,6 +109,14 @@ Per family, 64K context: t0 counting 0.478 / user 0.675 / temporal 0.523; t0.2 0
 | no answer (out of room / no \boxed) | 1 / 1 | 2 / 0 | 5 / 1 | — |
 | output tokens median / max | 8.1K / 56.6K | 13.3K / 48.0K | 18.2K / 37.5K | — |
 
+**Thinking enabled (2026-09-30).** All base-Qwen rows above use the project renderer `qwen3_5_disable_thinking` (the
+same one the fine-tunes are evaluated with). Rerun of the 20K chart with `RENDERER_NAME=qwen3_5` (thinking on), temp 0,
+64K total context: overall **0.518** (counting 0.444 / user 0.575 / temporal 0.534) vs 0.558 with thinking disabled —
+within noise. Thinking did engage (visible answer median 391 tokens vs 13.3K: the enumeration moves into the hidden
+thinking block), but 5/30 ran out of the 64K window (vs 2/30), since thinking shares it with the answer. No benefit
+from thinking at 20K; the thinking-disabled rows are a fair (if anything slightly favourable) base-Qwen baseline.
+Raw: `eval_results/competitor/base_qwen_think_t0_ctx64k_single_chart_20k.*`.
+
 **40K chart, 64K total context:**
 
 | | temp 0 | temp 0.2 |
@@ -291,6 +299,7 @@ call): $10/$50 models (Fable 5.1, gpt-6-astra) ~$65–110 for all four lengths, 
 - 2026-09-25: gpt-5.4 medium RULER-13 @80K = 0.846 as scored, 0.954 after the boxed-extractor fix (see section).
 - 2026-09-25: gpt-5.4 medium RULER-13 @320K = 0.920 (cwe 0.56; qa judged 1.00); ~$36.
 - 2026-09-25: gpt-5.4 medium RULER-13 @10/20/40/160K = 0.954 / 0.938 / 0.954 / 0.929; ~$28.
+- 2026-09-30: base Qwen with thinking ENABLED (`qwen3_5` renderer), 20K chart, temp 0 = 0.518 (disabled: 0.558).
 - 2026-09-29: cwe generator fixed (>=320K docs sampled words WITH replacement past the 8,166-word pool, so "uncommon"
   words repeated up to ~27x). gpt-5.4 cwe @320K rerun on the fixed generator (current source, inlined prompt): 0.56 -> 1.00;
   RULER-13 @320K 0.920 -> 0.954 (judged 0.966 -> 1.000). Raw: `eval_results/competitor/gpt5_4_rmed_nocap_cwe_fixed_320k.*`.
