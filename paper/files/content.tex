@@ -4,6 +4,20 @@
 We study long context language models. Instead of training long context natively, or designing a long context harness, we train a model over the simplest possible harness: a tool to call itself with any specified prompt and a tool to read tokens in a range from the input context. We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness. With only 8,000 tokens of context, our small model is as strong as GPT-5.4 with 1M tokens of context on the OOLONG-synth benchmark when document length exceeds 40K tokens\footnote{Our code is available at: \url{https://github.com/brycesandlund/infinite-context}.}.
 \end{abstract}
 
+\begin{figure}[H]
+\centering
+\begin{minipage}[t]{0.49\linewidth}\centering
+\includegraphics[width=\linewidth]{figures/eval_ruler.pdf}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\linewidth}\centering
+\includegraphics[width=\linewidth]{figures/eval_oolong.pdf}
+\end{minipage}
+\caption[Results on RULER and OOLONG-synth]{\textbf{Results} on RULER and OOLONG-synth. Our finetune runs in our harness with an 8K token
+per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
+baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
+\label{fig:length-sweep}
+\end{figure}
+
 \section{Introduction}
 
 As language models boast impressive breakthroughs~\citep{luong2025imogold,wei2025imogold,openai2025icpc,lin2025icpcgold,openai2026unitdistance,openai2026tenadvances,openai2026navierstokes}, increasing focus is placed on their limitations. The most salient resource constraint of a language model is its context length. Models can process and produce tokens within this limit, but the limit is hard. Model producers have identified this constraint and placed great emphasis on extending it as large as possible, with some model builders touting 10M~\citep{dangel2026subq,meta2025llama4,zhu2026pokeeisaac} and even 100M~\citep{magic2024ltm2mini} token context lengths (for reference, the length of the first Harry Potter book is about 100,000 tokens, the full U.S. tax code roughly 3M, and the Linux kernel source code about 300M).
@@ -13,8 +27,6 @@ While native context scaling is appealing as a concrete engineering problem, it 
 While handcrafted prompts and programmatic environments can be effective in solving long context problems without native long context training, it begs an obvious question: if models can, for example, solve all the problems at the International Collegiate Programming Contest\footnote{\url{https://icpc.global/}} World Finals~\citep{openai2025icpc}, or more generally, implement requested features in codebases far larger than context limits~\citep{marten2026terminalbench,openai2026gpt6astra,anthropic2026fablemythos51}, can they not be \emph{trained} to manage context effectively, \emph{without human-authored harness crutches}? Such model training internalizes decisions external harnesses hardcode, offering the potential to scale much more generally.
 
 We answer this question in this paper, affirmatively. We consider the simplest possible agentic context harness, defined below. The purpose of the harness is to \emph{enable capability}, without \emph{fixing choices} or \emph{instilling a prior}.
-
-\pagebreak
 
 \subsection{Harness}
 
@@ -29,7 +41,7 @@ Unmodified long-context prompts are provided to the model over a document access
 
 \subsection{Results}
 
-We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness and achieve the following results:
+We finetune Qwen3.6-35B-A3B on a diverse synthetic dataset using this harness and achieve the following results (see Figure~\ref{fig:length-sweep}):
 \begin{enumerate}
   \item On the OOLONG-synth benchmark, with a context limit of just 8K tokens per agent, our small model performs \textbf{as well} as GPT-5.4 with 1M tokens of context when document length exceeds 40K tokens.
   \item On the RULER benchmark, with a context limit of just 8K tokens per agent, our model scores $\geq85\%$ on document size from 10K to 320K tokens.
@@ -94,20 +106,6 @@ We do consider an RL stage following SFT. Unfortunately, even with LLM-as-a-judg
 We test our finetune on RULER~\citep{hsieh2024ruler}, the standard long context eval, and OOLONG-synth~\citep{bertsch2025oolong}, a newer long context benchmark frontier models have not yet saturated, also used in Recursive Language Models~\citep{zhang2025rlm}, Recursive Agent Optimization~\citep{gandhi2026rao}, and Recursive Agent Harnesses~\citep{lumer2026rah}. RULER is an extension of needle-in-a-haystack style tasks with variable tracking, word frequencies, and Q\&A. OOLONG-synth composes classification tasks on ten datasets into long documents on which aggregation is queried.
 
 We compare against base Qwen3.6-35B-A3B\footnote{While Qwen3.6-35B-A3B was trained with a 256K token context limit, we sample Qwen3.6-35B-A3B from Tinker, which caps the model at 64K token context.} and GPT-5.4. We chose GPT-5.4 as a selection from the best frontier models available upon Qwen3.6-35B-A3B release. While we do not eval against additional frontier models, due to compute requirements, we recommend the reader read the OOLONG paper for more comparisons (GPT-5 tops the chart)~\citep{bertsch2025oolong}. While we do eval GPT-5.4 on RULER, this benchmark is largely saturated for frontier models. For more RULER reference points, consult model release cards.
-
-\begin{figure}[H]
-\centering
-\begin{minipage}[t]{0.49\linewidth}\centering
-\includegraphics[width=\linewidth]{figures/eval_ruler.pdf}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.49\linewidth}\centering
-\includegraphics[width=\linewidth]{figures/eval_oolong.pdf}
-\end{minipage}
-\caption[Results on RULER and OOLONG-synth]{\textbf{Results} on RULER and OOLONG-synth. Our finetune runs in our harness with an 8K token
-per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
-baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
-\label{fig:length-sweep}
-\end{figure}
 
 For RULER, we fix a sample of 5 questions per problem type, for a total of 65 problems per document length. For OOLONG-synth, we fix a sample of 10 questions per family: counting, user, and temporal, each sampled from a different underlying classification dataset. We vendor generators for both benchmarks and generate our problems from scratch. We eval our finetune at temperature 0.2 (determined best empirically), GPT-5.4 at API default (required for reasoning mode), and base Qwen3.6-35B-A3B at temperature 0 (we found temperature 0 and 0.2 to perform similarly).
 
