@@ -13,8 +13,8 @@ We study long context language models. Instead of training long context natively
 \includegraphics[width=\linewidth]{figures/eval_oolong.pdf}
 \end{minipage}
 \caption[Results on RULER and OOLONG-synth]{\textbf{Results} on RULER and OOLONG-synth. Our finetune runs in our harness with an 8K token
-per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Appendix~\ref{app:harness} for details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
-baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on the same problems.}
+per-agent context limit. GPT-5.4 (medium reasoning) and base Qwen3.6-35B-A3B are given the full document with the question (see Section~\ref{experiments} and Appendix~\ref{app:harness} for more details). Base Qwen and GPT-5.4 are served with 64K and 1M token context limits, respectively. The OOLONG random
+baseline follows \citet[\S2.3]{bertsch2025oolong}, computed on our eval.}
 \label{fig:length-sweep}
 \end{figure}
 
@@ -111,7 +111,9 @@ For RULER, we fix a sample of 5 questions per problem type, for a total of 65 pr
 
 On RULER, our finetune performs worse than GPT-5.4, while remaining above 85\%. On OOLONG-synth, our model starts worse than GPT-5.4, then matches its performance when document size exceeds 40K. At this length, native context performance begins to degrade, and a single model can be overwhelmed with the number of items requiring tracking within its context. On the other hand, agents in our harness operate in 8K token budgets, executing small pieces of an overall decomposition strategy, which scales gracefully to arbitrary lengths.
 
-Per problem-family results are given in Table~\ref{tab:family-results}.
+Exact scores for Figure~\ref{fig:length-sweep} are given in Table~\ref{tab:comparison}, and per problem-family results for our model in Table~\ref{tab:family-results}.
+
+\input{figures/comparison_table}
 
 \input{figures/results_tables}
 
