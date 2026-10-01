@@ -113,6 +113,10 @@ On RULER, our finetune performs worse than GPT-5.4, while remaining above 85\%. 
 
 Exact scores for Figure~\ref{fig:length-sweep} are given in Table~\ref{tab:comparison}, and per problem-family results for our model in Table~\ref{tab:family-results}.
 
+A quick note on cost: while we do not quantify costs formally, our finetune is cheaper both by running a smaller model and by scaling \emph{agents} over document length instead of context window. In particular, our computational complexity is $O(n)$ in document size $n$, compared to $\Omega(n^2)$ for dense attention architectures.
+
+Our finetune is also \emph{faster} than full document comparisons, particularly when the \emph{tree reduce} decomposition strategy is chosen, which allows for parallel processing.
+
 \input{figures/comparison_table}
 
 \input{figures/results_tables}
