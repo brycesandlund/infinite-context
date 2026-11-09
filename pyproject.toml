@@ -1,0 +1,24 @@
+[project]
+name = "infinite-context"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "marimo>=0.23.8",
+    "matplotlib>=3.10.9",
+    "tinker>=0.22.3",
+    "tinker-cookbook>=0.4.1",
+    # RULER vendoring: wonderwords supplies the adj/noun/verb pools RULER uses
+    # for needle keys; nltk supplies sent_tokenize which RULER uses to insert
+    # needles at sentence boundaries (rather than mid-word token positions).
+    "wonderwords>=2.2.0",
+    "nltk>=3.9",
+    # Multi-backend eval: one interface over Anthropic + OpenAI (+ others) for
+    # the cross-model recursive-agent comparison.
+    "litellm>=1.40",
+    "wandb>=0.27.2",
+]
+
+[tool.uv.sources]
+tinker = { path = "../tinker-sdk", editable = true }

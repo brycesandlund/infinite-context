@@ -1,0 +1,14 @@
+This directory vendors task generators from NVIDIA RULER
+(https://github.com/NVIDIA/RULER, scripts/data/synthetic), licensed under the
+Apache License 2.0 (see LICENSE in this directory).
+
+Modifications by this project (Bryce Sandlund, 2026):
+- Generators are adapted to return Problem objects (tasks/base.py) with the
+  document separated from the question: RULER's {context} slot is replaced by a
+  pointer to a document accessed through the read_chunk tool (_common.render_question),
+  or re-inlined for single-shot evaluation (_common.inline_document).
+- Common-words extraction (CWE): when a document needs more distinct words than
+  the wonderwords pool, words are drawn without replacement from the pool plus a
+  vendored 40,000-word list (cwe_extra_words.txt, from the web2 word list), in
+  place of RULER's larger fallback word list.
+- QA tasks (qa_1 SQuAD, qa_2 HotpotQA) load data through qa_data.py.
