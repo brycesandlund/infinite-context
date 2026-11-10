@@ -159,6 +159,79 @@ class TinkerBackend(ModelBackend):
         )
 
 
+class VLLMBackend(TinkerBackend):
+    """Our own server instead of Tinker: any OpenAI-compatible /v1/completions endpoint that accepts TOKEN-ID prompts
+    (vLLM; see offtinker/modal_app.py::serve). Prompts are rendered by the SAME cookbook renderer + tool specs as
+    training and sent as token ids, and the reply's token ids go back through the renderer's parser — the server's chat
+    template, tool-call parser and sampling defaults are never involved, so a rollout differs from a Tinker rollout
+    only in who runs the forward pass.
+
+    Sampling matches TinkerBackend: temperature only (top_p 1, no top_k), stop at <|im_end|>."""
+
+    def __init__(self, base_url: str, api_key: str, model: str, tokenizer, renderer, temperature: float = 1.0):
+        super().__init__(None, tokenizer, renderer, temperature)
+        import httpx
+
+        self.name = "vllm"
+        self.model = model
+        self._http = httpx.AsyncClient(
+            base_url=base_url.rstrip("/"), headers={"Authorization": f"Bearer {api_key}"},
+            timeout=httpx.Timeout(900.0, connect=60.0), limits=httpx.Limits(max_connections=1024, max_keepalive_connections=256),
+        )
+
+    async def sample(
+        self, messages: list[dict], max_tokens: int, tools: bool = True
+    ) -> AssistantTurn:
+        import httpx
+        from tinker_cookbook.renderers import get_text_content
+
+        specs = self._tool_specs if tools else []
+        prompt = self.renderer.build_generation_prompt(neutral_to_cookbook(messages, self.renderer, specs)).to_ints()
+        stop_ids = [int(t) for t in self._stop if isinstance(t, int)]
+        body = {
+            "model": self.model, "prompt": prompt, "temperature": self.temperature, "top_p": 1.0,
+            "max_tokens": max(1, min(max_tokens, int(os.environ.get("TINKER_MAX_OUT", "0")) or max_tokens)),
+            "stop_token_ids": stop_ids, "skip_special_tokens": False, "add_special_tokens": False,
+            "return_token_ids": True,
+        }
+        # Cold starts (a scaled-to-zero server takes minutes to load the model) and transient 5xx are retried.
+        delay = 5.0
+        for attempt in range(40):
+            try:
+                r = await self._http.post("/v1/completions", json=body)
+                if r.status_code in (408, 425, 429, 500, 502, 503, 504):
+                    raise httpx.HTTPStatusError(f"{r.status_code}", request=r.request, response=r)
+                r.raise_for_status()
+                break
+            except (httpx.TransportError, httpx.HTTPStatusError) as e:
+                code = getattr(getattr(e, "response", None), "status_code", None)
+                if attempt == 39 or (code is not None and code not in (408, 425, 429, 500, 502, 503, 504)):
+                    detail = getattr(getattr(e, "response", None), "text", "")[:500]
+                    raise RuntimeError(f"vLLM request failed ({type(e).__name__} {code}): {detail}") from e
+                await asyncio.sleep(delay)
+                delay = min(delay * 1.5, 60.0)
+        resp = r.json()
+        choice = resp["choices"][0]
+        toks = choice.get("token_ids")
+        if toks is None:        # server without return_token_ids: re-encode the text (special tokens were kept)
+            toks = self.tokenizer.encode(choice.get("text") or "", add_special_tokens=False)
+        toks = [int(t) for t in toks]
+        # vLLM drops the stop token from the output; the renderer's parser needs it to see a clean stop.
+        if choice.get("finish_reason") == "stop" and stop_ids and not any(t in toks for t in stop_ids):
+            toks.append(stop_ids[0])
+        parsed, termination = self.renderer.parse_response(toks)
+        u = resp.get("usage") or {}
+        return AssistantTurn(
+            text=get_text_content(parsed) or "",
+            tool_calls=_cookbook_tool_calls_to_neutral(parsed.get("tool_calls")),
+            raw=parsed,
+            truncated=not getattr(termination, "is_clean", True),
+            served_model=resp.get("model"),
+            usage={"output_tokens": u.get("completion_tokens"), "reasoning_tokens": None,
+                   "prompt_tokens": u.get("prompt_tokens")},
+        )
+
+
 def neutral_to_cookbook(messages: list[dict], renderer, tool_specs: list[dict]) -> list[dict]:
     """Translate neutral messages -> cookbook Message format, with the tool-aware
     system prefix (create_conversation_prefix_with_tools). Shared by TinkerBackend

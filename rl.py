@@ -61,11 +61,13 @@ from tasks import (
 # ---------------------------------------------------------------------------
 
 
-MODEL_NAME = "Qwen/Qwen3.6-35B-A3B"
+# Env-overridable (MODEL_NAME=Qwen/Qwen3.5-9B): the Qwen3.5/3.6 family shares ONE tokenizer (tokenizer.json sha
+# 5f9e4d49… for 3.5-9B and 3.6-35B-A3B alike), so traces, budgets and the trace cache are identical across them.
+MODEL_NAME = os.environ.get("MODEL_NAME", "Qwen/Qwen3.6-35B-A3B")
 # disable_thinking: generation prefills an EMPTY <think> block — byte-identical to
 # the prefix SFT datums condition on (oracle traces have no thinking), so train and
 # sample distributions match. Free thinking would also eat the tight 8k budget.
-RENDERER_NAME = "qwen3_5_disable_thinking"
+RENDERER_NAME = os.environ.get("RENDERER_NAME", "qwen3_5_disable_thinking")
 LORA_RANK = 32
 # Env-overridable (LR=...) for sweeps. Run 9 settled this: at 4e-5 the policy
 # collapses in ~3 steps (reward 0.62->0.00, grounded 16->9) EVEN with the leak-free

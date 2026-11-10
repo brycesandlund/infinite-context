@@ -211,6 +211,9 @@ LAST_SFT_CHECKPOINT_FILE = Path.home() / ".cache" / "infinite-context" / "last_s
 #                       and save them to $TRACE_OUT.txt. This is the ground-truth
 #                       behaviour we're teaching — check it's actually clean.
 TRAIN = os.environ.get("TRAIN", "1") == "1"
+# SFT_EXPORT=<dir>: also write the EXACT training set (after resampling) and Tinker's batch order to <dir> for the
+# off-Tinker trainer (offtinker/train.py). Combine with TRAIN=0 to export without training.
+SFT_EXPORT = os.environ.get("SFT_EXPORT", "").strip()
 PRINT_TRACES = os.environ.get("PRINT_TRACES", "0") == "1"
 TRACE_OUT = os.environ.get("TRACE_OUT", "/tmp/sft_traces")
 
@@ -632,6 +635,63 @@ def _node_to_datums(node, renderer, tool_specs, is_qa: bool = False) -> list[tup
 # ---------------------------------------------------------------------------
 
 
+def _export_dataset(datums, datum_task, out_dir) -> None:
+    """Write the training set exactly as Tinker would consume it, for offtinker/train.py:
+      tokens.npy   int32, every UNIQUE datum's full token sequence, concatenated (input = seq[:-1], target = seq[1:])
+      mask.npy     uint8, aligned with tokens.npy: 1 where the token is a trained TARGET (an assistant token)
+      offsets.npy  int64, len = n_unique + 1 (datum u is tokens[offsets[u]:offsets[u+1]])
+      order.npy    int32, the training order = indices into the unique datums AFTER the loop's Random(0) shuffle;
+                   batch b is order[b*B:(b+1)*B]. Duplicates (ROOT_DUP, QA_ANSWER_DUP) appear as repeated indices.
+      task_ids.npy uint8 per unique datum (index into meta["tasks"])
+      meta.json    counts + the config that produced it
+    Loss weights are implied: datum_from_model_input_weights(reduction="mean") gives each trained token 1/n_trained,
+    so a datum's loss is its MEAN token NLL and a batch's loss is the SUM of those (Tinker cross_entropy). Asserted."""
+    import numpy as np
+    out = Path(out_dir).expanduser()
+    out.mkdir(parents=True, exist_ok=True)
+    uniq, index = [], {}
+    for d in datums:
+        if id(d) not in index:
+            index[id(d)] = len(uniq)
+            uniq.append(d)
+    order = list(datums)
+    random.Random(0).shuffle(order)          # == the epoch-0 shuffle in main()
+    tasks = sorted({datum_task.get(id(d), "?") for d in uniq})
+    toks, mask, offs, tids = [], [], [0], []
+    for d in uniq:
+        x = d.model_input.to_ints()
+        y = d.loss_fn_inputs["target_tokens"].to_torch().tolist()
+        w = d.loss_fn_inputs["weights"].to_torch().double()
+        assert len(x) == len(y) == len(w) and x[1:] == y[:-1], "datum is not a plain next-token shift"
+        nz = w[w > 0]
+        assert len(nz) and float(nz.max() - nz.min()) <= 1e-6 * float(nz.max()) and abs(float(w.sum()) - 1) < 1e-3, \
+            "weights are not uniform-mean; the export format assumes reduction='mean' over 0/1 weights"
+        toks.append(np.asarray(x + y[-1:], dtype=np.int32))
+        mask.append(np.concatenate([[0], (w.numpy() > 0)]).astype(np.uint8))
+        offs.append(offs[-1] + len(x) + 1)
+        tids.append(tasks.index(datum_task.get(id(d), "?")))
+    np.save(out / "tokens.npy", np.concatenate(toks))
+    np.save(out / "mask.npy", np.concatenate(mask))
+    np.save(out / "offsets.npy", np.asarray(offs, dtype=np.int64))
+    np.save(out / "order.npy", np.asarray([index[id(d)] for d in order], dtype=np.int32))
+    np.save(out / "task_ids.npy", np.asarray(tids, dtype=np.uint8))
+    n_seen = sum(len(d.model_input.to_ints()) for d in datums)
+    meta = {
+        "model_name": MODEL_NAME, "renderer": RENDERER_NAME, "cache_version": _CACHE_VERSION, "tasks": tasks,
+        "n_unique": len(uniq), "n_datums": len(datums), "unique_tokens": int(offs[-1]), "train_tokens": int(n_seen),
+        "batch_size": SFT_BATCH_SIZE, "n_batches": (len(datums) + SFT_BATCH_SIZE - 1) // SFT_BATCH_SIZE,
+        "lr": LEARNING_RATE, "lora_rank": LORA_RANK, "adam": {"beta1": 0.9, "beta2": 0.95, "eps": 1e-12},
+        "max_len": int(max(len(t) for t in toks)), "datum_mode": DATUM_MODE,
+        "env": {k: os.environ[k] for k in (
+            "SFT_TASKS", "N_PER_TASK", "N_PER_TASK_OVERRIDE", "CTX", "DOC", "BUDGET_MIX", "ROUND_DOC_FRAC", "CHUNK",
+            "FOLD_LEAF_TOKENS", "ROOT_DUP", "DATUM_MODE", "INTERNAL_KEEP", "CONTEXT_DROP", "QUESTION_PLACEHOLDER_FRAC",
+            "BOOKQA_LEAF_MODEL", "SAVE_NAME", "DOC_MIX", "DOC_MIX_OVERRIDE", "SYNTH_STRATEGY") if k in os.environ},
+    }
+    (out / "meta.json").write_text(json.dumps(meta, indent=1))
+    print(f"SFT_EXPORT: {len(uniq):,} unique datums ({offs[-1]:,} tokens), {len(datums):,} in training order "
+          f"({n_seen:,} tokens), max len {meta['max_len']} -> {out}")
+
+
 RETRY_MINUTES = float(os.environ.get("SFT_RETRY_MINUTES", "30"))   # in-process retry window per call
 
 
@@ -722,11 +782,15 @@ async def main() -> None:
     # Convert to (datum, klass); also sanity-check oracle traces actually solved the task.
     tagged: list[tuple] = []
     n_agents = 0
+    datum_task: dict[int, str] = {}      # id(datum) -> task, for SFT_EXPORT (per-task loss in the off-Tinker trainer)
     for (_task, _seed, _problem), node in traces:
         is_qa = _task in _QA_VERDICT_TASKS
         for agent in flatten(node):
             n_agents += 1
-            tagged.extend(_node_to_datums(agent, renderer, tool_specs, is_qa=is_qa))
+            new = _node_to_datums(agent, renderer, tool_specs, is_qa=is_qa)
+            for _d, _k in new:
+                datum_task[id(_d)] = _task
+            tagged.extend(new)
 
     # Resample the QA verdict imbalance: keep only a stride-fraction of no-answer verdicts,
     # duplicate each answer verdict. Deterministic (stride) so it's reproducible.
@@ -760,6 +824,9 @@ async def main() -> None:
     print(f"Datum mode: {DATUM_MODE} | training tokens: {n_tok:,} ({n_tok / max(1, len(datums)):.0f}/datum)")
     if not datums:
         raise SystemExit("No datums produced — check oracle trace generation.")
+
+    if SFT_EXPORT:
+        _export_dataset(datums, datum_task, SFT_EXPORT)
 
     if not TRAIN:
         print("TRAIN=0: skipping Tinker training/save (dry run). "

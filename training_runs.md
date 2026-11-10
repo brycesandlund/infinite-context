@@ -1964,3 +1964,75 @@ too loose for folds). Seed 3011000 rerun alongside as a check: 0.80, 685 nodes, 
 Raw: `eval_results/raw/sft_general18w_R18w_320k_vt_rerun.*`.
 
 **18w RULER-13 @20K (added 2026-09-29): 0.949** — niah/vt/fwe 1.00, cwe 0.94, qa_1 / qa_2 0.60 / 0.80 (string). Raw: `eval_results/raw/sft_general18w_R18w_20k_b8k.*`.
+
+## OFF-TINKER STACK (Qwen3.5-9B on rented GPUs) — built and validated 2026-11-10
+
+After the reviews, compute cost is the constraint. Tinker's dense options are priced above the MoE per token (Qwen3.5-9B
+train $1.463/M -> ~$290 for an 18b-scale run), so training and evals move to our own GPU for a dense Qwen3.5 model.
+Code: `offtinker/` (README there has the commands), `eval/backends.py::VLLMBackend`, `scripts/offtinker_parity.py`.
+No full training run yet — this entry is the validation of the stack.
+
+**Model facts.** Qwen3.5-9B: 32 layers (24 Gated-DeltaNet linear attention + 8 full attention), hidden 4096, same tokenizer
+as Qwen3.6-35B-A3B (identical tokenizer.json), so traces, budgets and the trace cache carry over unchanged. Tinker's
+adapter layout (read from downloaded adapters): rank 32 / alpha 32, A ~ U(+-1/sqrt(fan_in)), B = 0, on attention q/k/v/o,
+linear-attention q, k, v (three separate adapters on the fused `in_proj_qkv`), z, out_proj, MLP gate/up/down and the
+output layer; 94.6M params, 249 adapters. `offtinker/lora.py` reproduces it key for key.
+
+**Dataset.** `SFT_EXPORT` on the 18b recipe with today's generators (cache v18, not 18b's v15): 2,740 traces, 117,278
+datums, 199.5M tokens (18b: 117,335 / 196.1M), longest datum 5,927 tokens, 27.7% of tokens trained.
+
+**Parity with Tinker** (reference: 150 steps on Tinker's Qwen3.5-9B, 4.1M tokens, ~$6; 32 held-aside datums for log-probs):
+
+| Check | Result |
+|---|---|
+| Base model, loss on trained tokens | ours 0.5555, Tinker 0.5558 (per-datum gap 0.0010) |
+| 150 steps from Tinker's own init, same batches: per-step loss | correlation 1.0000, mean gap 0.0008 |
+| Weight updates after 150 steps, ours vs Tinker | cosine 0.997 (A) / 0.991 (B), norms within 0.1% |
+| Two of OUR runs from the same init (resume test, 8 steps) | cosine 0.995 — i.e. the Tinker gap is at our own run-to-run noise |
+| Tinker's step-150 adapter loaded in our stack | loss 0.0605 vs Tinker's server 0.0605 |
+| Same adapter merged and served by vLLM, greedy first turns | 103/120 identical 160-token continuations; both follow the trace equally (86 vs 87) |
+
+At the 17 greedy divergences vLLM preferred its token by a median 0.25 nats and Tinker's token was always in its top 5
+(near-ties on a barely trained model).
+
+**bf16 noise.** Against a float32 run of the same weights, ours and Tinker's server are equally far (trained tokens, mean
+|d log-prob| 0.0032 vs 0.0034). Isolated positions inside documents differ by 10+ nats in BOTH directions between any two
+of the three (copy-like tokens where two candidates tie); they are not trained on and the mean signed gap is ~0.
+
+**Merging is lossy with a plain cast.** At lr 1e-5 most LoRA update entries are smaller than half a bf16 step of the
+weight they are added to, so `W + BA` cast to bf16 returns `W` for most entries: loss 0.0605 -> 0.0807 on the step-150
+adapter. `offtinker/merge.py` rounds without bias (each value to one of its two bf16 neighbours with probability by
+proximity): 0.0603 / 0.0601 (two seeds). Use that default; never a plain cast.
+
+**Throughput** (H100, steady state): 6,200 tokens/s with gradient checkpointing, 32 GB peak. Matrix multiplies are 41% of
+GPU time (running near the card's limit); the rest is elementwise work and dtype casts in the reference model code.
+Padding waste 8% after replacing greedy micro-batching with an optimal split. Without checkpointing the saved
+activations need ~6 MB/token — too much for 80 GB; on an H200 that mode reaches 8,300 tokens/s (109 GB peak).
+
+| | Full 18b-scale run (199.5M tokens) |
+|---|---|
+| Modal H200, no checkpointing | ~6.7 h, ~$30 |
+| Modal H100, checkpointing | ~8.9 h, ~$35 |
+| Tinker Qwen3.5-9B | ~$290 |
+| Tinker Qwen3.6-35B-A3B (what 18b cost) | ~$230 |
+
+**Evals.** vLLM 0.33 serves Qwen3.5. The harness renders prompts itself and sends token ids, so the server's chat
+template, tool parser and sampling defaults are bypassed. Smoke-tested through `eval/run.py`; no benchmark numbers yet.
+Server capacity on agent-shaped requests (`scripts/vllm_load_test.py`: 600 distinct conversations, ~1,500-token prompts,
+~100-token replies, base 9B):
+
+| Server GPU | Tokens/s (prompt + output) | Modal $ per 1M tokens |
+|---|---|---|
+| H100, 256 concurrent | 33,200 (31,100 + 2,100) | ~$0.033 |
+| H100, 64 concurrent | 26,800 | ~$0.041 |
+| L40S, 64-256 concurrent | 9,000 (8,400 + 575) | ~$0.060 |
+
+So the H100 is both faster and cheaper per token. At that rate the token counts measured on 18w's trees would cost about
+$0.3 for the 4K scoreboard (7.7M), $3 for RULER-13 @40K (93.9M), $6 for RULER-13 @160K (187.9M) — IF the harness keeps the
+server busy; fold chains are sequential, so real evals will run it below capacity (raise CONCURRENCY). Prefix-cache hit
+rate was ~1-2% in this test (distinct conversations); not measured on real trees.
+
+**Not done:** a full training run (needs the v15-vs-v18 corpus decision); a real benchmark eval on vLLM (cost above is
+capacity-based); Vast (scripts written, no credentials here); B200 (no capacity on Modal when tried); torch.compile.
+Raw: `eval_results/offtinker/` (Tinker reference metrics, log-probs); adapters and our log-probs in
+`~/.cache/infinite-context/offtinker/`; Modal volumes `ic-data`, `ic-runs` (`/parity`, `/tinker_ref_9b`), `ic-hf-cache`.

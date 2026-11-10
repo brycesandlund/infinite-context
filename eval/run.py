@@ -31,7 +31,7 @@ from tinker_cookbook.renderers import get_renderer
 
 import rl  # single source of truth for budget/recursion/data constants
 from eval.agent import AgentNode, flatten, run_agent, run_single_shot
-from eval.backends import APIBackend, ModelBackend, TinkerBackend
+from eval.backends import APIBackend, ModelBackend, TinkerBackend, VLLMBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
 from tasks.oolong import OOLONG_TASKS, make_oolong_problem, oolong_spec
 
@@ -142,6 +142,17 @@ async def _build_backend(tokenizer) -> ModelBackend:
         sampling_client = await training_client.save_weights_and_get_sampling_client_async()
         renderer = get_renderer(RENDERER_NAME, tokenizer)
         return TinkerBackend(sampling_client, tokenizer, renderer, temperature=TEMPERATURE)
+
+    if BACKEND == "vllm":
+        # Our own vLLM server (offtinker/modal_app.py::serve, or any box): VLLM_URL=https://... ; the key comes from
+        # VLLM_API_KEY or ~/.cache/infinite-context/vllm_api_key.txt. MODEL_NAME still selects the tokenizer/renderer.
+        from pathlib import Path
+        url = os.environ.get("VLLM_URL") or Path("~/.cache/infinite-context/vllm_url.txt").expanduser().read_text().strip()
+        kf = Path("~/.cache/infinite-context/vllm_api_key.txt").expanduser()
+        key = os.environ.get("VLLM_API_KEY") or (kf.read_text().strip() if kf.exists() else "EMPTY")
+        renderer = get_renderer(RENDERER_NAME, tokenizer)
+        print(f"vLLM backend: {url} (served model {os.environ.get('VLLM_MODEL', 'ic')!r})")
+        return VLLMBackend(url, key, os.environ.get("VLLM_MODEL", "ic"), tokenizer, renderer, temperature=TEMPERATURE)
 
     # OUT_TOKENS=0 -> no output cap sent at all (the provider's own maximum applies)
     return APIBackend(BACKEND, temperature=TEMPERATURE, reasoning_effort=REASONING_EFFORT,
