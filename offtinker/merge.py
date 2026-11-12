@@ -20,6 +20,11 @@ import torch
 from offtinker.lora import PREFIX, adapter_scale, hf_weight_for, read_adapter
 
 
+import re
+
+_PER_EXPERT = re.compile(r"(.*\.mlp\.experts\.)(\d+)\.(gate|up|down)_proj\.weight$")
+
+
 def stochastic_bf16(wf: torch.Tensor, gen: torch.Generator, rows: int = 8192) -> torch.Tensor:
     """float32 -> bf16 with UNBIASED rounding: each value goes to one of its two bf16 neighbours with probability
     proportional to proximity, so E[result] = value.
@@ -29,6 +34,7 @@ def stochastic_bf16(wf: torch.Tensor, gen: torch.Generator, rows: int = 8192) ->
     most entries — the update is silently shrunk (measured: merged NLL 0.081 vs 0.060 unmerged on a 150-step
     adapter). Unbiased rounding keeps the update in expectation and turns the error into zero-mean noise."""
     out = torch.empty(wf.shape, dtype=torch.bfloat16, device=wf.device)
+    rows = max(1, rows * 4096 // max(1, wf[0].numel()))        # ~32M values per slice whatever the shape
     for a in range(0, wf.shape[0], rows):
         x = wf[a:a + rows]
         n = x.to(torch.bfloat16)                       # nearest neighbour
@@ -80,6 +86,7 @@ def main() -> None:
         wname, part = hf_weight_for(key)
         patches[wname].append((part, sd[k], sd[k.replace(".lora_A.", ".lora_B.")]))
     n_done = 0
+    per_expert_done: dict = defaultdict(int)
     for f in sorted(base.iterdir()):
         if f.suffix != ".safetensors":
             if f.is_file():
@@ -90,20 +97,34 @@ def main() -> None:
             meta = sf.metadata()
             for name in sf.keys():
                 w = sf.get_tensor(name)
-                if name in patches:
+                pe = _PER_EXPERT.match(name)
+                if pe and (pe[1] + ("down_proj" if pe[3] == "down" else "gate_up_proj")) in patches:
+                    # checkpoints re-saved by newer transformers store each expert separately
+                    # (`experts.<e>.gate_proj.weight`); the hub checkpoints store them fused (handled below).
+                    fused = pe[1] + ("down_proj" if pe[3] == "down" else "gate_up_proj")
+                    e = int(pe[2])
+                    (_, A, B), = [p for p in patches[fused] if p[0] == (None if pe[3] == "down" else pe[3])]
+                    wf = w.to(dev, torch.float32)
+                    wf += scale * (B[e if B.shape[0] > 1 else 0].to(dev, torch.float32) @ A[e if A.shape[0] > 1 else 0].to(dev, torch.float32))
+                    w = wf.cpu() if a.rounding == "fp32" else (stochastic_bf16(wf, gen).cpu() if a.rounding == "stochastic" and w.dtype == torch.bfloat16 else wf.to(w.dtype).cpu())
+                    per_expert_done[(fused, pe[3])] += 1
+                    if per_expert_done[(fused, pe[3])] == max(A.shape[0], B.shape[0]):
+                        n_done += 1
+                elif name in patches:
                     wf = w.to(dev, torch.float32)
                     row = 0
                     parts = patches[name]
-                    if parts[0][0] is not None:                     # fused in_proj_qkv: rows are [q | k | v]
-                        parts = sorted(parts, key=lambda p: "qkv".index(p[0]))
+                    if parts[0][0] is not None:       # fused rows: in_proj_qkv = [q | k | v], expert gate_up_proj = [gate | up]
+                        parts = sorted(parts, key=lambda p: ("q", "k", "v", "gate", "up").index(p[0]))
+                    rdim = wf.dim() - 2               # the row axis (1 for the 3-D expert weights [E, out, in])
                     for _, A, B in parts:
-                        d = scale * (B.to(dev, torch.float32) @ A.to(dev, torch.float32))
+                        d = scale * (B.to(dev, torch.float32) @ A.to(dev, torch.float32))   # 3-D: broadcasts the shared factor
                         if d.shape == wf.shape:
                             wf += d
                         else:
-                            wf[row:row + d.shape[0]] += d
-                            row += d.shape[0]
-                    assert parts[0][0] is None or row == wf.shape[0], (name, row, wf.shape)
+                            wf.narrow(rdim, row, d.shape[rdim]).add_(d)
+                            row += d.shape[rdim]
+                    assert parts[0][0] is None or row == wf.shape[rdim], (name, row, wf.shape)
                     if a.rounding == "fp32":
                         w = wf.cpu()
                     elif a.rounding == "stochastic" and w.dtype == torch.bfloat16:

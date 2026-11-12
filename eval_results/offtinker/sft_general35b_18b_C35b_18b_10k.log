@@ -1,0 +1,121 @@
+Backend: vllm | mode: decompose | tasks: ['oolong_counting', 'oolong_user', 'oolong_temporal'] | n/task: 10 | budget: 8000 | doc: 10000 | depth: None
+Loading + tokenizing PG-essay corpus...
+vLLM backend: https://bcsandlund--ic-serve-35b18b-serve.us-east.modal.run (served model 'ic')
+temp=0.2 | out=/tmp/eval_C35b_18b_10k.{jsonl,txt}
+[progress] 1/30 done | oolong_counting seed 2000002 score 1.00 | 31 nodes | 8.9 min
+[progress] 2/30 done | oolong_user seed 2100002 score 0.56 | 31 nodes | 9.4 min
+[progress] 3/30 done | oolong_counting seed 2000008 score 0.32 | 63 nodes | 10.5 min
+[progress] 4/30 done | oolong_user seed 2100005 score 1.00 | 31 nodes | 10.5 min
+[progress] 5/30 done | oolong_counting seed 2000004 score 0.00 | 31 nodes | 10.6 min
+[progress] 6/30 done | oolong_user seed 2100004 score 0.00 | 31 nodes | 10.6 min
+[progress] 7/30 done | oolong_counting seed 2000009 score 0.42 | 63 nodes | 11.9 min
+[progress] 8/30 done | oolong_counting seed 2000003 score 0.03 | 63 nodes | 11.9 min
+[progress] 9/30 done | oolong_counting seed 2000007 score 0.32 | 63 nodes | 12.0 min
+[progress] 10/30 done | oolong_counting seed 2000000 score 0.10 | 63 nodes | 12.3 min
+[progress] 11/30 done | oolong_counting seed 2000006 score 0.00 | 63 nodes | 12.5 min
+[progress] 12/30 done | oolong_user seed 2100000 score 1.00 | 63 nodes | 12.5 min
+[progress] 13/30 done | oolong_user seed 2100001 score 1.00 | 57 nodes | 12.7 min
+[progress] 14/30 done | oolong_user seed 2100003 score 1.00 | 63 nodes | 12.8 min
+[progress] 15/30 done | oolong_counting seed 2000001 score 1.00 | 63 nodes | 12.8 min
+[progress] 16/30 done | oolong_counting seed 2000005 score 1.00 | 63 nodes | 12.8 min
+[progress] 17/30 done | oolong_user seed 2100006 score 0.00 | 63 nodes | 21.1 min
+[progress] 18/30 done | oolong_user seed 2100007 score 0.00 | 63 nodes | 21.4 min
+[progress] 19/30 done | oolong_temporal seed 2200001 score 1.00 | 31 nodes | 21.4 min
+[progress] 20/30 done | oolong_temporal seed 2200009 score 1.00 | 63 nodes | 21.5 min
+[progress] 21/30 done | oolong_temporal seed 2200008 score 0.03 | 63 nodes | 21.6 min
+[progress] 22/30 done | oolong_temporal seed 2200006 score 1.00 | 63 nodes | 21.7 min
+[progress] 23/30 done | oolong_user seed 2100009 score 1.00 | 63 nodes | 21.7 min
+[progress] 24/30 done | oolong_user seed 2100008 score 0.00 | 63 nodes | 21.9 min
+[progress] 25/30 done | oolong_temporal seed 2200002 score 0.03 | 31 nodes | 23.1 min
+[progress] 26/30 done | oolong_temporal seed 2200004 score 0.42 | 31 nodes | 25.7 min
+[progress] 27/30 done | oolong_temporal seed 2200007 score 0.24 | 31 nodes | 26.3 min
+[progress] 28/30 done | oolong_temporal seed 2200005 score 1.00 | 31 nodes | 29.0 min
+[progress] 29/30 done | oolong_temporal seed 2200000 score 0.32 | 63 nodes | 29.2 min
+[progress] 30/30 done | oolong_temporal seed 2200003 score 0.75 | 63 nodes | 30.3 min
+
+========================================================================
+EVAL: backend=vllm ckpt=BASE
+========================================================================
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['38'] nodes=63 answer='46' term=answered score=0.100
+# task=oolong_counting seed=2000001 dataset=imdb gold=['same frequency as'] nodes=63 answer='Answer: negative is same frequency as positive' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['45'] nodes=31 answer='45' term=answered score=1.000
+# task=oolong_counting seed=2000003 dataset=negation gold=['63'] nodes=63 answer='51' term=answered score=0.032
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['less common than'] nodes=31 answer='Answer: Computers & Internet is the same frequency as Politics & Government' term=answered score=0.000
+# task=oolong_counting seed=2000005 dataset=formality gold=['more common than'] nodes=63 answer='Answer: formal is more common than informal' term=answered score=1.000
+# task=oolong_counting seed=2000006 dataset=spam gold=['spam'] nodes=63 answer='Label: ham' term=answered score=0.000
+# task=oolong_counting seed=2000007 dataset=multinli gold=['59'] nodes=63 answer='55' term=answered score=0.316
+# task=oolong_counting seed=2000008 dataset=metaphors gold=['89'] nodes=63 answer='85' term=answered score=0.316
+# task=oolong_counting seed=2000009 dataset=app_reviews gold=['104'] nodes=63 answer='107' term=answered score=0.422
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['entity'] nodes=63 answer='Label: entity' term=answered score=1.000
+# task=oolong_user seed=2100001 dataset=imdb gold=['91202'] nodes=57 answer='User: 91202' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['1'] nodes=31 answer='3' term=answered score=0.562
+# task=oolong_user seed=2100003 dataset=negation gold=['63189'] nodes=63 answer='User: 63189' term=answered score=1.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['30140'] nodes=31 answer='User: 48659' term=answered score=0.000
+# task=oolong_user seed=2100005 dataset=formality gold=['informal'] nodes=31 answer='Label: informal' term=answered score=1.000
+# task=oolong_user seed=2100006 dataset=spam gold=['95692'] nodes=63 answer='User: User 95692' term=answered score=0.000
+# task=oolong_user seed=2100007 dataset=multinli gold=['61575'] nodes=63 answer='User: 22244' term=answered score=0.000
+# task=oolong_user seed=2100008 dataset=metaphors gold=['40356'] nodes=63 answer='User: 64369' term=answered score=0.000
+# task=oolong_user seed=2100009 dataset=app_reviews gold=['69477'] nodes=63 answer='User: 69477' term=answered score=1.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['4'] nodes=63 answer='0' term=answered score=0.316
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['negative'] nodes=31 answer='Label: negative' term=answered score=1.000
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['8'] nodes=31 answer='20' term=answered score=0.032
+# task=oolong_temporal seed=2200003 dataset=negation gold=['16'] nodes=63 answer='17' term=answered score=0.750
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['10'] nodes=31 answer='7' term=answered score=0.422
+# task=oolong_temporal seed=2200005 dataset=formality gold=['10'] nodes=31 answer='10' term=answered score=1.000
+# task=oolong_temporal seed=2200006 dataset=spam gold=['more common than'] nodes=63 answer='Answer: ham is more common than spam' term=answered score=1.000
+# task=oolong_temporal seed=2200007 dataset=multinli gold=['11'] nodes=31 answer='16' term=answered score=0.237
+# task=oolong_temporal seed=2200008 dataset=metaphors gold=['27'] nodes=63 answer='39' term=answered score=0.032
+# task=oolong_temporal seed=2200009 dataset=app_reviews gold=['more common than'] nodes=63 answer='Answer: positive is more common than negative' term=answered score=1.000
+
+------------------------------------------------------------------------
+oolong_counting: 0.419  (grounded 0.419 | 10 rollouts | no_answer=0/10 | mean_tree=56.6)
+    dataset agnews         1.000  (n=1)
+    dataset app_reviews    0.422  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.316  (n=1)
+    dataset multinli       0.316  (n=1)
+    dataset negation       0.032  (n=1)
+    dataset spam           0.000  (n=1)
+    dataset trec_coarse    0.100  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   least_common_label 0.000  (n=1)
+    qtype   numeric_one_class  0.364  (n=6)
+    qtype   relative_freq      0.667  (n=3)
+oolong_temporal: 0.579  (grounded 0.579 | 10 rollouts | no_answer=0/10 | mean_tree=47.0)
+    dataset agnews         0.032  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.032  (n=1)
+    dataset multinli       0.237  (n=1)
+    dataset negation       0.750  (n=1)
+    dataset spam           1.000  (n=1)
+    dataset trec_coarse    0.316  (n=1)
+    dataset yahoo          0.422  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   most_common_label  0.316  (n=1)
+    qtype   numeric_one_class  0.032  (n=1)
+    qtype   relative_freq      0.538  (n=5)
+    qtype   represented_n_times 0.875  (n=2)
+oolong_user: 0.556  (grounded 0.556 | 10 rollouts | no_answer=0/10 | mean_tree=52.8)
+    dataset agnews         0.562  (n=1)
+    dataset app_reviews    1.000  (n=1)
+    dataset formality      1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset metaphors      0.000  (n=1)
+    dataset multinli       0.000  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset spam           0.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   least_common_label 1.000  (n=2)
+    qtype   most_common_label  0.250  (n=4)
+    qtype   numeric_one_class  0.562  (n=1)
+    qtype   relative_freq      0.500  (n=2)
+    qtype   second_most_freq   1.000  (n=1)
+
+OVERALL: 0.518  (grounded 0.518 | 30 rollouts)
+SCORE (held-out ['oolong_counting', 'oolong_temporal', 'oolong_user']): 0.518  (30 rollouts)
+All 30 rollouts saved -> /tmp/eval_C35b_18b_10k.jsonl + /tmp/eval_C35b_18b_10k.txt
+===== C35b_18b_10k DONE 00:35:58 =====

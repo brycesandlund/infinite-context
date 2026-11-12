@@ -22,17 +22,27 @@ from offtinker.core import loss_backward, pack, token_logprobs
 from offtinker.lora import LoRASet
 
 
+MOE = "--moe" in sys.argv      # same checks on a tiny random Qwen3.5 MoE (routed experts + shared expert)
+
+
+def model_cls():
+    import transformers
+    return transformers.Qwen3_5MoeForConditionalGeneration if MOE else transformers.Qwen3_5ForConditionalGeneration
+
+
 def tiny():
-    from transformers import Qwen3_5Config, Qwen3_5ForConditionalGeneration
-    cfg = Qwen3_5Config(
-        text_config=dict(vocab_size=300, hidden_size=64, intermediate_size=128, num_hidden_layers=4,
+    import transformers
+    Cfg = transformers.Qwen3_5MoeConfig if MOE else transformers.Qwen3_5Config
+    extra = dict(num_experts=12, num_experts_per_tok=3, moe_intermediate_size=24, shared_expert_intermediate_size=24) if MOE else {}
+    cfg = Cfg(
+        text_config=dict(**extra, vocab_size=300, hidden_size=64, intermediate_size=128, num_hidden_layers=4,
                          num_attention_heads=4, num_key_value_heads=2, head_dim=16, linear_num_key_heads=2,
                          linear_num_value_heads=4, linear_key_head_dim=16, linear_value_head_dim=16,
                          layer_types=["linear_attention", "linear_attention", "linear_attention", "full_attention"]),
         vision_config=dict(depth=1, hidden_size=32, intermediate_size=64, num_heads=2, out_hidden_size=64),
     )
     torch.manual_seed(0)
-    m = Qwen3_5ForConditionalGeneration(cfg).float()
+    m = model_cls()(cfg).float()
     with torch.no_grad():
         for p in m.parameters():        # non-degenerate norms / gates
             if p.dim() == 1:
@@ -60,6 +70,9 @@ def main() -> None:
     assert sum("in_proj_q" in n for n in names) == 3 and sum("in_proj_k" in n for n in names) == 3
     assert sum("self_attn" in n for n in names) == 4 and "unembed_tokens" in names
     assert not any("in_proj_a" in n or "in_proj_b" in n or "embed_tokens" == n for n in names)
+    if MOE:
+        assert sum(".mlp.experts.w" in n for n in names) == 12 and sum(".mlp.shared_expert." in n for n in names) == 12
+        assert len(names) == 3 * 5 + 4 + 24 + 1, len(names)
     for s, b in zip(seqs, base_lp):
         assert np.allclose(token_logprobs(text, m, s), b, atol=1e-5), "B=0 LoRA changed the model"
     print(f"1 ok: {len(names)} adapters, B=0 is a no-op")
@@ -112,10 +125,10 @@ def main() -> None:
         print("3 ok: adapter save/load round-trip")
 
         tiny().save_pretrained(f"{td}/base")
-        subprocess.run([sys.executable, "-m", "offtinker.merge", "--adapter", f"{td}/adapter", "--out", f"{td}/merged",
-                        "--model", f"{td}/base"], check=True, capture_output=True)
-        from transformers import Qwen3_5ForConditionalGeneration
-        m3 = Qwen3_5ForConditionalGeneration.from_pretrained(f"{td}/merged").float().to(core.DEV)
+        r = subprocess.run([sys.executable, "-m", "offtinker.merge", "--adapter", f"{td}/adapter", "--out", f"{td}/merged",
+                            "--model", f"{td}/base"], capture_output=True, text=True)
+        assert r.returncode == 0, "merge failed:\n" + r.stderr[-3000:]
+        m3 = model_cls().from_pretrained(f"{td}/merged").float().to(core.DEV)
         m3.requires_grad_(False)
         d = max(float(np.abs(token_logprobs(m3.model.language_model, m3, s) - b).max()) for s, b in zip(seqs, lp_lora))
         d0 = max(float(np.abs(a - b).max()) for a, b in zip(base_lp, lp_lora))

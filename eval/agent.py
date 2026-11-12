@@ -15,6 +15,7 @@ own tokenizer (which is the honest meaning of "your context is 10k").
 from __future__ import annotations
 
 import asyncio
+import time
 from dataclasses import dataclass, field
 
 import harness
@@ -37,6 +38,31 @@ class AgentNode:
     # e.g. eval / SFT traces, so the header is unchanged there).
     advantage: float | None = None      # the training advantage this trajectory received
     judge_score: float | None = None    # the judge's score for this node (None for the gold-graded root)
+    seconds: float | None = None        # wall time of this agent, start to finish, INCLUDING its subagents
+
+
+async def _timed_sample(backend: ModelBackend, messages: list[dict], **kw) -> AssistantTurn:
+    """backend.sample plus its wall time, stored in usage["seconds"] (includes any server-side queueing and retries)."""
+    t0 = time.perf_counter()
+    turn = await backend.sample(messages, **kw)
+    turn.usage = {**(turn.usage or {}), "seconds": round(time.perf_counter() - t0, 3)}
+    return turn
+
+
+def usage_totals(node: AgentNode) -> dict:
+    """Whole-tree totals for one rollout. input_tokens sums the prompt of EVERY model call (an agent's conversation
+    is re-sent each turn, so this is what an API bills as input, before any cache discount). None when no call
+    reported that field (e.g. prompt tokens in competitor files written before 2026-11-12)."""
+    calls = [m["usage"] for n in flatten(node) for m in n.messages if m.get("usage")]
+
+    def tot(key):
+        vals = [u[key] for u in calls if u.get(key) is not None]
+        return sum(vals) if vals else None
+
+    sec = tot("seconds")
+    return {"n_calls": len(calls), "input_tokens": tot("prompt_tokens"), "output_tokens": tot("output_tokens"),
+            "reasoning_tokens": tot("reasoning_tokens"), "cached_tokens": tot("cached_tokens"),
+            "model_seconds": round(sec, 2) if sec is not None else None}
 
 
 @dataclass
@@ -86,6 +112,7 @@ async def run_agent(
     if node_budget is None:
         node_budget = _RolloutBudget(max_nodes=max_nodes)
     node_budget.count += 1
+    t_start = time.perf_counter()
     system = harness.make_system_prompt(
         doc_length=len(document_tokens),
         context_budget=budget,
@@ -108,7 +135,7 @@ async def run_agent(
             termination = "overflow"
             break
         n_turns += 1
-        turn: AssistantTurn = await backend.sample(messages, max_tokens=budget - used)
+        turn: AssistantTurn = await _timed_sample(backend, messages, max_tokens=budget - used)
         messages.append(
             {"role": "assistant", "content": turn.text, "tool_calls": turn.tool_calls,
              **({"served_model": turn.served_model} if turn.served_model else {}),
@@ -161,6 +188,7 @@ async def run_agent(
         termination=termination,
         messages=messages,
         children=children,
+        seconds=round(time.perf_counter() - t_start, 3),
     )
 
 
@@ -189,7 +217,7 @@ async def run_single_shot(
     ]
     if context_limit:     # total-context models: output gets what the prompt leaves (prompt + output <= limit)
         max_output_tokens = min(max_output_tokens, context_limit - backend.count_tokens(messages))
-    turn = await backend.sample(messages, max_tokens=max_output_tokens, tools=False)
+    turn = await _timed_sample(backend, messages, max_tokens=max_output_tokens, tools=False)
     messages.append({"role": "assistant", "content": turn.text, "tool_calls": [],
                      **({"served_model": turn.served_model} if turn.served_model else {}),
              **({"usage": turn.usage} if turn.usage else {})})
@@ -208,6 +236,7 @@ async def run_single_shot(
         termination=termination,
         messages=messages,
         children=[],
+        seconds=(turn.usage or {}).get("seconds"),
     )
 
 

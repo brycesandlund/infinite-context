@@ -2036,3 +2036,130 @@ rate was ~1-2% in this test (distinct conversations); not measured on real trees
 capacity-based); Vast (scripts written, no credentials here); B200 (no capacity on Modal when tried); torch.compile.
 Raw: `eval_results/offtinker/` (Tinker reference metrics, log-probs); adapters and our log-probs in
 `~/.cache/infinite-context/offtinker/`; Modal volumes `ic-data`, `ic-runs` (`/parity`, `/tinker_ref_9b`), `ic-hf-cache`.
+
+## sft9b_18b_v15 (Qwen3.5-9B, FROM BASE, off Tinker, 18b corpus) — 2026-11-10 — 4K SCORE-9 **0.876**; RULER-13 0.934 / 0.877 @10K/40K; OOLONG chart 0.437 / 0.362
+
+First full off-Tinker run: the 18b recipe on a dense 9B instead of the 35B MoE. Corpus regenerated from commit `4cca78c`
+(cache v15, 25 min before 18b's launch) in a worktree with the export patch: 2,740 traces / 117,351 datums / 196.16M tokens /
+7,335 steps (18b logged 117,335 / 196.1M / 7,334 — 16 datums differ, cause not traced). Modal H200, `--grad-ckpt 0
+--micro-tokens 11000`: 334.7 min at ~9,000 tok/s (~$25), final NLL ~0.003-0.006. One container restart at step 682: resumed from the step-600 checkpoint (steps 601-682 appear twice in the metrics file), ~10 min lost. Adapter `ic-runs:/sft9b_18b_v15/final`,
+merged (unbiased bf16 rounding) `.../merged`, served by vLLM on an H100 (`ic-serve-9b18b`). Evals: `scripts/after_run9b.sh`
+(18b's tasks, seeds, budgets, TEMP 0.2, MAX_NODES; BACKEND=vllm), ~50 min wall for the whole suite.
+
+| | 18b (35B-A3B MoE, Tinker) | **9B dense, own GPU** |
+|---|---|---|
+| 4K SCORE-9 (3K budget) | 0.847 | **0.876** |
+| RULER-13 @10K / 40K (8K budget) | 0.954 / 0.965 | 0.934 / 0.877 |
+| – cwe @10K / 40K | — / 0.78 | 0.98 / 0.54 |
+| – fwe @40K | 1.00 | 0.87 |
+| – qa_1 / qa_2 LLM-judged @4K | 0.80 / 0.60 | 0.80 / 0.20 |
+| – qa_1 / qa_2 LLM-judged @10K | 1.00 / 0.80 | 0.80 / 0.40 |
+| – qa_1 / qa_2 LLM-judged @40K | 1.00 / 0.80 | 0.80 / 0.20 |
+| OOLONG chart @10K / 40K | 0.621 / 0.551 | 0.437 / 0.362 |
+| – counting / user / temporal @10K | 0.44 / 0.70 / 0.72 | 0.33 / 0.53 / 0.45 |
+| – counting / user / temporal @40K | 0.32 / 1.00 / 0.33 | 0.32 / 0.36 / 0.40 |
+
+9B @4K: every task 1.00 except oolong counting 0.65 / user 0.80 / temporal 0.44, labeled_records 0.88, synth_peak 0.50,
+qa_1 0.80, qa_2 0.20. All 8 niah tasks and vt 1.00 at every length (vt 0.96 @10K). Failures NOT yet analysed (which of
+OOLONG's loss is leaf labelling vs aggregation; why cwe/fwe drop at 40K; qa_2). Leaf-classification probe not run (Tinker-
+only script). Noise as for 18b: 30 chart / 65 RULER rollouts per point. Raw: `eval_results/offtinker/sft_general9b_18b*`,
+`qa_judge_9b_18b.txt`, training curve `sft9b_18b_v15_metrics.jsonl`.
+
+## OFF-TINKER STACK, MoE (Qwen3.6-35B-A3B on a rented H200) — built and validated 2026-11-10
+
+The 9B is a no-go (above); the stack now trains the paper's own model. No full run yet.
+
+**Tinker's MoE adapter layout** (read off the 18w adapter and a step-0 adapter): 431 adapters / 862 tensors / 561.5M values.
+Attention + output layer as for the dense models; the always-on `shared_expert` gate/up/down; and the routed experts:
+`w1` (gate), `w3` (up): A SHARED by the block's 256 experts `[1, 32, 2048]`, B per expert `[256, 512, 32]`; `w2` (down): A per
+expert `[256, 32, 512]`, B shared `[1, 2048, 32]`. **w1.A and w3.A are one tied tensor** (identical in all 40 layers at init
+and after training — one LoRA on the fused gate_up projection). Init: shared A U(±1/sqrt(2048)), per-expert A
+U(±1/sqrt(32·512)), B = 0. Not adapted: the router, `shared_expert_gate`. `offtinker/lora.py::ExpertLoRA` reproduces this
+(same key names, so adapters load in either direction).
+
+**Expert forward.** Hugging Face loops over the 256 experts in Python. Ours sorts the (token, expert) pairs by expert and
+runs each projection as one `torch._grouped_mm` (native grouped matmul, bf16 CUDA); the shared A is applied once per token
+before the gather; the K=8 outputs per token are summed with `index_add_`.
+
+**Parity with Tinker** (32 datums of the v15 export; 150-step reference run on Tinker's Qwen3.6-35B-A3B, 4.1M tokens):
+
+| Check | Result |
+|---|---|
+| Base model, mean NLL on trained tokens | ours 0.5259 vs Tinker 0.5255 (per-datum gap 0.0054; token-level mean \|d\| 0.029 — router flips make the MoE noisier than the 9B's 0.007) |
+| Tinker's 18w adapter in our stack | 0.0008 vs Tinker 0.0010 |
+| Tinker's step-150 adapter in our stack | 0.0577 vs Tinker 0.0593 |
+| ... merged (unbiased bf16 rounding) | 0.0581 |
+| 150 steps from Tinker's init, same batches | loss corr 1.0000, mean \|dNLL\| 0.0012 (mean 0.2350 vs 0.2352) |
+| Weight updates after 150 steps, ours vs Tinker | cosine 0.981 (A) / 0.946 (B), norm ratio 1.012 / 1.003 |
+| Weight updates, ours vs ours (run A index_add, run B sorted sum) | cosine 0.984 / 0.952 — the same as vs Tinker, so that is run-to-run noise |
+| Merged step-150 model on vLLM vs Tinker's sampler, greedy 160 tokens | 101/120 identical; follows the trace: Tinker 94, vLLM 92; at the 19 divergences vLLM's margin median 0.375 nats (max 3.75), Tinker's token always in vLLM's top-5 |
+
+**Throughput (H200, gradient checkpointing, micro_tokens 32000, peak 83-86 GB — does not fit an H100):** bench ~6,650
+tok/s, the real train loop 6,000-6,250 -> the 196M-token 18b corpus in ~8.9 h, **~$40** on Modal ($4.54/h). Tinker charged
+~$230. Without checkpointing: 7,183 tok/s at micro_tokens 6000 but 126 GB peak and OOM at 9000 — not worth the risk.
+Tried and dropped: padded per-expert bmm for the LoRA factors (3,700 tok/s: expert loads are uneven, max ~3.5x mean); a
+custom batched backward for grouped_mm (no gain: GPU-bound, not launch-bound). `index_add_` vs a sorted sum: +10%.
+Serving the merged model with vLLM 0.33 on an H200: 42,267 tok/s at 256 concurrent requests (21,488 at 64) -> ~$0.030/M.
+
+**Operational notes.** (1) `modal volume get` silently corrupted one 2.2 GB download (a 4 MB run of zeros inside one
+tensor, caught as a cosine-0.1 outlier): compare `sha256sum` on the volume with the local file for anything that matters.
+(2) transformers 5.22 re-saves expert weights per expert (`experts.<e>.gate_proj.weight`); the hub checkpoint is fused
+(`experts.gate_up_proj` [E, 2I, H]); `merge.py` handles both. (3) Modal web endpoints answer requests that wait >150 s with
+a 303 — clients need `follow_redirects`. (4) `OFFTINKER_GPU=none` gives a CPU container.
+
+**Not done:** a full MoE run; a resume test on the MoE (same code path as the 9B's, which was tested). Launch: `OFFTINKER_GPU=H200 uvx modal run --detach offtinker/modal_app.py::train_long --args "--data
+/data/sft18b_v15 --out /runs/sft35b_18b_v15 --model Qwen/Qwen3.6-35B-A3B --micro-tokens 32000"`, then merge with
+`--model Qwen/Qwen3.6-35B-A3B`, deploy with `OFFTINKER_GPU=H200`, and `scripts/after_run9b.sh <name> <url>`.
+Raw: `eval_results/offtinker/{lp_tinker_moe_*,tinker_ref_moe_*,moe_parity_train_*,moe_sample_cmp.txt,parity_ids_v15.txt}`.
+
+### Serving check at benchmark level: Tinker's 18w adapter, merged and served by our vLLM — 2026-11-11 — no detectable difference (412 paired rollouts, -0.010, 95% [-0.035, +0.013])
+
+Isolates merge + vLLM serving from training: Tinker's own 18w adapter merged into the base (`ic-runs:/tinker_18w_merged`,
+unbiased bf16 rounding), served on an H200, and run through 18w's exact eval protocol (`OOLONG_N=20 CONCURRENCY=16
+scripts/after_run9b.sh moe18w <url>`; same tasks, seeds, budgets, TEMP 0.2), so every rollout pairs with a Tinker
+rollout on the same problem (`scripts/compare_evals.py`; RULER vt keeps the same variables but lays the document out
+differently per process, counted as paired).
+
+| | 18w on Tinker (2026-09-25) | 18w merged, our vLLM | paired diff per rollout |
+|---|---|---|---|
+| 4K SCORE-9 | 0.800 | 0.855 | +0.024 (n 102, p 0.13) |
+| OOLONG chart @10K / @40K | 0.606 / 0.535 | 0.582 / 0.552 | -0.023 / +0.017 (n 30 each, p 0.69 / 0.78) |
+| RULER-13 @10K / @40K | 0.949 / 0.929 | 0.973 / 0.918 | |
+| OOLONG fresh seeds (in the RULER runs) @10K / @40K | 0.715 / 0.606 | 0.650 / 0.547 | -0.065 / -0.058 (n 60 each) |
+| whole RULER+OOLONG run @10K / @40K | | | -0.019 / -0.034 (n 125 each, p 0.45 / 0.17) |
+
+Pooled: all 412 rollouts -0.010 (p 0.40; better on 37, worse on 47, equal on 328); the 195 non-OOLONG rollouts +0.008;
+all 195 OOLONG rollouts -0.030 (p 0.20). Tree shapes match (mean agents per task identical or within a few; node
+overflows 116 vs 105 of ~47K nodes), and the open-QA answers the judge disagrees with the string grader on are the same
+ones as on Tinker (`KPMG and Ernst & Young`, `35`, `High risk preparations ...`).
+**The one soft spot:** OOLONG inside the two RULER runs is -0.062 over 120 rollouts (95% [-0.123, -0.003], p 0.045,
+uncorrected and picked out after looking); the chart OOLONG runs (60 rollouts, -0.003) and 4K (15 rollouts, +0.116)
+do not show it. Noise reference from Tinker itself, same R@40K problems at TEMP 0.2 vs 0.4: -0.032 over 125 rollouts
+(p 0.02), OOLONG families -0.04 / -0.06 / -0.05 — the same size. So it is not evidence of a serving gap, but it has not
+been ruled out either; a second run on our own stack (vLLM vs vLLM) would settle it.
+Largest per-task moves are n=5 tasks: @40K cwe 0.74 -> 0.60, fwe 0.93 -> 0.73 (Tinker's own fwe went 0.93 -> 0.33
+at TEMP 0); @10K qa_1 0.60 -> 1.00.
+Cost / time: merge ~15 min on an H100 (incl. queue), server cold start 10.5 min (72 GB), evals 2 h 22 min wall on one
+H200 (the 40K RULER+OOLONG run is the long pole: 125 rollouts, 117 min; ~112M prompt tokens in total) -> ~$11.
+Raw: `eval_results/offtinker/sft_generalmoe18w*`, `qa_judge_moe18w.txt`.
+
+## sft35b_18b_v15 (Qwen3.6-35B-A3B MoE, FROM BASE, off Tinker, 18b corpus) — 2026-11-12 — 4K SCORE-9 **0.873**; RULER-13 0.969 / 0.943 @10K/40K; OOLONG chart 0.518 / 0.516 — reproduces 18b within noise
+
+18b's recipe and corpus (the v15 export of sft9b_18b_v15: 117,351 datums / 196.16M tokens / 7,335 steps) trained on our
+own stack with Tinker's adapter layout. Modal H200, `--micro-tokens 32000`, gradient checkpointing: 521.1 min, no
+restarts, 6,100-6,700 tok/s, peak 86.7 GB, **~$39**; final NLL ~0.002-0.005. Merge 7 min (H100), vLLM on an H200, 18b's
+eval suite 1 h 37 min incl. cold start (~$7.5). All unattended via `scripts/after_train_offtinker.sh`. Adapter
+`ic-runs:/sft35b_18b_v15/final`, merged `.../merged`.
+
+| | 18b (Tinker) | **35B, own GPU** | paired diff per rollout |
+|---|---|---|---|
+| 4K SCORE-9 | 0.847 | **0.873** | +0.028 (n 104, p 0.15) |
+| RULER-13 @10K / @40K | 0.954 / 0.965 | **0.969 / 0.943** | +0.015 / -0.022 (n 65 each, p 1.0 / 0.50) |
+| OOLONG chart @10K / @40K | 0.621 / 0.551 | **0.518 / 0.516** | -0.103 / -0.035 (n 30 each, p 0.19 / 0.56) |
+
+All 294 paired rollouts: -0.006. Tree sizes match task by task. OOLONG chart @10K is the only visible gap (temporal 0.73 ->
+0.58, user 0.70 -> 0.56; 6 rollouts better, 8 worse, 95% [-0.26, +0.04]) — inside what 30 rollouts can show, and this is
+one training run against one (no second Tinker run of 18b exists to give the training-seed spread). With the 18w serving
+check's -0.03 on OOLONG it is the thing to watch, not a finding. qa LLM-judged: 4K 1.00 / 0.80, @10K 1.00 / 0.80, @40K
+1.00 / 0.60. Raw: `eval_results/offtinker/sft_general35b_18b*`, `qa_judge_35b_18b.txt`, `sft35b_18b_v15_metrics.jsonl`.
+

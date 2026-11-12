@@ -30,7 +30,7 @@ from tinker_cookbook import tokenizer_utils
 from tinker_cookbook.renderers import get_renderer
 
 import rl  # single source of truth for budget/recursion/data constants
-from eval.agent import AgentNode, flatten, run_agent, run_single_shot
+from eval.agent import AgentNode, flatten, run_agent, run_single_shot, usage_totals
 from eval.backends import APIBackend, ModelBackend, TinkerBackend, VLLMBackend
 from tasks import grade_answer, list_tasks, load_pg_essays_text, make_problem, resolve_eval_grading_mode
 from tasks.oolong import OOLONG_TASKS, make_oolong_problem, oolong_spec
@@ -254,7 +254,7 @@ async def main() -> None:
     _prog = open(f"{OUT}.progress.jsonl", "w")
 
     async def _tracked(task, seed, problem):
-        node = await _one(problem)
+        node = await _one(problem)   # node.seconds: prompt -> last agent done, clock started AFTER the CONCURRENCY slot
         sc = grade_answer(node.answer, problem.gold_answers, resolve_eval_grading_mode(problem))
         _done[0] += 1
         n_nodes = len(flatten(node))
@@ -262,6 +262,7 @@ async def main() -> None:
               f"{(_time.time() - _t0) / 60:.1f} min", flush=True)
         _prog.write(json.dumps({"task": task, "seed": seed, "score": sc, "answer": node.answer,
                                 "gold": problem.gold_answers, "nodes": n_nodes,
+                                "latency_s": node.seconds, **usage_totals(node),
                                 "dataset": problem.metadata.get("dataset")}) + "\n")
         _prog.flush()
         return node
@@ -290,6 +291,7 @@ async def main() -> None:
     by_dataset: dict[tuple[str, str], list[float]] = defaultdict(list)
     by_qtype: dict[tuple[str, str], list[float]] = defaultdict(list)
     health: dict[str, list] = defaultdict(list)  # task -> list of (no_answer, tree_size)
+    cost: dict[str, list] = defaultdict(list)    # task -> list of (latency_s, input_tokens, output_tokens)
     jsonl = open(f"{OUT}.jsonl", "w")
     txt = open(f"{OUT}.txt", "w")
     print()
@@ -309,11 +311,19 @@ async def main() -> None:
             by_qtype[(task, qt)].append(score)
         n_nodes = len(flatten(node))
         health[task].append((node.answer is None, n_nodes))
+        _u = usage_totals(node)
+        cost[task].append((node.seconds, _u["input_tokens"], _u["output_tokens"]))
         jsonl.write(json.dumps({
             "task": task, "seed": seed, "dataset": ds, "qtype": qt,
             "question": problem.question, "gold": problem.gold_answers,
             "answer": node.answer, "score": score, "grounded": grounded,
             "n_agents": n_nodes, "root_termination": node.termination,
+            # COST (2026-11-12). latency_s = end-to-end wall time, question in -> last agent finished; the clock starts
+            # when the rollout gets its CONCURRENCY slot, so waiting for a slot is not counted, but slowdown from other
+            # rollouts sharing the server IS (time the latency numbers at a load the server holds). input_tokens sums
+            # every call's prompt; output_tokens includes reasoning_tokens; model_seconds = sum of call wall times
+            # (what a fully serial execution would take; latency_s / model_seconds shows the gain from parallelism).
+            "latency_s": node.seconds, **usage_totals(node),
             # every model snapshot that answered in this rollout (API backends; empty for Tinker)
             "served_models": sorted({m["served_model"] for n in flatten(node) for m in n.messages
                                      if m.get("served_model")}),
@@ -341,6 +351,12 @@ async def main() -> None:
         mean_tree = sum(sz for _, sz in health[t]) / len(health[t])
         print(f"{t}: {sum(s)/len(s):.3f}  (grounded {sum(g)/len(g):.3f} | {len(s)} rollouts | "
               f"no_answer={no_ans}/{len(s)} | mean_tree={mean_tree:.1f})")
+
+        def _mean(i):
+            v = [c[i] for c in cost[t] if c[i] is not None]
+            return sum(v) / len(v) if v else float("nan")
+        print(f"    cost: latency {_mean(0):.1f} s | input {_mean(1) / 1000:.1f}K | output {_mean(2) / 1000:.1f}K tokens "
+              f"(means per rollout)")
         for (tt, ds), ss in sorted(by_dataset.items()):
             if tt == t:
                 print(f"    dataset {ds:14s} {sum(ss)/len(ss):.3f}  (n={len(ss)})")

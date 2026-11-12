@@ -1,0 +1,12 @@
+[92m20:21:16 - LiteLLM:WARNING[0m: common_utils.py:979 - litellm: could not pre-load bedrock-runtime response stream shape — Bedrock event-stream decoding will be unavailable. Error: No module named 'botocore'
+[92m20:21:17 - LiteLLM:WARNING[0m: common_utils.py:24 - litellm: could not pre-load sagemaker-runtime response stream shape — SageMaker event-stream decoding will be unavailable. Error: No module named 'botocore'
+== eval_results/offtinker/sft_general9b_18b.jsonl
+   narrativeqa  string 1.00 | LLM-judged 1.00  (n=2)
+   qa_1         string 0.80 | LLM-judged 0.80  (n=5)
+   qa_2         string 0.20 | LLM-judged 0.20  (n=5)
+== eval_results/offtinker/sft_general9b_18b_R9b_18b_10k_b8k.jsonl
+   qa_1         string 0.80 | LLM-judged 0.80  (n=5)
+   qa_2         string 0.40 | LLM-judged 0.40  (n=5)
+== eval_results/offtinker/sft_general9b_18b_R9b_18b_40k_b8k.jsonl
+   qa_1         string 0.80 | LLM-judged 0.80  (n=5)
+   qa_2         string 0.20 | LLM-judged 0.20  (n=5)

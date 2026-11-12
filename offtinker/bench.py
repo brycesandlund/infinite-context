@@ -73,8 +73,12 @@ def main() -> None:
         print(f"warmup {i + 1}: {n / dt:,.0f} tok/s ({dt:.1f}s)", flush=True)
     results = []
     for cfg in a.configs.split(","):
-        ck, micro = (int(x) for x in cfg.split(":"))
+        ck, micro, *fl = cfg.split(":")                 # optional 3rd field: MoE expert path: S = sorted sum instead of index_add
+        ck, micro, fl = int(ck), int(micro), (fl[0] if fl else "")
+        from offtinker import lora as _lora
+        _lora.ACC_INDEX_ADD = "S" not in fl
         mode(ck)
+        cursor[0] = a.start + a.warmup                  # every config times the same batches
         try:
             step(micro)                                  # settle (new shapes / allocator)
             torch.cuda.reset_peak_memory_stats()
@@ -84,7 +88,7 @@ def main() -> None:
                 n, dt = step(micro)
                 tot_n += n; tot_t += dt; times.append(n / dt)
             results.append((tot_n / tot_t, ck, micro))
-            print(f"grad_ckpt={ck} micro_tokens={micro}: {tot_n / tot_t:,.0f} tok/s (per-step median {sorted(times)[len(times) // 2]:,.0f} min {min(times):,.0f} max {max(times):,.0f}) | "
+            print(f"grad_ckpt={ck} micro_tokens={micro} flags='{fl}': {tot_n / tot_t:,.0f} tok/s (per-step median {sorted(times)[len(times) // 2]:,.0f} min {min(times):,.0f} max {max(times):,.0f}) | "
                   f"peak mem {torch.cuda.max_memory_allocated() / 2**30:.1f} GB", flush=True)
         except torch.OutOfMemoryError:
             print(f"grad_ckpt={ck} micro_tokens={micro}: OUT OF MEMORY", flush=True)
@@ -98,6 +102,7 @@ def main() -> None:
             step(micro); step(micro)
         print(f"\nprofile of 2 steps at grad_ckpt={ck} micro_tokens={micro}:")
         print(prof.key_averages().table(sort_by="self_cuda_time_total", row_limit=22, max_name_column_width=60))
+        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=16, max_name_column_width=60))
 
 
 if __name__ == "__main__":

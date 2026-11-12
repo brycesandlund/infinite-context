@@ -52,7 +52,9 @@ class AssistantTurn:
     # The exact model the provider SERVED (e.g. alias "gpt-5.4" -> "gpt-5.4-2026-03-05"); aliases can be re-pointed
     # over time, so every rollout records it. None for Tinker (the checkpoint path identifies the model).
     served_model: str | None = None
-    usage: dict | None = None   # {"output_tokens", "reasoning_tokens"} when the provider reports them
+    # {"prompt_tokens", "output_tokens", "reasoning_tokens" (included in output_tokens), "cached_tokens"}; a field is
+    # None when the provider does not report it. eval/agent.py adds "seconds" (wall time of the call).
+    usage: dict | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -144,7 +146,8 @@ class TinkerBackend(ModelBackend):
                 stop=self._stop,
             ),
         )
-        parsed, termination = self.renderer.parse_response(resp.sequences[0].tokens)
+        out_tokens = resp.sequences[0].tokens
+        parsed, termination = self.renderer.parse_response(out_tokens)
         # content may be a str or a multimodal list; get_text_content normalizes to str.
         from tinker_cookbook.renderers import get_text_content
 
@@ -156,6 +159,7 @@ class TinkerBackend(ModelBackend):
             tool_calls=_cookbook_tool_calls_to_neutral(parsed.get("tool_calls")),
             raw=parsed,
             truncated=truncated,
+            usage={"output_tokens": len(out_tokens), "reasoning_tokens": None, "prompt_tokens": model_input.length},
         )
 
 
@@ -177,6 +181,8 @@ class VLLMBackend(TinkerBackend):
         self._http = httpx.AsyncClient(
             base_url=base_url.rstrip("/"), headers={"Authorization": f"Bearer {api_key}"},
             timeout=httpx.Timeout(900.0, connect=60.0), limits=httpx.Limits(max_connections=1024, max_keepalive_connections=256),
+            # Modal answers a request that waits > 150 s (a cold start) with 303 -> a result URL to poll.
+            follow_redirects=True, max_redirects=50,
         )
 
     async def sample(
@@ -298,8 +304,12 @@ def _usage(resp) -> dict | None:
     if u is None:
         return None
     d = getattr(u, "completion_tokens_details", None)
+    pd = getattr(u, "prompt_tokens_details", None)
     return {"output_tokens": getattr(u, "completion_tokens", None),
-            "reasoning_tokens": getattr(d, "reasoning_tokens", None) if d is not None else None}
+            "reasoning_tokens": getattr(d, "reasoning_tokens", None) if d is not None else None,
+            # prompt_tokens was not recorded before 2026-11-12 (older competitor files have output tokens only)
+            "prompt_tokens": getattr(u, "prompt_tokens", None),
+            "cached_tokens": getattr(pd, "cached_tokens", None) if pd is not None else None}
 
 
 class APIBackend(ModelBackend):

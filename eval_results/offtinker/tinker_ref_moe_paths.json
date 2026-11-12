@@ -1,0 +1,5 @@
+{
+ "0": "tinker://6d809736-1f9e-52cd-a55c-cdf556f34f42:train:0/sampler_weights/offtinker_refmoe_s0",
+ "20": "tinker://6d809736-1f9e-52cd-a55c-cdf556f34f42:train:0/sampler_weights/offtinker_refmoe_s20",
+ "150": "tinker://6d809736-1f9e-52cd-a55c-cdf556f34f42:train:0/sampler_weights/offtinker_refmoe_s150"
+}

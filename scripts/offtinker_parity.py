@@ -120,7 +120,7 @@ async def sample_cmp(a) -> None:
     client = (await sc.create_sampling_client_async(model_path=a.ckpt) if a.ckpt
               else await sc.create_sampling_client_async(base_model=a.model))
     key = Path("~/.cache/infinite-context/vllm_api_key.txt").expanduser().read_text().strip()
-    http = httpx.AsyncClient(base_url=a.url.rstrip("/"), headers={"Authorization": f"Bearer {key}"}, timeout=900)
+    http = httpx.AsyncClient(base_url=a.url.rstrip("/"), headers={"Authorization": f"Bearer {key}"}, timeout=900, follow_redirects=True, max_redirects=50)
     STOP = 248046   # <|im_end|>
 
     async def one(u):

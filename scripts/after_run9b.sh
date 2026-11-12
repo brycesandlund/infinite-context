@@ -4,7 +4,8 @@
 #   usage: scripts/after_run9b.sh <name> <vllm url>       e.g. after_run9b.sh 9b_18b https://...modal.run
 #   nohup caffeinate -is bash scripts/after_run9b.sh 9b_18b <url> > /tmp/after_run9b.log 2>&1 &
 # Same tasks, seeds, budgets, temperature and MAX_NODES as 18b; only BACKEND differs. (The plain leaf-classification
-# probe is Tinker-only and is not run here.)
+# probe is Tinker-only and is not run here.)  OOLONG_N=20 adds the 3 OOLONG families to the RULER runs (18w's protocol,
+# scripts/after_run18.sh; 18b ran them with 0). Also used for the MoE served on our stack (name e.g. moe18w).
 cd "$(dirname "$0")/.."
 export PYTHONUNBUFFERED=1
 NAME=$1
@@ -30,8 +31,8 @@ say "$NAME 4K: $(grep -o '^SCORE.*' /tmp/eval_general$NAME.log | tail -1)"
 say "$NAME OOLONG chart @10K / @40K and RULER-13 @10K / @40K (8K budget)"
 bash scripts/eval_oolong_chart.sh C${NAME}_10k "" 10000 > /tmp/eval_C${NAME}_10k.log 2>&1 &
 bash scripts/eval_oolong_chart.sh C${NAME}_40k "" 40000 > /tmp/eval_C${NAME}_40k.log 2>&1 &
-bash scripts/eval_long.sh R${NAME}_10k_b8k "" 10000 8000 5 0 > /tmp/eval_R${NAME}_10k_b8k.log 2>&1 &
-bash scripts/eval_long.sh R${NAME}_40k_b8k "" 40000 8000 5 0 > /tmp/eval_R${NAME}_40k_b8k.log 2>&1 &
+bash scripts/eval_long.sh R${NAME}_10k_b8k "" 10000 8000 5 ${OOLONG_N:-0} > /tmp/eval_R${NAME}_10k_b8k.log 2>&1 &
+bash scripts/eval_long.sh R${NAME}_40k_b8k "" 40000 8000 5 ${OOLONG_N:-0} > /tmp/eval_R${NAME}_40k_b8k.log 2>&1 &
 wait
 for t in C${NAME}_10k C${NAME}_40k R${NAME}_10k_b8k R${NAME}_40k_b8k; do
   cp /tmp/eval_$t.jsonl eval_results/offtinker/sft_general${NAME}_$t.jsonl 2>/dev/null

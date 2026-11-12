@@ -1,0 +1,5 @@
+Your Tinker SDK version is outdated. Please upgrade to the latest version.
+120 prompts, greedy, up to 160 tokens | identical continuations 101/120 | mean common prefix 123.7 of mean length 142.6 | follows the training trace: Tinker 94, vLLM 92
+at the first differing token, vLLM's log-prob margin for its own token over Tinker's: median 0.375, max 3.750 nats; margins under 0.1: 1/19, under 0.5: 10/19; Tinker's token outside vLLM's top-5: 0
+Task was destroyed but it is pending!
+task: <Task pending name='tinker_session_futures_poller' coro=<SessionFuturesPoller._poll_loop() running at /Users/brycesandlund/GitHub/tinker-sdk/src/tinker/lib/session_futures_poller.py:132> wait_for=<Future pending cb=[Task.task_wakeup()]>>

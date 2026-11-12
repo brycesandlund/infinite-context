@@ -1,6 +1,6 @@
 # Off-Tinker training and evals
 
-LoRA fine-tuning and eval serving for the dense Qwen3.5 models on a rented GPU (Modal or Vast), reproducing the
+LoRA fine-tuning and eval serving for the Qwen3.5 / 3.6 models (dense and MoE) on a rented GPU (Modal or Vast), reproducing the
 Tinker loop in `sft.py` and the Tinker eval backend. The trace generator, renderer, tools and eval harness are
 unchanged; only the forward/backward passes move. Validation against Tinker is in `training_runs.md`
 ("OFF-TINKER STACK").
@@ -21,6 +21,14 @@ unchanged; only the forward/backward passes move. Validation against Tinker is i
 
 Pinned versions (the linear-attention Triton kernels break across versions): torch 2.15.0, transformers 5.22.2,
 flash-linear-attention 0.6.0, vLLM 0.33.0. `python -m offtinker.envcheck` verifies a box.
+
+**Models.** Dense Qwen3.5 (validated on the 9B) and the MoE Qwen3.6-35B-A3B (the paper's model): pass
+`--model Qwen/Qwen3.6-35B-A3B` to `train` / `merge` / `logprobs` / `bench`. The MoE needs an H200 for training (peak
+~86 GB with gradient checkpointing, the default) and for serving. Measured: ~6,100 tokens/s, so the 196M-token 18b corpus
+is ~8.9 h, ~$40. `python -m offtinker.selftest --moe` tests the expert adapters on a tiny random MoE.
+
+**Check downloads.** `modal volume get` once returned a silently corrupted 2 GB adapter: compare `sha256sum` on the
+volume (`... ::sh --file` with a one-line script) with the local file before trusting it.
 
 ## 1. Export a dataset (laptop)
 
@@ -88,6 +96,10 @@ Everything in `eval/run.py` works as before with two extra variables:
 ```bash
 BACKEND=vllm VLLM_URL=https://<workspace>--ic-serve-<run>-serve.us-east.modal.run <usual eval env> PYTHONPATH=. uv run python -m eval.run
 ```
+
+`scripts/after_train_offtinker.sh <modal app id> <run> <eval name>` chains steps 3-4 unattended: it waits for the
+training app to stop, merges, deploys, runs the 18b suite (`scripts/after_run9b.sh`) and stops the server.
+`scripts/compare_evals.py` pairs two result files on the same problems (per-task means, paired difference, p-value).
 
 `AGENT_CONTEXT` must not exceed the server's `IC_MAX_LEN` (default 16384). `MODEL_NAME` only selects the tokenizer
 and renderer, which are shared across the family, so the default is fine.

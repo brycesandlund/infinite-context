@@ -78,6 +78,7 @@ def node_to_dict(node: "AgentNode") -> dict:
     return {
         "depth": node.depth, "subtask": node.subtask, "answer": node.answer,
         "termination": node.termination, "n_turns": node.n_turns,
+        **({"seconds": node.seconds} if getattr(node, "seconds", None) is not None else {}),
         "messages": [
             {
                 "role": m.get("role"),

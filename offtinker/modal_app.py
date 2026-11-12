@@ -21,6 +21,7 @@ import subprocess
 import modal
 
 GPU = os.environ.get("OFFTINKER_GPU", "H100")
+GPU = None if GPU.lower() in ("none", "cpu") else GPU      # OFFTINKER_GPU=none: a CPU container (downloads, merges)
 SERVE_NAME = os.environ.get("IC_SERVE_NAME", "")            # set at deploy time -> its own app + URL per served model
 app = modal.App("ic-serve-" + SERVE_NAME if SERVE_NAME else "ic-offtinker")
 

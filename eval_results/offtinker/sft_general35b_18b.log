@@ -1,0 +1,280 @@
+Backend: vllm | mode: decompose | tasks: ['synth_sum', 'synth_count', 'synth_mode', 'synth_varchain', 'synth_count_cmp', 'realdoc_count', 'niah_novel', 'niah_multi', 'vt_novel', 'narrativeqa', 'oolong_counting', 'oolong_user', 'oolong_temporal', 'niah_single_1', 'niah_multikey_1', 'niah_multiquery', 'vt', 'cwe', 'fwe', 'synth_2d', 'synth_peak', 'long_records', 'rule_label', 'labeled_records', 'synth_topk', 'niah_single_2', 'niah_single_3', 'niah_multikey_2', 'niah_multikey_3', 'niah_multivalue', 'qa_1', 'qa_2'] | n/task: 2 | budget: 3000 | doc: 4000 | depth: None
+Loading + tokenizing PG-essay corpus...
+vLLM backend: https://bcsandlund--ic-serve-35b18b-serve.us-east.modal.run (served model 'ic')
+temp=0.2 | out=/tmp/eval_general35b_18b.{jsonl,txt}
+Token indices sequence length is longer than the specified maximum sequence length for this model (311729 > 262144). Running this sequence through the model will result in indexing errors
+[progress] 1/104 done | oolong_counting seed 2000002 score 1.00 | 15 nodes | 6.3 min
+[progress] 2/104 done | realdoc_count seed 2005000 score 0.75 | 31 nodes | 6.4 min
+[progress] 3/104 done | realdoc_count seed 2005001 score 1.00 | 31 nodes | 6.4 min
+[progress] 4/104 done | synth_sum seed 2000000 score 1.00 | 17 nodes | 6.4 min
+[progress] 5/104 done | synth_sum seed 2000001 score 1.00 | 17 nodes | 6.4 min
+[progress] 6/104 done | oolong_counting seed 2000003 score 0.24 | 15 nodes | 6.5 min
+[progress] 7/104 done | oolong_counting seed 2000001 score 1.00 | 15 nodes | 6.6 min
+[progress] 8/104 done | oolong_counting seed 2000000 score 0.32 | 15 nodes | 6.7 min
+[progress] 9/104 done | synth_mode seed 2002000 score 1.00 | 15 nodes | 6.7 min
+[progress] 10/104 done | niah_multi seed 2007001 score 1.00 | 31 nodes | 6.7 min
+[progress] 11/104 done | narrativeqa seed 2009001 score 1.00 | 15 nodes | 6.7 min
+[progress] 12/104 done | narrativeqa seed 2009000 score 1.00 | 31 nodes | 6.7 min
+[progress] 13/104 done | synth_mode seed 2002001 score 1.00 | 17 nodes | 6.7 min
+[progress] 14/104 done | oolong_user seed 2100002 score 1.00 | 15 nodes | 7.2 min
+[progress] 15/104 done | oolong_counting seed 2000004 score 0.00 | 15 nodes | 7.3 min
+[progress] 16/104 done | niah_multi seed 2007000 score 1.00 | 31 nodes | 7.3 min
+[progress] 17/104 done | oolong_user seed 2100001 score 1.00 | 15 nodes | 7.4 min
+[progress] 18/104 done | oolong_user seed 2100000 score 1.00 | 15 nodes | 7.5 min
+[progress] 19/104 done | oolong_user seed 2100004 score 1.00 | 15 nodes | 7.5 min
+[progress] 20/104 done | niah_single_1 seed 2013000 score 1.00 | 23 nodes | 7.7 min
+[progress] 21/104 done | niah_single_1 seed 2013001 score 1.00 | 23 nodes | 7.7 min
+[progress] 22/104 done | oolong_user seed 2100003 score 1.00 | 15 nodes | 7.8 min
+[progress] 23/104 done | oolong_temporal seed 2200001 score 0.75 | 15 nodes | 7.8 min
+[progress] 24/104 done | vt_novel seed 2008000 score 1.00 | 11 nodes | 8.0 min
+[progress] 25/104 done | vt_novel seed 2008001 score 1.00 | 11 nodes | 8.1 min
+[progress] 26/104 done | niah_single_1 seed 2013002 score 1.00 | 27 nodes | 8.1 min
+[progress] 27/104 done | niah_single_1 seed 2013003 score 1.00 | 23 nodes | 8.2 min
+[progress] 28/104 done | niah_single_1 seed 2013004 score 1.00 | 25 nodes | 8.3 min
+[progress] 29/104 done | oolong_temporal seed 2200002 score 1.00 | 15 nodes | 8.3 min
+[progress] 30/104 done | niah_multikey_1 seed 2014000 score 1.00 | 31 nodes | 8.4 min
+[progress] 31/104 done | niah_multikey_1 seed 2014001 score 1.00 | 31 nodes | 8.6 min
+[progress] 32/104 done | niah_multikey_1 seed 2014003 score 1.00 | 31 nodes | 8.6 min
+[progress] 33/104 done | niah_multikey_1 seed 2014002 score 1.00 | 31 nodes | 8.6 min
+[progress] 34/104 done | oolong_temporal seed 2200003 score 0.00 | 15 nodes | 8.7 min
+[progress] 35/104 done | oolong_temporal seed 2200004 score 0.00 | 15 nodes | 8.7 min
+[progress] 36/104 done | oolong_temporal seed 2200000 score 0.00 | 15 nodes | 8.7 min
+[progress] 37/104 done | niah_multikey_1 seed 2014004 score 1.00 | 31 nodes | 8.8 min
+[progress] 38/104 done | niah_multiquery seed 2015000 score 1.00 | 31 nodes | 9.1 min
+[progress] 39/104 done | niah_multiquery seed 2015001 score 1.00 | 31 nodes | 9.2 min
+[progress] 40/104 done | niah_multiquery seed 2015002 score 1.00 | 31 nodes | 9.3 min
+[progress] 41/104 done | niah_multiquery seed 2015003 score 1.00 | 31 nodes | 9.5 min
+[progress] 42/104 done | niah_multiquery seed 2015004 score 1.00 | 31 nodes | 9.5 min
+[progress] 43/104 done | cwe seed 2017003 score 1.00 | 15 nodes | 9.8 min
+[progress] 44/104 done | cwe seed 2017004 score 1.00 | 15 nodes | 9.9 min
+[progress] 45/104 done | cwe seed 2017001 score 1.00 | 27 nodes | 10.0 min
+[progress] 46/104 done | cwe seed 2017002 score 1.00 | 27 nodes | 10.0 min
+[progress] 47/104 done | cwe seed 2017000 score 1.00 | 15 nodes | 10.1 min
+[progress] 48/104 done | fwe seed 2018000 score 1.00 | 31 nodes | 10.3 min
+[progress] 49/104 done | vt seed 2016000 score 1.00 | 10 nodes | 10.4 min
+[progress] 50/104 done | fwe seed 2018001 score 1.00 | 29 nodes | 10.5 min
+[progress] 51/104 done | vt seed 2016001 score 1.00 | 10 nodes | 10.5 min
+[progress] 52/104 done | vt seed 2016002 score 1.00 | 10 nodes | 10.5 min
+[progress] 53/104 done | fwe seed 2018002 score 1.00 | 29 nodes | 10.6 min
+[progress] 54/104 done | fwe seed 2018004 score 1.00 | 15 nodes | 10.6 min
+[progress] 55/104 done | vt seed 2016003 score 1.00 | 11 nodes | 10.6 min
+[progress] 56/104 done | fwe seed 2018003 score 1.00 | 21 nodes | 10.7 min
+[progress] 57/104 done | vt seed 2016004 score 1.00 | 10 nodes | 10.7 min
+[progress] 58/104 done | long_records seed 2021001 score 1.00 | 15 nodes | 10.7 min
+[progress] 59/104 done | long_records seed 2021000 score 1.00 | 15 nodes | 10.7 min
+[progress] 60/104 done | synth_2d seed 2019001 score 1.00 | 29 nodes | 10.9 min
+[progress] 61/104 done | labeled_records seed 2023001 score 0.56 | 15 nodes | 11.2 min
+[progress] 62/104 done | synth_2d seed 2019000 score 1.00 | 23 nodes | 11.2 min
+[progress] 63/104 done | rule_label seed 2022000 score 1.00 | 27 nodes | 11.3 min
+[progress] 64/104 done | niah_single_2 seed 2025003 score 1.00 | 29 nodes | 11.7 min
+[progress] 65/104 done | niah_single_2 seed 2025002 score 1.00 | 31 nodes | 11.7 min
+[progress] 66/104 done | rule_label seed 2022001 score 1.00 | 21 nodes | 11.7 min
+[progress] 67/104 done | niah_single_2 seed 2025004 score 1.00 | 29 nodes | 11.8 min
+[progress] 68/104 done | niah_single_2 seed 2025001 score 1.00 | 29 nodes | 11.8 min
+[progress] 69/104 done | synth_topk seed 2024000 score 1.00 | 15 nodes | 11.9 min
+[progress] 70/104 done | niah_single_2 seed 2025000 score 1.00 | 29 nodes | 11.9 min
+[progress] 71/104 done | labeled_records seed 2023000 score 0.75 | 15 nodes | 12.1 min
+[progress] 72/104 done | niah_single_3 seed 2026000 score 1.00 | 31 nodes | 12.1 min
+[progress] 73/104 done | niah_single_3 seed 2026001 score 1.00 | 31 nodes | 12.3 min
+[progress] 74/104 done | niah_multikey_2 seed 2027000 score 1.00 | 15 nodes | 12.4 min
+[progress] 75/104 done | synth_topk seed 2024001 score 1.00 | 29 nodes | 12.4 min
+[progress] 76/104 done | niah_single_3 seed 2026002 score 1.00 | 31 nodes | 12.5 min
+[progress] 77/104 done | niah_multikey_2 seed 2027002 score 1.00 | 17 nodes | 12.6 min
+[progress] 78/104 done | niah_single_3 seed 2026003 score 1.00 | 31 nodes | 12.6 min
+[progress] 79/104 done | niah_single_3 seed 2026004 score 1.00 | 31 nodes | 12.7 min
+[progress] 80/104 done | niah_multikey_2 seed 2027003 score 1.00 | 29 nodes | 12.8 min
+[progress] 81/104 done | niah_multikey_2 seed 2027001 score 1.00 | 15 nodes | 12.8 min
+[progress] 82/104 done | niah_multikey_3 seed 2028001 score 1.00 | 17 nodes | 13.0 min
+[progress] 83/104 done | niah_multikey_3 seed 2028000 score 1.00 | 15 nodes | 13.0 min
+[progress] 84/104 done | niah_multikey_2 seed 2027004 score 1.00 | 19 nodes | 13.0 min
+[progress] 85/104 done | niah_multikey_3 seed 2028002 score 1.00 | 15 nodes | 13.2 min
+[progress] 86/104 done | synth_peak seed 2020000 score 1.00 | 11 nodes | 13.5 min
+[progress] 87/104 done | qa_1 seed 2030000 score 1.00 | 15 nodes | 13.6 min
+[progress] 88/104 done | niah_multikey_3 seed 2028003 score 1.00 | 29 nodes | 13.6 min
+[progress] 89/104 done | qa_1 seed 2030001 score 1.00 | 15 nodes | 13.7 min
+[progress] 90/104 done | qa_1 seed 2030002 score 1.00 | 15 nodes | 13.7 min
+[progress] 91/104 done | niah_multivalue seed 2029001 score 1.00 | 31 nodes | 13.7 min
+[progress] 92/104 done | synth_peak seed 2020001 score 1.00 | 11 nodes | 13.7 min
+[progress] 93/104 done | niah_multivalue seed 2029000 score 1.00 | 29 nodes | 13.7 min
+[progress] 94/104 done | niah_multikey_3 seed 2028004 score 1.00 | 25 nodes | 13.8 min
+[progress] 95/104 done | niah_multivalue seed 2029002 score 1.00 | 31 nodes | 13.8 min
+[progress] 96/104 done | niah_multivalue seed 2029003 score 1.00 | 31 nodes | 13.8 min
+[progress] 97/104 done | niah_multivalue seed 2029004 score 1.00 | 31 nodes | 13.8 min
+[progress] 98/104 done | qa_1 seed 2030003 score 1.00 | 15 nodes | 13.8 min
+[progress] 99/104 done | qa_1 seed 2030004 score 1.00 | 15 nodes | 13.9 min
+[progress] 100/104 done | qa_2 seed 2031000 score 1.00 | 15 nodes | 14.1 min
+[progress] 101/104 done | qa_2 seed 2031001 score 0.00 | 15 nodes | 14.1 min
+[progress] 102/104 done | qa_2 seed 2031002 score 1.00 | 15 nodes | 14.1 min
+[progress] 103/104 done | qa_2 seed 2031003 score 0.00 | 15 nodes | 14.2 min
+[progress] 104/104 done | qa_2 seed 2031004 score 1.00 | 15 nodes | 14.2 min
+
+========================================================================
+EVAL: backend=vllm ckpt=BASE
+========================================================================
+# task=synth_sum seed=2000000 dataset=None gold=['-57'] nodes=17 answer='-57' term=answered score=1.000
+# task=synth_sum seed=2000001 dataset=None gold=['115'] nodes=17 answer='115' term=answered score=1.000
+# task=synth_mode seed=2002000 dataset=None gold=['K2'] nodes=15 answer='K2' term=answered score=1.000
+# task=synth_mode seed=2002001 dataset=None gold=['K3'] nodes=17 answer='K3' term=answered score=1.000
+# task=realdoc_count seed=2005000 dataset=None gold=['11'] nodes=31 answer='10' term=answered score=0.750
+# task=realdoc_count seed=2005001 dataset=None gold=['39'] nodes=31 answer='39' term=answered score=1.000
+# task=niah_multi seed=2007000 dataset=None gold=['d90e9234-7b8f-0bda-5106-4b27461cf0c0', '1d5985b1-40e5-7ca1-2b6b-b1ef336878a6', 'efe96747-d7e4-b5c7-5199-d4640e55bedc', '33c10903-035f-2abe-b3f0-0ffb64b60332'] nodes=31 answer='33c10903-035f-2abe-b3f0-0ffb64b60332, d90e9234-7b8f-0bda-5106-4b27461cf0c0, efe96747-d7e4-b5c7-5199-d4640e55bedc, 1d5985b1-40e5-7ca1-2b6b-b1ef336878a6' term=answered score=1.000
+# task=niah_multi seed=2007001 dataset=None gold=['5572626'] nodes=31 answer='5572626' term=answered score=1.000
+# task=vt_novel seed=2008000 dataset=None gold=['DKQTS', 'ICXLE', 'MHCWV', 'PGSDY', 'SNPJK', 'TDHZE'] nodes=11 answer='DKQTS, ICXLE, MHCWV, PGSDY, SNPJK, TDHZE' term=answered score=1.000
+# task=vt_novel seed=2008001 dataset=None gold=['CNWTE', 'ILIEY', 'OFANV', 'OMTIO', 'TEJNC', 'XRELC'] nodes=11 answer='CNWTE, ILIEY, OFANV, OMTIO, TEJNC, XRELC' term=answered score=1.000
+# task=narrativeqa seed=2009000 dataset=None gold=['The Rose'] nodes=31 answer='The Rose Theater' term=answered score=1.000
+# task=narrativeqa seed=2009001 dataset=None gold=['Annie'] nodes=15 answer='Annie' term=answered score=1.000
+# task=oolong_counting seed=2000000 dataset=trec_coarse gold=['14'] nodes=15 answer='18' term=answered score=0.316
+# task=oolong_counting seed=2000001 dataset=imdb gold=['more common than'] nodes=15 answer='Answer: negative is more common than positive' term=answered score=1.000
+# task=oolong_counting seed=2000002 dataset=agnews gold=['17'] nodes=15 answer='17' term=answered score=1.000
+# task=oolong_counting seed=2000003 dataset=negation gold=['23'] nodes=15 answer='18' term=answered score=0.237
+# task=oolong_counting seed=2000004 dataset=yahoo gold=['less common than'] nodes=15 answer='Answer: Computers & Internet is same frequency as Politics & Government' term=answered score=0.000
+# task=oolong_user seed=2100000 dataset=trec_coarse gold=['numeric value'] nodes=15 answer='Label: numeric value' term=answered score=1.000
+# task=oolong_user seed=2100001 dataset=imdb gold=['negative'] nodes=15 answer='Label: negative' term=answered score=1.000
+# task=oolong_user seed=2100002 dataset=agnews gold=['1'] nodes=15 answer='Answer: 1' term=answered score=1.000
+# task=oolong_user seed=2100003 dataset=negation gold=['49255'] nodes=15 answer='User: 49255' term=answered score=1.000
+# task=oolong_user seed=2100004 dataset=yahoo gold=['30140'] nodes=15 answer='User: 30140' term=answered score=1.000
+# task=oolong_temporal seed=2200000 dataset=trec_coarse gold=['8'] nodes=15 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=2200001 dataset=imdb gold=['4'] nodes=15 answer='5' term=answered score=0.750
+# task=oolong_temporal seed=2200002 dataset=agnews gold=['6'] nodes=15 answer='6' term=answered score=1.000
+# task=oolong_temporal seed=2200003 dataset=negation gold=['75'] nodes=15 answer=None term=overflow score=0.000
+# task=oolong_temporal seed=2200004 dataset=yahoo gold=['6'] nodes=15 answer=None term=overflow score=0.000
+# task=niah_single_1 seed=2013000 dataset=None gold=['1389868'] nodes=23 answer='1389868' term=answered score=1.000
+# task=niah_single_1 seed=2013001 dataset=None gold=['3327249'] nodes=23 answer='3327249' term=answered score=1.000
+# task=niah_single_1 seed=2013002 dataset=None gold=['2148524'] nodes=27 answer='2148524' term=answered score=1.000
+# task=niah_single_1 seed=2013003 dataset=None gold=['9167102'] nodes=23 answer='9167102' term=answered score=1.000
+# task=niah_single_1 seed=2013004 dataset=None gold=['4964220'] nodes=25 answer='4964220' term=answered score=1.000
+# task=niah_multikey_1 seed=2014000 dataset=None gold=['9877562'] nodes=31 answer='9877562' term=answered score=1.000
+# task=niah_multikey_1 seed=2014001 dataset=None gold=['1574537'] nodes=31 answer='1574537' term=answered score=1.000
+# task=niah_multikey_1 seed=2014002 dataset=None gold=['2136960'] nodes=31 answer='2136960' term=answered score=1.000
+# task=niah_multikey_1 seed=2014003 dataset=None gold=['2780693'] nodes=31 answer='2780693' term=answered score=1.000
+# task=niah_multikey_1 seed=2014004 dataset=None gold=['1323691'] nodes=31 answer='1323691' term=answered score=1.000
+# task=niah_multiquery seed=2015000 dataset=None gold=['2317212', '2297150', '2483542', '9155445'] nodes=31 answer='dull-preservation=2317212|watery-atheist=2297150|concerned-music=2483542|bitter-software=9155445' term=answered score=1.000
+# task=niah_multiquery seed=2015001 dataset=None gold=['3548587', '9664940', '3902918', '5546353'] nodes=31 answer='quarrelsome-cocoa=3548587|massive-palm=9664940|ratty-beyond=3902918|nonstop-workhorse=5546353' term=answered score=1.000
+# task=niah_multiquery seed=2015002 dataset=None gold=['9646106', '7983932', '7575015', '4122396'] nodes=31 answer='helpful-opening=9646106|talented-due=7983932|madly-deputy=7575015|lazy-reveal=4122396' term=answered score=1.000
+# task=niah_multiquery seed=2015003 dataset=None gold=['9156422', '8222524', '9920121', '4040071'] nodes=31 answer='zany-spaghetti=9156422|whimsical-rider=8222524|festive-sulfur=9920121|comfortable-isogloss=4040071' term=answered score=1.000
+# task=niah_multiquery seed=2015004 dataset=None gold=['8399560', '4811721', '7402023', '2527289'] nodes=31 answer='likeable-rheumatism=8399560|auspicious-wrist=4811721|disillusioned-planning=7402023|massive-passing=2527289' term=answered score=1.000
+# task=vt seed=2016000 dataset=None gold=['BRSMD', 'WZCLD', 'NGYUP', 'RGOYO', 'ROOFJ'] nodes=10 answer='BRSMD, NGYUP, RGOYO, ROOFJ, WZCLD' term=answered score=1.000
+# task=vt seed=2016001 dataset=None gold=['LGASV', 'PLOCW', 'TCXWF', 'PZPFR', 'LYRIQ'] nodes=10 answer='LGASV, LYRIQ, PLOCW, PZPFR, TCXWF' term=answered score=1.000
+# task=vt seed=2016002 dataset=None gold=['ANQAS', 'LDIFA', 'PYVCS', 'MJHCS', 'YOOWJ'] nodes=10 answer='ANQAS, LDIFA, MJHCS, PYVCS, YOOWJ' term=answered score=1.000
+# task=vt seed=2016003 dataset=None gold=['MKWPS', 'UTQPD', 'HLVXX', 'OHYWF', 'FHORI'] nodes=11 answer='FHORI, HLVXX, MKWPS, OHYWF, UTQPD' term=answered score=1.000
+# task=vt seed=2016004 dataset=None gold=['SMFJF', 'UZGAG', 'WMKGQ', 'LSVJC', 'EEYOV'] nodes=10 answer='EEYOV, LSVJC, SMFJF, UZGAG, WMKGQ' term=answered score=1.000
+# task=cwe seed=2017000 dataset=None gold=['disposal', 'banjo', 'van', 'payoff', 'neighbor', 'bootee', 'mitten', 'mourn', 'colt', 'counter'] nodes=15 answer='neighbor (27), disposal (27), van (26), payoff (25), counter (24), bootee (23), banjo (22), colt (20), mitten (19), mourn (18)' term=answered score=1.000
+# task=cwe seed=2017001 dataset=None gold=['initialize', 'cyclone', 'thunderstorm', 'necessity', 'preserves', 'sale', 'acquaintance', 'harmony', 'scotch', 'pin'] nodes=27 answer='pin (37), scotch (35), necessity (34), preserves (29), cyclone (29), sale (28), thunderstorm (28), acquaintance (26), harmony (25), initialize (23)' term=answered score=1.000
+# task=cwe seed=2017002 dataset=None gold=['font', 'miter', 'assess', 'salami', 'rejoice', 'snore', 'barrel', 'theism', 'piquant', 'bathroom'] nodes=27 answer='piquant (31), bathroom (30), miter (26), salami (26), snore (26), assess (24), barrel (24), font (24), rejoice (21), theism (19)' term=answered score=1.000
+# task=cwe seed=2017003 dataset=None gold=['bookmark', 'composition', 'scam', 'raiment', 'lobby', 'auto', 'sleeping', 'pence', 'nestmate', 'cenotaph'] nodes=15 answer='pence, nestmate, scam, raiment, bookmark, lobby, composition, auto, sleeping, cenotaph' term=answered score=1.000
+# task=cwe seed=2017004 dataset=None gold=['councilperson', 'workbench', 'space', 'decline', 'future', 'uttermost', 'bra', 'passion', 'jockey', 'faithful'] nodes=15 answer='jockey, bra, faithful, decline, space, workbench, future, councilperson, passion, uttermost' term=answered score=1.000
+# task=fwe seed=2018000 dataset=None gold=['kmomkx', 'fhwuvj', 'tsbrhv'] nodes=31 answer='kmomkx, fhwuvj, tsbrhv' term=answered score=1.000
+# task=fwe seed=2018001 dataset=None gold=['zldkge', 'szwsuc', 'yvuyxr'] nodes=29 answer='zldkge, szwsuc, yvuyxr' term=answered score=1.000
+# task=fwe seed=2018002 dataset=None gold=['yoxnjk', 'fjgepj', 'wuozsq'] nodes=29 answer='yoxnjk, fjgepj, wuozsq' term=answered score=1.000
+# task=fwe seed=2018003 dataset=None gold=['uqgdsm', 'lugajd', 'uqdnnm'] nodes=21 answer='uqgdsm, lugajd, uqdnnm' term=answered score=1.000
+# task=fwe seed=2018004 dataset=None gold=['hcuuzt', 'mlphpg', 'xrkept'] nodes=15 answer='hcuuzt, mlphpg, xrkept' term=answered score=1.000
+# task=synth_2d seed=2019000 dataset=None gold=['1'] nodes=23 answer='1' term=answered score=1.000
+# task=synth_2d seed=2019001 dataset=None gold=['sales'] nodes=29 answer='sales' term=answered score=1.000
+# task=synth_peak seed=2020000 dataset=None gold=['0'] nodes=11 answer='0' term=answered score=1.000
+# task=synth_peak seed=2020001 dataset=None gold=['68'] nodes=11 answer='68' term=answered score=1.000
+# task=long_records seed=2021000 dataset=None gold=['A'] nodes=15 answer='A' term=answered score=1.000
+# task=long_records seed=2021001 dataset=None gold=['2'] nodes=15 answer='2' term=answered score=1.000
+# task=rule_label seed=2022000 dataset=None gold=['0'] nodes=27 answer='0' term=answered score=1.000
+# task=rule_label seed=2022001 dataset=None gold=['4'] nodes=21 answer='4' term=answered score=1.000
+# task=labeled_records seed=2023000 dataset=paws gold=['3'] nodes=15 answer='4' term=answered score=0.750
+# task=labeled_records seed=2023001 dataset=politeness gold=['30'] nodes=15 answer='28' term=answered score=0.562
+# task=synth_topk seed=2024000 dataset=None gold=['aifzel', 'bodmxd', 'mrihxt', 'ocijbl', 'rnrdvs', 'veukos', 'vpiiml', 'zkomjy'] nodes=15 answer='aifzel, mrihxt, veukos, bodmxd, vpiiml, rnrdvs, zkomjy, ocijbl' term=answered score=1.000
+# task=synth_topk seed=2024001 dataset=None gold=['coincided', 'follows', 'notes', 'policy', 'trained', 'cuts', 'inline', 'year'] nodes=29 answer='notes, trained, cuts, follows, inline, policy, coincided, year' term=answered score=1.000
+# task=niah_single_2 seed=2025000 dataset=None gold=['9264307'] nodes=29 answer='9264307' term=answered score=1.000
+# task=niah_single_2 seed=2025001 dataset=None gold=['6588894'] nodes=29 answer='6588894' term=answered score=1.000
+# task=niah_single_2 seed=2025002 dataset=None gold=['7370073'] nodes=31 answer='7370073' term=answered score=1.000
+# task=niah_single_2 seed=2025003 dataset=None gold=['9718187'] nodes=29 answer='9718187' term=answered score=1.000
+# task=niah_single_2 seed=2025004 dataset=None gold=['7823764'] nodes=29 answer='7823764' term=answered score=1.000
+# task=niah_single_3 seed=2026000 dataset=None gold=['063ca11e-016c-4c42-a5c4-3c2aa039832e'] nodes=31 answer='063ca11e-016c-4c42-a5c4-3c2aa039832e' term=answered score=1.000
+# task=niah_single_3 seed=2026001 dataset=None gold=['076c718a-ea19-467e-a032-60c38cd09718'] nodes=31 answer='076c718a-ea19-467e-a032-60c38cd09718' term=answered score=1.000
+# task=niah_single_3 seed=2026002 dataset=None gold=['b19485cb-5c10-46ee-b0fd-4de9543349ea'] nodes=31 answer='b19485cb-5c10-46ee-b0fd-4de9543349ea' term=answered score=1.000
+# task=niah_single_3 seed=2026003 dataset=None gold=['2b55634f-4a83-432a-8f3e-11bf8a0a9043'] nodes=31 answer='2b55634f-4a83-432a-8f3e-11bf8a0a9043' term=answered score=1.000
+# task=niah_single_3 seed=2026004 dataset=None gold=['f52273b0-fa94-4f78-89da-ef972b0248ae'] nodes=31 answer='f52273b0-fa94-4f78-89da-ef972b0248ae' term=answered score=1.000
+# task=niah_multikey_2 seed=2027000 dataset=None gold=['7363251'] nodes=15 answer='7363251' term=answered score=1.000
+# task=niah_multikey_2 seed=2027001 dataset=None gold=['4208194'] nodes=15 answer='4208194' term=answered score=1.000
+# task=niah_multikey_2 seed=2027002 dataset=None gold=['8133974'] nodes=17 answer='8133974' term=answered score=1.000
+# task=niah_multikey_2 seed=2027003 dataset=None gold=['5281507'] nodes=29 answer='5281507' term=answered score=1.000
+# task=niah_multikey_2 seed=2027004 dataset=None gold=['7233345'] nodes=19 answer='7233345' term=answered score=1.000
+# task=niah_multikey_3 seed=2028000 dataset=None gold=['fe51e062-7a0e-4d38-983f-e05b0fd58bc3'] nodes=15 answer='fe51e062-7a0e-4d38-983f-e05b0fd58bc3' term=answered score=1.000
+# task=niah_multikey_3 seed=2028001 dataset=None gold=['ea978593-4f5d-4721-9af1-74596956c7d5'] nodes=17 answer='ea978593-4f5d-4721-9af1-74596956c7d5' term=answered score=1.000
+# task=niah_multikey_3 seed=2028002 dataset=None gold=['659bac3c-7800-4c64-8a86-946c6732a4ba'] nodes=15 answer='659bac3c-7800-4c64-8a86-946c6732a4ba' term=answered score=1.000
+# task=niah_multikey_3 seed=2028003 dataset=None gold=['93f55a14-07c0-4283-82e7-1f607573217f'] nodes=29 answer='93f55a14-07c0-4283-82e7-1f607573217f' term=answered score=1.000
+# task=niah_multikey_3 seed=2028004 dataset=None gold=['c6d684f1-22cf-46c7-9652-112246403994'] nodes=25 answer='c6d684f1-22cf-46c7-9652-112246403994' term=answered score=1.000
+# task=niah_multivalue seed=2029000 dataset=None gold=['9616552', '4746142', '2518896', '8358811'] nodes=29 answer='2518896, 4746142, 8358811, 9616552' term=answered score=1.000
+# task=niah_multivalue seed=2029001 dataset=None gold=['8485229', '8255938', '1374944', '1572748'] nodes=31 answer='1374944, 8255938, 8485229, 1572748' term=answered score=1.000
+# task=niah_multivalue seed=2029002 dataset=None gold=['7621108', '7643448', '4616707', '4671684'] nodes=31 answer='4616707, 4671684, 7621108, 7643448' term=answered score=1.000
+# task=niah_multivalue seed=2029003 dataset=None gold=['7319509', '6743220', '7539698', '9357577'] nodes=31 answer='6743220, 7319509, 7539698, 9357577' term=answered score=1.000
+# task=niah_multivalue seed=2029004 dataset=None gold=['6686125', '8180289', '7685751', '3507037'] nodes=31 answer='3507037, 6686125, 7685751, 8180289' term=answered score=1.000
+# task=qa_1 seed=2030000 dataset=squad gold=['medication management system development, deployment and optimization', 'medication management system development, deployment and optimization', 'medication management system development, deployment and optimization'] nodes=15 answer='Many practice areas of pharmacy, information technology departments, healthcare information technology vendor companies, and medication management system development, deployment and optimization' term=answered score=1.000
+# task=qa_1 seed=2030001 dataset=squad gold=['quickly', 'growing quickly', 'quickly'] nodes=15 answer='Growing quickly' term=answered score=1.000
+# task=qa_1 seed=2030002 dataset=squad gold=['specialty pharmacies', 'specialty pharmacies', 'specialty pharmacies'] nodes=15 answer='Specialty pharmacies' term=answered score=1.000
+# task=qa_1 seed=2030003 dataset=squad gold=['19', '19', '19 of 28 newly FDA approved medications'] nodes=15 answer='19' term=answered score=1.000
+# task=qa_1 seed=2030004 dataset=squad gold=['cancer, hepatitis, and rheumatoid arthritis', 'chronic and complex disease states', 'chronic and complex disease states such as cancer, hepatitis, and rheumatoid arthritis'] nodes=15 answer='Cancer, hepatitis, and rheumatoid arthritis' term=answered score=1.000
+# task=qa_2 seed=2031000 dataset=hotpotqa gold=['Bertalan Farkas'] nodes=15 answer='Bertalan Farkas' term=answered score=1.000
+# task=qa_2 seed=2031001 dataset=hotpotqa gold=['Sister Anthony, S.C.'] nodes=15 answer='Margaret (Mary) Willie Arvin\'s portrait hangs in an exhibit at the Kentucky State Capital Rotunda. ‖ Harriet Patience Dame\'s portrait hangs in the New Hampshire State House. ‖ "Her portrait hangs in the Smithsonian Institution in Washington, DC." (Document 26) ‖ Florence Nightingale is described as "the founder of modern nursing" and "the founder of educated and scientific nursing" and "widely known as \'The Lady with the Lamp\'."' term=answered score=0.000
+# task=qa_2 seed=2031002 dataset=hotpotqa gold=['leg injury'] nodes=15 answer='A leg injury' term=answered score=1.000
+# task=qa_2 seed=2031003 dataset=hotpotqa gold=['500-room'] nodes=15 answer='500' term=answered score=0.000
+# task=qa_2 seed=2031004 dataset=hotpotqa gold=['Chris Gould'] nodes=15 answer='Chris Gould' term=answered score=1.000
+
+------------------------------------------------------------------------
+cwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=19.8)
+fwe: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=25.0)
+labeled_records: 0.656  (grounded 0.656 | 2 rollouts | no_answer=0/2 | mean_tree=15.0)
+    dataset paws           0.750  (n=1)
+    dataset politeness     0.562  (n=1)
+long_records: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=15.0)
+narrativeqa: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=23.0)
+niah_multi: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=31.0)
+niah_multikey_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=31.0)
+niah_multikey_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=19.0)
+niah_multikey_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=20.2)
+niah_multiquery: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=31.0)
+niah_multivalue: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=30.6)
+niah_single_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=24.2)
+niah_single_2: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=29.4)
+niah_single_3: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=31.0)
+oolong_counting: 0.511  (grounded 0.511 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset agnews         1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset negation       0.237  (n=1)
+    dataset trec_coarse    0.316  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   numeric_one_class  0.518  (n=3)
+    qtype   relative_freq      0.500  (n=2)
+oolong_temporal: 0.350  (grounded 0.350 | 5 rollouts | no_answer=3/5 | mean_tree=15.0)
+    dataset agnews         1.000  (n=1)
+    dataset imdb           0.750  (n=1)
+    dataset negation       0.000  (n=1)
+    dataset trec_coarse    0.000  (n=1)
+    dataset yahoo          0.000  (n=1)
+    qtype   most_common_label  0.375  (n=2)
+    qtype   relative_freq      0.500  (n=2)
+    qtype   represented_n_times 0.000  (n=1)
+oolong_user: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset agnews         1.000  (n=1)
+    dataset imdb           1.000  (n=1)
+    dataset negation       1.000  (n=1)
+    dataset trec_coarse    1.000  (n=1)
+    dataset yahoo          1.000  (n=1)
+    qtype   least_common_label 1.000  (n=1)
+    qtype   most_common_label  1.000  (n=2)
+    qtype   numeric_one_class  1.000  (n=1)
+    qtype   relative_freq      1.000  (n=1)
+qa_1: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset squad          1.000  (n=5)
+qa_2: 0.600  (grounded 0.600 | 5 rollouts | no_answer=0/5 | mean_tree=15.0)
+    dataset hotpotqa       0.600  (n=5)
+realdoc_count: 0.875  (grounded 0.875 | 2 rollouts | no_answer=0/2 | mean_tree=31.0)
+rule_label: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=24.0)
+synth_2d: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=26.0)
+synth_mode: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=16.0)
+synth_peak: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=11.0)
+synth_sum: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=17.0)
+synth_topk: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=22.0)
+vt: 1.000  (grounded 1.000 | 5 rollouts | no_answer=0/5 | mean_tree=10.2)
+vt_novel: 1.000  (grounded 1.000 | 2 rollouts | no_answer=0/2 | mean_tree=11.0)
+
+OVERALL: 0.917  (grounded 0.917 | 104 rollouts)
+SCORE (held-out ['cwe', 'fwe', 'niah_multikey_1', 'niah_multiquery', 'niah_single_1', 'oolong_counting', 'oolong_temporal', 'oolong_user', 'vt']): 0.873  (45 rollouts)
+DIAGNOSTIC (in-dist): 0.950  (59 rollouts)
+All 104 rollouts saved -> /tmp/eval_general35b_18b.jsonl + /tmp/eval_general35b_18b.txt
