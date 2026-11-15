@@ -3,7 +3,11 @@
 
 Each request is one training conversation cut at the start of its LAST assistant turn (the longest prompt that agent
 ever sends), asking for up to --max-tokens. Conversations are distinct, so only the system prompt is shared between
-requests: real evals re-send growing prefixes and benefit more from vLLM's prefix cache, i.e. this is a lower bound."""
+requests: real evals re-send growing prefixes and benefit more from vLLM's prefix cache, i.e. this is a lower bound.
+
+To split the cost of prefill and output tokens, run it at saturation on workloads with very different mixes and solve
+seconds = a * prompt_tokens + b * output_tokens: --max-tokens 1 (prefill only), --prompt-tokens 300 --max-tokens 1000
+--ignore-eos (output heavy; --ignore-eos makes every request generate exactly --max-tokens)."""
 
 from __future__ import annotations
 
@@ -25,6 +29,8 @@ async def main() -> None:
     ap.add_argument("--url", required=True); ap.add_argument("--data", required=True)
     ap.add_argument("--n", type=int, default=600); ap.add_argument("--conc", type=int, default=128)
     ap.add_argument("--max-tokens", type=int, default=200); ap.add_argument("--start", type=int, default=20000)
+    ap.add_argument("--prompt-tokens", type=int, default=0, help="cut every prompt to its first N tokens (0 = whole)")
+    ap.add_argument("--ignore-eos", action="store_true", help="generate exactly --max-tokens per request")
     a = ap.parse_args()
     ds = Dataset(a.data)
     key = Path("~/.cache/infinite-context/vllm_api_key.txt").expanduser().read_text().strip()
@@ -35,11 +41,12 @@ async def main() -> None:
         seq, mask = ds.datum(u)
         on = np.nonzero(mask)[0]
         starts = on[np.insert(np.diff(on) > 1, 0, True)]            # first token of every assistant turn
-        prompts.append([int(t) for t in seq[:int(starts[-1])]])
+        prompts.append([int(t) for t in seq[:int(starts[-1])]][:a.prompt_tokens or None])
         if len(prompts) == a.n:
             break
     sem = asyncio.Semaphore(a.conc)
     lat, pt, ot = [], [], []
+    extra = {"ignore_eos": True} if a.ignore_eos else {"stop_token_ids": [248046]}
 
     async def one(p):
         async with sem:
@@ -47,7 +54,7 @@ async def main() -> None:
             for _ in range(60):
                 r = await http.post("/v1/completions", json={
                     "model": "ic", "prompt": p, "temperature": 0.2, "top_p": 1.0, "max_tokens": a.max_tokens,
-                    "stop_token_ids": [248046], "skip_special_tokens": False, "add_special_tokens": False})
+                    "skip_special_tokens": False, "add_special_tokens": False, **extra})
                 if r.status_code == 200:
                     break
                 await asyncio.sleep(10)

@@ -737,8 +737,9 @@ async def main() -> None:
     unknown = [t for t in SFT_TASKS if t not in list_tasks()]
     if unknown:
         raise SystemExit(f"Unknown SFT_TASKS: {unknown}. Available: {list_tasks()}")
-    if "oolong_real" in SFT_TASKS:
-        raise SystemExit("oolong_real is EVAL ONLY (held-out benchmark) — never train on it.")
+    _eval_only = sorted(set(SFT_TASKS) & {"oolong_real", "longbench_v2", "mrcr"})
+    if _eval_only:
+        raise SystemExit(f"{_eval_only} are EVAL ONLY (held-out benchmarks) — never train on them.")
 
     tokenizer = tokenizer_utils.get_tokenizer(MODEL_NAME)
     renderer = get_renderer(RENDERER_NAME, tokenizer)

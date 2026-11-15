@@ -26,6 +26,8 @@ from tasks.rulelabel import RULELABEL_TASKS, make_rulelabel_problem
 from tasks.labeled import LABELED_TASKS, make_labeled_problem
 from tasks.topk import TOPK_TASKS, make_topk_problem
 from tasks.oolong_real import OOLONG_REAL_TASKS, make_oolong_real_problem
+from tasks.longbench_v2 import LONGBENCH_V2_TASKS, make_longbench_v2_problem
+from tasks.mrcr import MRCR_TASKS, make_mrcr_problem
 
 
 # All 13 RULER tasks resolve through the same vendored builder; per-task
@@ -49,6 +51,8 @@ _GENERATORS.update({name: _bind(make_rulelabel_problem, name) for name in RULELA
 _GENERATORS.update({name: _bind(make_labeled_problem, name) for name in LABELED_TASKS})
 _GENERATORS.update({name: _bind(make_topk_problem, name) for name in TOPK_TASKS})
 _GENERATORS.update({name: _bind(make_oolong_real_problem, name) for name in OOLONG_REAL_TASKS})  # EVAL ONLY
+_GENERATORS.update({name: _bind(make_longbench_v2_problem, name) for name in LONGBENCH_V2_TASKS})  # EVAL ONLY
+_GENERATORS.update({name: _bind(make_mrcr_problem, name) for name in MRCR_TASKS})  # EVAL ONLY
 
 
 # Training graders: strict equality / set / numeric. Clean reward signal —
@@ -83,6 +87,7 @@ _TRAIN_GRADING_MODES: dict[str, GradingMode] = {
     "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
     "synth_topk": "set",
     "oolong_real": "oolong_real",   # eval only — never an SFT/RL task
+    "longbench_v2": "choice", "mrcr": "mrcr",   # eval only — never SFT/RL tasks
 }
 
 
@@ -115,6 +120,7 @@ _EVAL_GRADING_MODES: dict[str, GradingMode] = {
     "labeled_records": "numeric",  # fallback; per-problem grading_mode decides
     "synth_topk": "set",
     "oolong_real": "oolong_real",   # eval only — never an SFT/RL task
+    "longbench_v2": "choice", "mrcr": "mrcr",   # eval only — never SFT/RL tasks
 }
 
 

@@ -19,7 +19,7 @@ from typing import Literal
 
 GradingMode = Literal[
     "exact", "set", "numeric", "ruler_all", "ruler_part", "qa_part",
-    "oolong_exact", "oolong_compare", "oolong_soft", "oolong_real",
+    "oolong_exact", "oolong_compare", "oolong_soft", "oolong_real", "choice", "mrcr",
 ]
 
 
@@ -148,6 +148,22 @@ def grade_answer(
         pred_lc = extracted.lower()
         hits = sum(1.0 for g in gold_answers if g.lower() in pred_lc)
         return hits / len(gold_answers)
+
+    if mode == "choice":
+        # Multiple choice (LongBench v2). The official extraction first (pred.py: drop '*', then "The correct answer
+        # is (X)" / "The correct answer is X"), else a bare letter with optional brackets / trailing punctuation.
+        t = extracted.replace("*", "").strip()
+        m = (re.search(r"The correct answer is \(([A-D])\)", t) or re.search(r"The correct answer is ([A-D])", t)
+             or re.fullmatch(r"\(?([A-Da-d])\)?[.:]?", t))
+        return 1.0 if m and m.group(1).upper() == gold_answers[0].strip().upper() else 0.0
+
+    if mode == "mrcr":
+        # OpenAI MRCR's grader, as on the dataset card. gold_answers = [answer, random_string_to_prepend].
+        from difflib import SequenceMatcher
+        answer, prefix = gold_answers[0], gold_answers[1]
+        if not extracted.startswith(prefix):
+            return 0.0
+        return float(SequenceMatcher(None, extracted.removeprefix(prefix), answer.removeprefix(prefix)).ratio())
 
     if mode == "oolong_real":
         # OOLONG-real's official scorer, vendored verbatim (tasks/oolong_real/vendored_eval.py). It parses the
